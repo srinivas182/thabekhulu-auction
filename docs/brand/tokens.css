@@ -1,0 +1,37 @@
+/* Thabekhulu brand tokens — v1.0 (Sprint 0). Source of truth for the web app's theme. */
+:root {
+  --ridge: #173B33;        /* primary — deep ridge green */
+  --ridge-700: #0F2B25;
+  --ridge-100: #DCE6E1;
+  --jacaranda: #6E5BA8;    /* accent — premium, winning bid, focus */
+  --jacaranda-100: #ECE8F6;
+  --limestone: #F2F3EE;    /* page background */
+  --paper: #FFFFFF;        /* cards, panels */
+  --ink: #14201C;          /* body text */
+  --slate: #5E6E68;        /* secondary text */
+  --line: #D5DBD7;         /* borders */
+  /* auction status */
+  --status-live: #2E7D4F;
+  --status-closing: #B7791F;
+  --status-processing: #2F6690;
+  --status-sold: #14201C;
+  --status-soon: #6B7570;
+  /* type */
+  --font-display: "Gloock", "Georgia", "Times New Roman", serif;
+  --font-ui: "Schibsted Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --step--1: 0.833rem; --step-0: 1rem; --step-1: 1.2rem; --step-2: 1.44rem;
+  --step-3: 1.728rem; --step-4: 2.488rem; --step-5: 3.583rem;
+  --radius-sm: 4px; --radius-md: 10px; --radius-lg: 18px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --limestone: #0E1D19; --paper: #15271F; --ink: #E8ECE9; --slate: #A3B2AC; --line: #2A3D36;
+    --ridge-100: #1E352E; --jacaranda: #A595E0; --jacaranda-100: #2A2440;
+    --status-live: #5BBF85; --status-closing: #E3AE55; --status-processing: #7FB2DA; --status-sold: #E8ECE9; --status-soon: #93A09B;
+  }
+}
+:root[data-theme="dark"] {
+  --limestone: #0E1D19; --paper: #15271F; --ink: #E8ECE9; --slate: #A3B2AC; --line: #2A3D36;
+  --ridge-100: #1E352E; --jacaranda: #A595E0; --jacaranda-100: #2A2440;
+  --status-live: #5BBF85; --status-closing: #E3AE55; --status-processing: #7FB2DA; --status-sold: #E8ECE9; --status-soon: #93A09B;
+}
