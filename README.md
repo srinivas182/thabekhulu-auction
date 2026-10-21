@@ -2,7 +2,7 @@
 
 Premium online property auction platform for **Thabekhulu Development Group** (South Africa), covering Homes, Land, Mining and Malls. Built by Mayura Consultancy Services (MCS).
 
-**Status:** Sprint 2 — Foundation (2a scaffold and 2b identity done; 2c platform services next). See [docs/sprint-plan.md](docs/sprint-plan.md).
+**Status:** Sprint 2 — Foundation (2a, 2b and 2c-1 done; 2c-2 theme manager next). See [docs/sprint-plan.md](docs/sprint-plan.md).
 
 ## Run it locally (Docker)
 

@@ -4,6 +4,8 @@ use App\Domains\Identity\Http\Middleware\EnsureAccountActive;
 use App\Domains\Identity\Http\Middleware\EnsureStaff;
 use App\Domains\Identity\Http\Middleware\RequireStaffTwoFactor;
 use App\Domains\Platform\Http\Middleware\SecurityHeaders;
+use App\Domains\Settings\Http\Middleware\ApplyRuntimeSettings;
+use App\Domains\Settings\Http\Middleware\RestrictAdminIp;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -28,9 +30,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'staff' => EnsureStaff::class,
             'staff.2fa' => RequireStaffTwoFactor::class,
+            'admin.ip' => RestrictAdminIp::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
         ]);
+
+        // Session lifetime comes from security settings, so set it before the session starts.
+        $middleware->web(prepend: [ApplyRuntimeSettings::class]);
 
         $middleware->web(append: [
             SecurityHeaders::class,

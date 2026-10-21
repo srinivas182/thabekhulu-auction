@@ -5,6 +5,7 @@ namespace App\Domains\Access\Http\Controllers;
 use App\Domains\Access\Enums\SystemRole;
 use App\Domains\Access\Http\Requests\RoleRequest;
 use App\Domains\Access\Support\PermissionCatalogue;
+use App\Domains\Audit\Support\Audit;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
@@ -52,6 +53,7 @@ class RoleController extends Controller
     {
         $label = (string) $request->input('label');
 
+        /** @var Role $role */
         $role = Role::create(['name' => $this->uniqueName($label), 'guard_name' => 'web']);
         $role->forceFill([
             'label' => $label,
@@ -59,6 +61,10 @@ class RoleController extends Controller
             'is_system' => false,
         ])->save();
         $role->syncPermissions($this->permissions($request));
+
+        Audit::record('roles', 'created', "Created role {$label}", $role, null, [
+            'attributes' => ['permissions' => $this->permissions($request)],
+        ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role created.')]);
 
@@ -85,11 +91,28 @@ class RoleController extends Controller
     {
         $this->ensureEditable($role);
 
+        $before = [
+            'label' => $role->getAttribute('label'),
+            'description' => $role->getAttribute('description'),
+            'permissions' => $role->permissions()->pluck('name')->sort()->values()->all(),
+        ];
+
         $role->forceFill([
             'label' => $request->input('label'),
             'description' => $request->input('description'),
         ])->save();
         $role->syncPermissions($this->permissions($request));
+
+        $after = [
+            'label' => $role->getAttribute('label'),
+            'description' => $role->getAttribute('description'),
+            'permissions' => collect($this->permissions($request))->sort()->values()->all(),
+        ];
+
+        Audit::record('roles', 'updated', "Updated role {$after['label']}", $role, null, [
+            'old' => $before,
+            'attributes' => $after,
+        ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role updated.')]);
 
@@ -106,7 +129,10 @@ class RoleController extends Controller
             ]);
         }
 
+        $label = (string) ($role->getAttribute('label') ?? $role->name);
         $role->delete();
+
+        Audit::record('roles', 'deleted', "Deleted role {$label}", null, null, ['old' => ['label' => $label]]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role deleted.')]);
 

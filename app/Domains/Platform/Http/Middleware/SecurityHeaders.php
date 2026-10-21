@@ -2,6 +2,7 @@
 
 namespace App\Domains\Platform\Http\Middleware;
 
+use App\Domains\Platform\Features\Flags;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
@@ -42,7 +43,7 @@ class SecurityHeaders
             $headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
-        if (! config('platform.indexing')) {
+        if (! Flags::active('public_site_indexing')) {
             $headers->set('X-Robots-Tag', 'noindex, nofollow');
         }
 

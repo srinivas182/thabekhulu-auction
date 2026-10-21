@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Domains\Access\Enums\SystemRole;
+use App\Domains\Audit\Listeners\AuditSubscriber;
+use App\Domains\Platform\Features\Flags;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
@@ -32,6 +34,9 @@ class AppServiceProvider extends ServiceProvider
         $this->guardProductionConfiguration();
         $this->configureDefaults();
         $this->configureAccess();
+
+        Event::subscribe(AuditSubscriber::class);
+        Flags::define();
     }
 
     /**

@@ -18,6 +18,8 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -49,7 +51,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, LogsActivity, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /** @var list<string> */
     protected $appends = ['name'];
@@ -76,6 +78,25 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'deactivated_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Profile and status changes go to the audit log. Passwords and 2FA
+     * secrets are never logged; sign-in timestamps are saved quietly.
+     */
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('users')
+            ->logOnly(['first_name', 'last_name', 'email', 'mobile', 'type', 'email_verified_at', 'deactivated_at', 'two_factor_confirmed_at'])
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs()
+            ->setDescriptionForEvent(fn (string $event): string => match ($event) {
+                'created' => 'Account created',
+                'updated' => 'Account details changed',
+                'deleted' => 'Account deleted',
+                default => ucfirst($event),
+            });
     }
 
     public function getRouteKeyName(): string
