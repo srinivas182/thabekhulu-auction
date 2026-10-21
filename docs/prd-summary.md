@@ -49,3 +49,4 @@ Winner misses the deadline → deposit forfeited (within cap) → property offer
 - Seller packages: auction end date may not pass package expiry.
 - Events: free or paid, online or in person; paid → gateway → QR ticket; staff QR check-in.
 - Roles: super admin, auctioneer, listings manager, KYC officer, finance, content editor, support, buyer (unverified/verified), seller.
+- Theme: super admin can change colours, logos, fonts and corner style for the website and the back office separately (draft → preview → publish, contrast check, version history, reset to brand defaults). Auction status colours are locked.

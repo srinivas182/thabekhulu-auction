@@ -1,0 +1,189 @@
+@import '@fontsource/gloock/400.css';
+@import '@fontsource-variable/schibsted-grotesk/wght.css';
+@import 'tailwindcss';
+
+@import 'tw-animate-css';
+
+@source '../views';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+    --font-sans:
+        'Schibsted Grotesk Variable', 'Segoe UI', 'Helvetica Neue', Arial,
+        ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Gloock', Georgia, 'Times New Roman', serif;
+
+    --color-brand: var(--brand);
+    --color-brand-foreground: var(--brand-foreground);
+    --color-brand-accent: var(--brand-accent);
+    --color-brand-accent-soft: var(--brand-accent-soft);
+    --color-status-live: var(--status-live);
+    --color-status-closing: var(--status-closing);
+    --color-status-processing: var(--status-processing);
+    --color-status-sold: var(--status-sold);
+    --color-status-soon: var(--status-soon);
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/*
+ * Thabekhulu brand tokens v1.0 (docs/brand/tokens.css).
+ * The theme manager (Sprint 2c) overrides these variables at runtime from
+ * published theme settings; these values are the brand defaults.
+ * Auction status colours are fixed and are never overridden.
+ */
+:root {
+    --background: #f2f3ee;
+    --foreground: #14201c;
+    --card: #ffffff;
+    --card-foreground: #14201c;
+    --popover: #ffffff;
+    --popover-foreground: #14201c;
+    --primary: #173b33;
+    --primary-foreground: #f2f3ee;
+    --secondary: #e4e9e5;
+    --secondary-foreground: #173b33;
+    --muted: #e9ece8;
+    --muted-foreground: #5e6e68;
+    --accent: #dce6e1;
+    --accent-foreground: #173b33;
+    --destructive: #b42318;
+    --destructive-foreground: #b42318;
+    --border: #d5dbd7;
+    --input: #c9d1cc;
+    --ring: #6e5ba8;
+    --brand: #173b33;
+    --brand-foreground: #f2f3ee;
+    --brand-accent: #6e5ba8;
+    --brand-accent-soft: #ece8f6;
+    --chart-1: #173b33;
+    --chart-2: #6e5ba8;
+    --chart-3: #2f6690;
+    --chart-4: #b7791f;
+    --chart-5: #2e7d4f;
+    --radius: 0.625rem;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #14201c;
+    --sidebar-primary: #173b33;
+    --sidebar-primary-foreground: #f2f3ee;
+    --sidebar-accent: #eef2ef;
+    --sidebar-accent-foreground: #173b33;
+    --sidebar-border: #d5dbd7;
+    --sidebar-ring: #6e5ba8;
+    --status-live: #2e7d4f;
+    --status-closing: #b7791f;
+    --status-processing: #2f6690;
+    --status-sold: #14201c;
+    --status-soon: #6b7570;
+}
+
+.dark {
+    --background: #0e1d19;
+    --foreground: #e8ece9;
+    --card: #15271f;
+    --card-foreground: #e8ece9;
+    --popover: #15271f;
+    --popover-foreground: #e8ece9;
+    --primary: #cfe3da;
+    --primary-foreground: #0e1d19;
+    --secondary: #1e352e;
+    --secondary-foreground: #e8ece9;
+    --muted: #1a2e27;
+    --muted-foreground: #a3b2ac;
+    --accent: #1e352e;
+    --accent-foreground: #e8ece9;
+    --destructive: #f0857a;
+    --destructive-foreground: #f0857a;
+    --border: #2a3d36;
+    --input: #34493f;
+    --ring: #a595e0;
+    --brand: #173b33;
+    --brand-foreground: #f2f3ee;
+    --brand-accent: #a595e0;
+    --brand-accent-soft: #2a2440;
+    --chart-1: #cfe3da;
+    --chart-2: #a595e0;
+    --chart-3: #7fb2da;
+    --chart-4: #e3ae55;
+    --chart-5: #5bbf85;
+    --sidebar: #12231d;
+    --sidebar-foreground: #e8ece9;
+    --sidebar-primary: #cfe3da;
+    --sidebar-primary-foreground: #0e1d19;
+    --sidebar-accent: #1e352e;
+    --sidebar-accent-foreground: #e8ece9;
+    --sidebar-border: #2a3d36;
+    --sidebar-ring: #a595e0;
+    --status-live: #5bbf85;
+    --status-closing: #e3ae55;
+    --status-processing: #7fb2da;
+    --status-sold: #e8ece9;
+    --status-soon: #93a09b;
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-variant-numeric: lining-nums;
+    }
+
+    .font-display {
+        font-weight: 400;
+        letter-spacing: -0.01em;
+    }
+
+    .tabular {
+        font-variant-numeric: tabular-nums lining-nums;
+    }
+}
