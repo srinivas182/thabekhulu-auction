@@ -2,7 +2,7 @@
 
 Premium online property auction platform for **Thabekhulu Development Group** (South Africa), covering Homes, Land, Mining and Malls. Built by Mayura Consultancy Services (MCS).
 
-**Status:** Sprint 2 — Foundation (2a scaffold). See [docs/sprint-plan.md](docs/sprint-plan.md).
+**Status:** Sprint 2 — Foundation (2a scaffold and 2b identity done; 2c platform services next). See [docs/sprint-plan.md](docs/sprint-plan.md).
 
 ## Run it locally (Docker)
 
@@ -13,6 +13,8 @@ cp .env.example .env
 docker compose up -d --build
 docker compose exec app composer setup
 ```
+
+`composer setup` runs the migrations and seeders. The seeder prints the first super admin’s email and a one-time password; sign in, then set up two-factor authentication when prompted.
 
 | Service                    | URL                           |
 | -------------------------- | ----------------------------- |

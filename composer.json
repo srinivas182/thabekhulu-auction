@@ -17,7 +17,8 @@
         "laravel/framework": "^13.17",
         "laravel/horizon": "^5.50",
         "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14"
+        "laravel/wayfinder": "^0.1.14",
+        "spatie/laravel-permission": "^8.3"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
@@ -49,7 +50,7 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php -r \"if (! preg_match('/^APP_KEY=.+/m', (string) file_get_contents('.env'))) { passthru('php artisan key:generate --ansi'); }\"",
-            "@php artisan migrate --force",
+            "@php artisan migrate --force --seed",
             "npm install",
             "npm run build:ssr"
         ],

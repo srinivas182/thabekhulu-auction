@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Identity\Http\Controllers\SessionController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -13,8 +14,6 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
     Route::get('settings/security', [SecurityController::class, 'edit'])
         ->middleware(RequirePassword::class)
         ->name('security.edit');
@@ -24,6 +23,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('user-password.update');
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+
+    Route::get('settings/sessions', [SessionController::class, 'index'])->name('sessions.index');
+    Route::delete('settings/sessions', [SessionController::class, 'destroy'])
+        ->middleware('throttle:6,1')
+        ->name('sessions.destroy');
 });
 
 Route::get('.well-known/passkey-endpoints', function () {

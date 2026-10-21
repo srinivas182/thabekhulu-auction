@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Domains\Access\Support\PermissionCatalogue;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -40,6 +42,13 @@ class HandleInertiaRequests extends Middleware
             'name' => config('app.name'),
             'auth' => [
                 'user' => $request->user(),
+                // Permission names drive back-office navigation. Policies still
+                // enforce access server-side; this only hides links.
+                'permissions' => $request->user() instanceof User && $request->user()->isStaff()
+                    ? ($request->user()->isSuperAdmin()
+                        ? PermissionCatalogue::all()
+                        : $request->user()->getAllPermissions()->pluck('name')->values()->all())
+                    : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
