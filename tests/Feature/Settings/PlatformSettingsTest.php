@@ -49,9 +49,10 @@ it('saves auction settings and records only what changed', function () {
     expect($auction->default_duration_days)->toBe(21)
         ->and($auction->soft_close_enabled)->toBeFalse();
 
+    // MySQL's JSON type reorders object keys, so compare by key, not position.
     $entry = AuditEntry::where('log_name', 'settings')->latest('id')->firstOrFail();
-    expect($entry->properties['old'])->toBe(['default_duration_days' => 30, 'soft_close_enabled' => true])
-        ->and($entry->properties['attributes'])->toBe(['default_duration_days' => 21, 'soft_close_enabled' => false])
+    expect($entry->properties['old'])->toEqual(['default_duration_days' => 30, 'soft_close_enabled' => true])
+        ->and($entry->properties['attributes'])->toEqual(['default_duration_days' => 21, 'soft_close_enabled' => false])
         ->and($entry->causer_id)->toBe($this->admin->id);
 });
 
