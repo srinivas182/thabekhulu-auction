@@ -1,0 +1,4 @@
+/* Font pairing: geometric. Loaded only when this pairing is the published theme. */
+@import '@fontsource/syne/600.css';
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/600.css';

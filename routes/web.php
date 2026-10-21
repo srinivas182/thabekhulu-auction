@@ -8,6 +8,7 @@ use App\Domains\Identity\Http\Controllers\StaffController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
+use App\Domains\Theme\Http\Controllers\ThemeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -66,6 +67,15 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
 
         Route::get('audit', [AuditController::class, 'index'])->middleware('can:audit.view')->name('audit.index');
         Route::get('audit/export', [AuditController::class, 'export'])->middleware('can:audit.export')->name('audit.export');
+
+        Route::middleware('can:theme.manage')->prefix('theme/{scope}')->whereIn('scope', ['website', 'admin'])->name('theme.')->group(function () {
+            Route::get('/', [ThemeController::class, 'edit'])->name('edit');
+            Route::post('draft', [ThemeController::class, 'saveDraft'])->name('draft.save');
+            Route::delete('draft', [ThemeController::class, 'discard'])->name('draft.discard');
+            Route::post('publish', [ThemeController::class, 'publish'])->name('publish');
+            Route::post('reset', [ThemeController::class, 'reset'])->name('reset');
+            Route::post('versions/{version}/restore', [ThemeController::class, 'restore'])->name('restore');
+        });
 
         Route::get('features', [FeatureController::class, 'index'])->middleware('can:features.manage')->name('features.index');
         Route::put('features/{flag}', [FeatureController::class, 'update'])->middleware('can:features.manage')->name('features.update');

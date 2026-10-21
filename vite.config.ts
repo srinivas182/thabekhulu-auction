@@ -9,7 +9,21 @@ import { defineConfig, lazyPlugins } from 'vite-plus';
 export default defineConfig({
     plugins: lazyPlugins(() => [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.tsx'],
+            input: [
+                'resources/css/app.css',
+                'resources/js/app.tsx',
+                // One entry per theme font pairing; only the published one is loaded.
+                ...[
+                    'thabekhulu',
+                    'classic',
+                    'modern',
+                    'heritage',
+                    'studio',
+                    'bold',
+                    'geometric',
+                    'humanist',
+                ].map((key) => `resources/css/fonts/${key}.css`),
+            ],
             refresh: true,
         }),
         inertia(),

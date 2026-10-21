@@ -1,0 +1,4 @@
+/* Font pairing: heritage. Loaded only when this pairing is the published theme. */
+@import '@fontsource/libre-caslon-display/400.css';
+@import '@fontsource/libre-franklin/400.css';
+@import '@fontsource/libre-franklin/600.css';

@@ -1,0 +1,4 @@
+/* Font pairing: classic. Loaded only when this pairing is the published theme. */
+@import '@fontsource/playfair-display/400.css';
+@import '@fontsource/source-sans-3/400.css';
+@import '@fontsource/source-sans-3/600.css';

@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Domains\Access\Support\PermissionCatalogue;
+use App\Domains\Theme\Support\ThemeRepository;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -40,6 +41,10 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'theme' => [
+                'scope' => ThemeRepository::scopeFor($request),
+                ...ThemeRepository::assets(ThemeRepository::scopeFor($request)),
+            ],
             'auth' => [
                 'user' => $request->user(),
                 // Permission names drive back-office navigation. Policies still

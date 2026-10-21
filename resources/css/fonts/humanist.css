@@ -1,0 +1,4 @@
+/* Font pairing: humanist. Loaded only when this pairing is the published theme. */
+@import '@fontsource/lora/400.css';
+@import '@fontsource/nunito-sans/400.css';
+@import '@fontsource/nunito-sans/600.css';

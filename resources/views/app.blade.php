@@ -18,19 +18,35 @@
             })();
         </script>
 
-        {{-- Page background before CSS loads, matching the brand tokens --}}
+        @php
+            $themeScope = \App\Domains\Theme\Support\ThemeRepository::scopeFor(request());
+            $theme = \App\Domains\Theme\Support\ThemeRepository::published($themeScope);
+            $themeAssets = \App\Domains\Theme\Support\ThemeRepository::assets($themeScope);
+        @endphp
+
+        {{-- Page background before CSS loads, from the published theme --}}
         <style nonce="{{ Vite::cspNonce() }}">
-            html { background-color: #f2f3ee; }
-            html.dark { background-color: #0e1d19; }
+            html { background-color: {{ $theme['light']['background'] }}; }
+            html.dark { background-color: {{ $theme['dark']['background'] }}; }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-        <meta name="theme-color" content="#173b33">
+        @if ($themeAssets['favicon'])
+            <link rel="icon" href="{{ $themeAssets['favicon'] }}">
+            @if ($themeAssets['faviconApple'])
+                <link rel="apple-touch-icon" href="{{ $themeAssets['faviconApple'] }}">
+            @endif
+        @else
+            <link rel="icon" href="/favicon.ico" sizes="any">
+            <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+            <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @endif
+        <meta name="theme-color" content="{{ $theme['light']['primary'] }}">
 
         @viteReactRefresh
-        @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        @vite(['resources/css/app.css', ...\App\Domains\Theme\Support\ThemeRepository::fontEntries($themeScope), 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+
+        {{-- Published theme (Sprint 2c): overrides the brand tokens in app.css. Values are validated hex colours. --}}
+        <style nonce="{{ Vite::cspNonce() }}" id="theme">{!! \App\Domains\Theme\Support\ThemeRepository::css($themeScope) !!}</style>
         <x-inertia::head>
             <title>{{ config('app.name', 'Thabekhulu Development Group') }}</title>
         </x-inertia::head>
