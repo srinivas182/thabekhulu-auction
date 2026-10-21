@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { CircleAlert, CircleCheck } from 'lucide-react';
-import { dashboard } from '@/routes';
+import { dashboard } from '@/routes/admin';
 
 type ServiceStatus = { ok: boolean; detail: string };
 

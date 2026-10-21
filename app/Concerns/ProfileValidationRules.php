@@ -9,31 +9,29 @@ use Illuminate\Validation\Rule;
 trait ProfileValidationRules
 {
     /**
-     * Get the validation rules used to validate user profiles.
+     * Rules for a user's profile details.
      *
      * @return array<string, array<int, ValidationRule|array<mixed>|string>>
      */
     protected function profileRules(?int $userId = null): array
     {
         return [
-            'name' => $this->nameRules(),
+            'first_name' => $this->nameRules(),
+            'last_name' => $this->nameRules(),
             'email' => $this->emailRules($userId),
+            'mobile' => $this->mobileRules(),
         ];
     }
 
     /**
-     * Get the validation rules used to validate user names.
-     *
      * @return array<int, ValidationRule|array<mixed>|string>
      */
     protected function nameRules(): array
     {
-        return ['required', 'string', 'max:255'];
+        return ['required', 'string', 'max:100'];
     }
 
     /**
-     * Get the validation rules used to validate user emails.
-     *
      * @return array<int, ValidationRule|array<mixed>|string>
      */
     protected function emailRules(?int $userId = null): array
@@ -41,11 +39,32 @@ trait ProfileValidationRules
         return [
             'required',
             'string',
+            'lowercase',
             'email',
             'max:255',
             $userId === null
                 ? Rule::unique(User::class)
                 : Rule::unique(User::class)->ignore($userId),
         ];
+    }
+
+    /**
+     * South African mobile numbers: 0821234567, 082 123 4567 or +27821234567.
+     *
+     * @return array<int, ValidationRule|array<mixed>|string>
+     */
+    protected function mobileRules(): array
+    {
+        return ['required', 'string', 'regex:/^(\+27|0)[6-8][0-9]{8}$/'];
+    }
+
+    /**
+     * Normalise a South African mobile number to E.164 (+27...).
+     */
+    protected function normaliseMobile(string $mobile): string
+    {
+        $digits = preg_replace('/[\s\-()]/', '', $mobile) ?? $mobile;
+
+        return str_starts_with($digits, '0') ? '+27'.substr($digits, 1) : $digits;
     }
 }

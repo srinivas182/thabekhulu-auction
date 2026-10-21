@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Database\Seeders\AccessSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 
 it('renders the public home page', function () {
@@ -10,16 +11,18 @@ it('renders the public home page', function () {
 });
 
 it('sends guests to the login page from the back office', function () {
-    $this->get(route('dashboard'))->assertRedirect(route('login'));
+    $this->get(route('admin.dashboard'))->assertRedirect(route('login'));
 });
 
 it('serves the back office dashboard under /admin', function () {
-    expect(route('dashboard', absolute: false))->toBe('/admin');
+    expect(route('admin.dashboard', absolute: false))->toBe('/admin');
 });
 
 it('shows system status on the back office dashboard', function () {
-    $this->actingAs(User::factory()->create())
-        ->get(route('dashboard'))
+    $this->seed(AccessSeeder::class);
+
+    $this->actingAs(User::factory()->staff()->create())
+        ->get(route('admin.dashboard'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('admin/dashboard')

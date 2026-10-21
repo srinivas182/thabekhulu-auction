@@ -1,6 +1,13 @@
+export type UserType = 'staff' | 'buyer' | 'seller';
+
 export type User = {
-    id: number;
+    ulid: string;
+    type: UserType;
+    first_name: string;
+    last_name: string;
+    /** First and last name combined. */
     name: string;
+    mobile: string | null;
     email: string;
     avatar?: string;
     email_verified_at: string | null;
@@ -12,6 +19,8 @@ export type User = {
 
 export type Auth = {
     user: User;
+    /** Permission names of the signed-in staff member; empty for buyers. */
+    permissions: string[];
 };
 
 export type Passkey = {

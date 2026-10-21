@@ -1,5 +1,8 @@
 <?php
 
+use App\Domains\Identity\Http\Middleware\EnsureAccountActive;
+use App\Domains\Identity\Http\Middleware\EnsureStaff;
+use App\Domains\Identity\Http\Middleware\RequireStaffTwoFactor;
 use App\Domains\Platform\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -9,6 +12,8 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Spatie\Permission\Middleware\PermissionMiddleware;
+use Spatie\Permission\Middleware\RoleMiddleware;
 use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -20,8 +25,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        $middleware->alias([
+            'staff' => EnsureStaff::class,
+            'staff.2fa' => RequireStaffTwoFactor::class,
+            'role' => RoleMiddleware::class,
+            'permission' => PermissionMiddleware::class,
+        ]);
+
         $middleware->web(append: [
             SecurityHeaders::class,
+            EnsureAccountActive::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,

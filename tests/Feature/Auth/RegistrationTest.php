@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use Database\Seeders\AccessSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Fortify\Features;
 use Tests\TestCase;
@@ -26,11 +27,16 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register()
     {
+        $this->seed(AccessSeeder::class);
+
         $response = $this->post(route('register.store'), [
-            'name' => 'Test User',
+            'first_name' => 'Test',
+            'last_name' => 'User',
             'email' => 'test@example.com',
+            'mobile' => '0821234567',
             'password' => 'Thabekhulu2026',
             'password_confirmation' => 'Thabekhulu2026',
+            'terms' => '1',
         ]);
 
         $this->assertAuthenticated();
