@@ -11,6 +11,7 @@
     "license": "proprietary",
     "require": {
         "php": "^8.3",
+        "enshrined/svg-sanitize": "^1.1",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/chisel": "^0.1.0",
         "laravel/fortify": "^1.37.2",
@@ -54,6 +55,7 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php -r \"if (! preg_match('/^APP_KEY=.+/m', (string) file_get_contents('.env'))) { passthru('php artisan key:generate --ansi'); }\"",
             "@php artisan migrate --force --seed",
+            "@php artisan storage:link --quiet",
             "npm install",
             "npm run build:ssr"
         ],

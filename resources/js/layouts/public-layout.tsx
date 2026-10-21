@@ -1,6 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import type { PropsWithChildren } from 'react';
-import BrandLockup from '@/components/brand-lockup';
+import BrandLogo from '@/components/brand-logo';
 import { dashboard, home, login, register } from '@/routes';
 
 /**
@@ -16,7 +16,7 @@ export default function PublicLayout({ children }: PropsWithChildren) {
             <header className="border-b border-border bg-card">
                 <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-4 py-3 sm:px-8 sm:py-4">
                     <Link href={home()} className="text-foreground">
-                        <BrandLockup className="h-8 w-auto sm:h-12" />
+                        <BrandLogo className="h-8 w-auto sm:h-12" />
                     </Link>
                     <nav className="flex shrink-0 items-center gap-1 text-sm font-medium whitespace-nowrap sm:gap-2">
                         {auth.user ? (

@@ -1,5 +1,6 @@
 import {
     History,
+    Palette,
     LayoutGrid,
     Settings,
     ShieldCheck,
@@ -11,6 +12,7 @@ import { index as audit } from '@/routes/admin/audit';
 import { index as features } from '@/routes/admin/features';
 import { index as roles } from '@/routes/admin/roles';
 import { edit as settings } from '@/routes/admin/settings';
+import { edit as theme } from '@/routes/admin/theme';
 import { index as staff } from '@/routes/admin/staff';
 import type { NavItem } from '@/types';
 
@@ -42,6 +44,12 @@ export const adminNavigation: NavItem[] = [
         href: settings(),
         icon: Settings,
         permission: 'settings.view',
+    },
+    {
+        title: 'Theme',
+        href: theme('website'),
+        icon: Palette,
+        permission: 'theme.manage',
     },
     {
         title: 'Feature flags',

@@ -11,11 +11,11 @@
   --slate: #5E6E68;        /* secondary text */
   --line: #D5DBD7;         /* borders */
   /* auction status */
-  --status-live: #2E7D4F;
-  --status-closing: #B7791F;
+  --status-live: #2d7b4e;
+  --status-closing: #946219;
   --status-processing: #2F6690;
   --status-sold: #14201C;
-  --status-soon: #6B7570;
+  --status-soon: #656e6a;
   /* type */
   --font-display: "Gloock", "Georgia", "Times New Roman", serif;
   --font-ui: "Schibsted Grotesk", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
