@@ -8,26 +8,26 @@ A running, secure, tested Laravel application that every later sprint builds on:
 
 ## 2. Delivery: three sub-sprints, one PR each
 
-| Sub-sprint | Contents | Merge rule |
-| --- | --- | --- |
-| 2a Scaffold | Laravel app, React + SSR, Tailwind with brand tokens, Docker, CI, security headers, public and admin shells | CI green, merged |
+| Sub-sprint             | Contents                                                                                                              | Merge rule       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------- |
+| 2a Scaffold            | Laravel app, React + SSR, Tailwind with brand tokens, Docker, CI, security headers, public and admin shells           | CI green, merged |
 | 2b Identity and access | Login, buyer sign-up (basic), password reset, email verification, 2FA, sessions, staff invites, roles and permissions | CI green, merged |
-| 2c Platform services | Settings framework, theme manager, audit log, feature flags, admin pages for all of these | CI green, merged |
+| 2c Platform services   | Settings framework, theme manager, audit log, feature flags, admin pages for all of these                             | CI green, merged |
 
 ## 3. Stack and versions
 
-| Area | Choice | Why |
-| --- | --- | --- |
-| Framework | Laravel 13, PHP 8.4 | Same as the ERP; current LTS line |
-| Front end | React 19 + TypeScript via Inertia 2, server-side rendering on | SEO/AEO needs server-rendered HTML |
-| Styling | Tailwind CSS 4 using CSS variables from the theme | Colours change at runtime from the admin, no rebuild |
-| Auth | Laravel Fortify (session, web) + Sanctum (future mobile/API tokens) | First-party, supports 2FA |
-| Permissions | spatie/laravel-permission | Roles + fine-grained permissions, cached |
-| Settings | spatie/laravel-settings | Typed, versioned settings classes |
-| Audit | spatie/laravel-activitylog | Model change and event logging |
-| Feature flags | Laravel Pennant | First-party, database-backed |
-| Quality | Pint, Larastan (PHPStan level 8), Pest 3, ESLint, Prettier, TypeScript strict | |
-| Local env | Docker Compose: php-fpm, nginx, mysql 8, redis, horizon, reverb, meilisearch, mailpit, ssr | Mirrors production services |
+| Area          | Choice                                                                                     | Why                                                  |
+| ------------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| Framework     | Laravel 13, PHP 8.4                                                                        | Same as the ERP; current LTS line                    |
+| Front end     | React 19 + TypeScript via Inertia 2, server-side rendering on                              | SEO/AEO needs server-rendered HTML                   |
+| Styling       | Tailwind CSS 4 using CSS variables from the theme                                          | Colours change at runtime from the admin, no rebuild |
+| Auth          | Laravel Fortify (session, web) + Sanctum (future mobile/API tokens)                        | First-party, supports 2FA                            |
+| Permissions   | spatie/laravel-permission                                                                  | Roles + fine-grained permissions, cached             |
+| Settings      | spatie/laravel-settings                                                                    | Typed, versioned settings classes                    |
+| Audit         | spatie/laravel-activitylog                                                                 | Model change and event logging                       |
+| Feature flags | Laravel Pennant                                                                            | First-party, database-backed                         |
+| Quality       | Pint, Larastan (PHPStan level 8), Pest 3, ESLint, Prettier, TypeScript strict              |                                                      |
+| Local env     | Docker Compose: php-fpm, nginx, mysql 8, redis, horizon, reverb, meilisearch, mailpit, ssr | Mirrors production services                          |
 
 ## 4. Code structure
 
@@ -78,13 +78,13 @@ Permissions are named `module.action` (for example `listings.publish`, `kyc.appr
 
 Typed settings groups, each with defaults, validation and an admin page (pages only for groups marked ✓; others get pages in their own sprint):
 
-| Group | Key settings (defaults) | Admin page now |
-| --- | --- | --- |
-| General | Site name, contact email, phone, office address, timezone Africa/Johannesburg, currency ZAR, date format | ✓ |
-| Auction | Duration 30 days; soft close on, 5 min window, 5 min extension; closing-soon 72 h; refund delay 5 days; runner-up hold 14 days; step-up threshold; suspension 12 months; Hot badge threshold 10 bids; New badge 7 days | ✓ |
-| Theme | Section 7 | ✓ |
-| Security | Staff 2FA required (locked on), session lifetime, admin IP allow-list (optional) | ✓ |
-| Notifications, Payments, KYC, SEO | Stubs with defaults | Later sprints |
+| Group                             | Key settings (defaults)                                                                                                                                                                                                | Admin page now |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| General                           | Site name, contact email, phone, office address, timezone Africa/Johannesburg, currency ZAR, date format                                                                                                               | ✓              |
+| Auction                           | Duration 30 days; soft close on, 5 min window, 5 min extension; closing-soon 72 h; refund delay 5 days; runner-up hold 14 days; step-up threshold; suspension 12 months; Hot badge threshold 10 bids; New badge 7 days | ✓              |
+| Theme                             | Section 7                                                                                                                                                                                                              | ✓              |
+| Security                          | Staff 2FA required (locked on), session lifetime, admin IP allow-list (optional)                                                                                                                                       | ✓              |
+| Notifications, Payments, KYC, SEO | Stubs with defaults                                                                                                                                                                                                    | Later sprints  |
 
 Every change is audit-logged with old and new values. Settings are cached and the cache is cleared on save.
 
@@ -94,17 +94,17 @@ Super admin (permission `theme.manage`) can change the look of the **website** a
 
 ### 7.1 What can be changed
 
-| Item | Website | Back office |
-| --- | --- | --- |
-| Primary colour (buttons, headers) | ✓ | ✓ |
-| Accent colour (premium, focus, highlights) | ✓ | ✓ |
-| Background and surface colours | ✓ | ✓ |
-| Text and secondary text colours | ✓ | ✓ |
-| Border colour | ✓ | ✓ |
-| Dark-mode palette (each colour above) | ✓ | ✓ |
-| Logo (light background), logo (dark background), favicon | ✓ | ✓ (sidebar logo) |
-| Display font and interface font, from a curated list of 8 pairings | ✓ | Interface font only |
-| Corner style: sharp, soft, round | ✓ | ✓ |
+| Item                                                               | Website | Back office         |
+| ------------------------------------------------------------------ | ------- | ------------------- |
+| Primary colour (buttons, headers)                                  | ✓       | ✓                   |
+| Accent colour (premium, focus, highlights)                         | ✓       | ✓                   |
+| Background and surface colours                                     | ✓       | ✓                   |
+| Text and secondary text colours                                    | ✓       | ✓                   |
+| Border colour                                                      | ✓       | ✓                   |
+| Dark-mode palette (each colour above)                              | ✓       | ✓                   |
+| Logo (light background), logo (dark background), favicon           | ✓       | ✓ (sidebar logo)    |
+| Display font and interface font, from a curated list of 8 pairings | ✓       | Interface font only |
+| Corner style: sharp, soft, round                                   | ✓       | ✓                   |
 
 Auction status colours (Live, Closing soon, Processing, Sold, Coming soon) are **locked**: buyers learn their meaning, and changing them would cause confusion.
 
@@ -132,14 +132,14 @@ Published theme values are compiled to CSS custom properties, cached in Redis, a
 
 Laravel Pennant, database driver. Super admin toggle page, changes audit-logged.
 
-| Flag | Default | Turned on in |
-| --- | --- | --- |
-| `sellers` | Off | Phase 2 |
-| `consortium_bidding` | Off | Phase 2 |
-| `investor_club` | Off | Phase 2 |
-| `whatsapp_notifications` | Off | Sprint 6 |
-| `soft_close` | On | Controlled from Auction settings |
-| `public_site_indexing` | Off (noindex until launch) | Sprint 9 |
+| Flag                     | Default                    | Turned on in                     |
+| ------------------------ | -------------------------- | -------------------------------- |
+| `sellers`                | Off                        | Phase 2                          |
+| `consortium_bidding`     | Off                        | Phase 2                          |
+| `investor_club`          | Off                        | Phase 2                          |
+| `whatsapp_notifications` | Off                        | Sprint 6                         |
+| `soft_close`             | On                         | Controlled from Auction settings |
+| `public_site_indexing`   | Off (noindex until launch) | Sprint 9                         |
 
 ## 10. Shells
 
@@ -158,12 +158,12 @@ Laravel Pennant, database driver. Super admin toggle page, changes audit-logged.
 
 GitHub Actions, following ADR 0002:
 
-| Trigger | Jobs | Target time |
-| --- | --- | --- |
-| Draft PR | Pint check, ESLint, TypeScript, PHPStan level 8 | under 4 min |
-| PR marked ready | Above + Pest (MySQL 8 + Redis services, parallel) + front-end build + SSR build | under 10 min |
-| Docs-only changes | Skipped | — |
-| Push to main | None (already tested in PR) | — |
+| Trigger           | Jobs                                                                            | Target time  |
+| ----------------- | ------------------------------------------------------------------------------- | ------------ |
+| Draft PR          | Pint check, ESLint, TypeScript, PHPStan level 8                                 | under 4 min  |
+| PR marked ready   | Above + Pest (MySQL 8 + Redis services, parallel) + front-end build + SSR build | under 10 min |
+| Docs-only changes | Skipped                                                                         | —            |
+| Push to main      | None (already tested in PR)                                                     | —            |
 
 Composer and npm caches; `concurrency` cancels superseded runs.
 
@@ -198,8 +198,8 @@ Categories and listings (3), KYC and ID numbers (4), payments (5), bidding and W
 
 ## 17. Risks
 
-| Risk | Mitigation |
-| --- | --- |
+| Risk                                              | Mitigation                                                           |
+| ------------------------------------------------- | -------------------------------------------------------------------- |
 | Admin picks colours that make the site unreadable | Contrast check blocks save; status colours locked; reset to defaults |
-| SSR adds complexity | Set up and tested in 2a before any feature pages |
-| CI minutes | Lean triggers per ADR 0002; target under 10 min |
+| SSR adds complexity                               | Set up and tested in 2a before any feature pages                     |
+| CI minutes                                        | Lean triggers per ADR 0002; target under 10 min                      |

@@ -1,0 +1,97 @@
+# Local development stack. Production hosting is defined in Sprint 9.
+# Usage: cp .env.example .env && docker compose up -d && docker compose exec app composer setup
+
+x-php: &php
+    build:
+        context: .
+        dockerfile: docker/php/Dockerfile
+    volumes:
+        - ./:/var/www/html
+    env_file: .env
+    depends_on:
+        mysql:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
+
+services:
+    app:
+        <<: *php
+
+    nginx:
+        image: nginx:1.27-alpine
+        ports:
+            - '${APP_PORT:-8080}:80'
+        volumes:
+            - ./:/var/www/html:ro
+            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+        depends_on:
+            - app
+
+    horizon:
+        <<: *php
+        command: php artisan horizon
+        restart: unless-stopped
+
+    scheduler:
+        <<: *php
+        command: php artisan schedule:work
+        restart: unless-stopped
+
+    ssr:
+        <<: *php
+        command: php artisan inertia:start-ssr
+        restart: unless-stopped
+
+    mysql:
+        image: mysql:8.4
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE:-thabekhulu}
+            MYSQL_USER: ${DB_USERNAME:-thabekhulu}
+            MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+            MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+        ports:
+            - '${FORWARD_DB_PORT:-3307}:3306'
+        volumes:
+            - mysql-data:/var/lib/mysql
+        healthcheck:
+            test:
+                [
+                    'CMD',
+                    'mysqladmin',
+                    'ping',
+                    '-h',
+                    'localhost',
+                    '-p${DB_ROOT_PASSWORD:-root}',
+                ]
+            interval: 5s
+            retries: 20
+
+    redis:
+        image: redis:7-alpine
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 5s
+            retries: 20
+
+    meilisearch:
+        image: getmeili/meilisearch:v1.15
+        environment:
+            MEILI_MASTER_KEY: ${MEILISEARCH_KEY:-masterKey}
+            MEILI_NO_ANALYTICS: 'true'
+        ports:
+            - '${FORWARD_MEILISEARCH_PORT:-7700}:7700'
+        volumes:
+            - meili-data:/meili_data
+
+    mailpit:
+        image: axllent/mailpit:latest
+        ports:
+            - '${FORWARD_MAILPIT_UI_PORT:-8025}:8025'
+
+volumes:
+    mysql-data:
+    redis-data:
+    meili-data:
