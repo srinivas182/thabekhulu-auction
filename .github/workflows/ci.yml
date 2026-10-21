@@ -49,10 +49,17 @@ jobs:
 
       - run: npm ci --no-audit --no-fund
 
+      # Route type generation reads model key types from the schema, so
+      # migrate a throwaway SQLite database first (matches local machines).
       - name: Prepare environment
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/ci.sqlite
         run: |
           cp .env.example .env
           php artisan key:generate --ansi
+          touch database/ci.sqlite
+          php artisan migrate --force --no-interaction
           php artisan wayfinder:generate --with-form
 
       - name: PHP code style (Pint)
