@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-        @unless (config('platform.indexing'))
+        @unless (\App\Domains\Platform\Features\Flags::active('public_site_indexing'))
             <meta name="robots" content="noindex, nofollow">
         @endunless
 

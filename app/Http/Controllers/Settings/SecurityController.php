@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Settings;
 
+use App\Domains\Audit\Support\Audit;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
@@ -60,6 +61,8 @@ class SecurityController extends Controller
         $user->update([
             'password' => $request->password,
         ]);
+
+        Audit::record('auth', 'password_changed', 'Password changed', $user, $user);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 

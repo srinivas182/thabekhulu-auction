@@ -1,10 +1,13 @@
 <?php
 
 use App\Domains\Access\Http\Controllers\RoleController;
+use App\Domains\Audit\Http\Controllers\AuditController;
 use App\Domains\Identity\Http\Controllers\DashboardRedirectController;
 use App\Domains\Identity\Http\Controllers\InvitationController;
 use App\Domains\Identity\Http\Controllers\StaffController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
+use App\Domains\Platform\Http\Controllers\FeatureController;
+use App\Domains\Settings\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -32,7 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 /*
 | Back office: staff only, two-factor required, every page permission-checked
 */
-Route::middleware(['auth', 'verified', 'staff', 'staff.2fa'])
+Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -53,6 +56,19 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa'])
             Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
             Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
         });
+
+        Route::get('settings/{group?}', [SettingsController::class, 'edit'])
+            ->whereIn('group', ['general', 'auction', 'security'])
+            ->middleware('can:settings.view')->name('settings.edit');
+        Route::put('settings/{group}', [SettingsController::class, 'update'])
+            ->whereIn('group', ['general', 'auction', 'security'])
+            ->middleware('can:settings.manage')->name('settings.update');
+
+        Route::get('audit', [AuditController::class, 'index'])->middleware('can:audit.view')->name('audit.index');
+        Route::get('audit/export', [AuditController::class, 'export'])->middleware('can:audit.export')->name('audit.export');
+
+        Route::get('features', [FeatureController::class, 'index'])->middleware('can:features.manage')->name('features.index');
+        Route::put('features/{flag}', [FeatureController::class, 'update'])->middleware('can:features.manage')->name('features.update');
     });
 
 require __DIR__.'/settings.php';
