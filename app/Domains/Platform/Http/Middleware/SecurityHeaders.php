@@ -59,7 +59,10 @@ class SecurityHeaders
             'script-src' => array_filter(["'self'", $nonce ? "'nonce-{$nonce}'" : null, $devServer]),
             // Radix UI and Inertia set inline style attributes at runtime.
             'style-src' => array_filter(["'self'", "'unsafe-inline'", $devServer]),
-            'img-src' => ["'self'", 'data:', 'blob:'],
+            // OpenStreetMap tiles for listing maps (spec D2).
+            'img-src' => ["'self'", 'data:', 'blob:', 'https://tile.openstreetmap.org'],
+            // Privacy-enhanced video tours only (spec D3).
+            'frame-src' => ['https://www.youtube-nocookie.com', 'https://player.vimeo.com'],
             'font-src' => ["'self'", 'data:'],
             'connect-src' => array_filter(["'self'", $devServer, $devServer ? str_replace('http', 'ws', $devServer) : null]),
             'media-src' => ["'self'", 'blob:'],

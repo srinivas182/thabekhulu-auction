@@ -10,6 +10,7 @@ use App\Domains\Identity\Http\Controllers\StaffController;
 use App\Domains\Listings\Http\Controllers\ListingAssetController;
 use App\Domains\Listings\Http\Controllers\ListingController;
 use App\Domains\Listings\Http\Controllers\ListingWorkflowController;
+use App\Domains\Listings\Http\Controllers\Public\AuctionController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
@@ -20,6 +21,11 @@ use Illuminate\Support\Facades\Route;
 | Public website
 */
 Route::inertia('/', 'public/home')->name('home');
+Route::get('sitemap.xml', [AuctionController::class, 'sitemap'])->name('sitemap');
+Route::get('auctions', [AuctionController::class, 'index'])->name('auctions.index');
+Route::get('auctions/{category:slug}', [AuctionController::class, 'index'])->name('auctions.category');
+Route::get('auctions/{category:slug}/{city}', [AuctionController::class, 'index'])->name('auctions.city');
+Route::get('auctions/{category:slug}/{city}/{listing}', [AuctionController::class, 'show'])->name('auctions.show');
 
 /*
 | Staff invitations (signed-out users accept their invite here)
