@@ -1,5 +1,6 @@
 import {
     History,
+    House,
     Palette,
     FolderTree,
     LayoutGrid,
@@ -13,6 +14,7 @@ import { dashboard } from '@/routes/admin';
 import { index as audit } from '@/routes/admin/audit';
 import { index as categories } from '@/routes/admin/categories';
 import { index as features } from '@/routes/admin/features';
+import { index as listings } from '@/routes/admin/listings';
 import { index as locations } from '@/routes/admin/locations';
 import { index as roles } from '@/routes/admin/roles';
 import { edit as settings } from '@/routes/admin/settings';
@@ -30,6 +32,12 @@ export const adminNavigation: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
         permission: 'dashboard.view',
+    },
+    {
+        title: 'Listings',
+        href: listings(),
+        icon: House,
+        permission: 'listings.view',
     },
     {
         title: 'Categories',

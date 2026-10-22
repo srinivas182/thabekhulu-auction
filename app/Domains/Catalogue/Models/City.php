@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $name
  * @property string $slug
  * @property bool $is_active
+ * @property-read Province $province
  */
 class City extends Model
 {

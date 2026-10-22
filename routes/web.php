@@ -7,6 +7,9 @@ use App\Domains\Catalogue\Http\Controllers\LocationController;
 use App\Domains\Identity\Http\Controllers\DashboardRedirectController;
 use App\Domains\Identity\Http\Controllers\InvitationController;
 use App\Domains\Identity\Http\Controllers\StaffController;
+use App\Domains\Listings\Http\Controllers\ListingAssetController;
+use App\Domains\Listings\Http\Controllers\ListingController;
+use App\Domains\Listings\Http\Controllers\ListingWorkflowController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
@@ -58,6 +61,35 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::get('roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
             Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
             Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+        });
+
+        Route::get('listings', [ListingController::class, 'index'])->middleware('can:listings.view')->name('listings.index');
+        Route::post('listings', [ListingController::class, 'store'])->middleware('can:listings.create')->name('listings.store');
+        Route::get('listings/{listing}', [ListingController::class, 'edit'])->middleware('can:listings.view')->name('listings.edit');
+        Route::put('listings/{listing}/sections/{section}', [ListingController::class, 'update'])->middleware('can:listings.edit')->name('listings.update');
+        Route::delete('listings/{listing}', [ListingController::class, 'destroy'])->middleware('can:listings.delete')->name('listings.destroy');
+
+        Route::middleware('can:listings.edit')->group(function () {
+            Route::post('listings/{listing}/media/{collection}', [ListingAssetController::class, 'uploadMedia'])->name('listings.media.store');
+            Route::put('listings/{listing}/media/{collection}/order', [ListingAssetController::class, 'reorderMedia'])->name('listings.media.order');
+            Route::put('listings/{listing}/media/item/{media}', [ListingAssetController::class, 'updateMedia'])->name('listings.media.update');
+            Route::delete('listings/{listing}/media/item/{media}', [ListingAssetController::class, 'destroyMedia'])->name('listings.media.destroy');
+            Route::post('listings/{listing}/documents/{type}', [ListingAssetController::class, 'uploadDocument'])->name('listings.documents.store');
+            Route::delete('listings/{listing}/documents/{document}', [ListingAssetController::class, 'destroyDocument'])->name('listings.documents.destroy');
+        });
+        Route::get('listings/{listing}/documents/{document}', [ListingAssetController::class, 'downloadDocument'])->middleware('can:listings.view')->name('listings.documents.download');
+
+        Route::post('listings/{listing}/submit', [ListingWorkflowController::class, 'submit'])->middleware('can:listings.submit')->name('listings.submit');
+        Route::middleware('can:listings.publish')->group(function () {
+            Route::post('listings/{listing}/approve', [ListingWorkflowController::class, 'approve'])->name('listings.approve');
+            Route::post('listings/{listing}/request-changes', [ListingWorkflowController::class, 'requestChanges'])->name('listings.request-changes');
+            Route::post('listings/{listing}/withdraw', [ListingWorkflowController::class, 'withdraw'])->name('listings.withdraw');
+        });
+        Route::post('listings/{listing}/reopen', [ListingWorkflowController::class, 'reopen'])->middleware('can:listings.edit')->name('listings.reopen');
+
+        Route::middleware('can:compliance.signoff')->group(function () {
+            Route::post('listings/{listing}/compliance/{item}', [ListingAssetController::class, 'signOff'])->name('listings.compliance.signoff');
+            Route::delete('listings/{listing}/compliance/{item}', [ListingAssetController::class, 'withdrawSignOff'])->name('listings.compliance.withdraw');
         });
 
         Route::middleware('can:categories.manage')->group(function () {
