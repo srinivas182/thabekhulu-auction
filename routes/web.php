@@ -20,6 +20,8 @@ use App\Domains\Listings\Http\Controllers\ListingWorkflowController;
 use App\Domains\Listings\Http\Controllers\Public\AuctionController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
+use App\Domains\Quotes\Http\Controllers\QuoteController;
+use App\Domains\Quotes\Http\Controllers\QuoteSetupController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
 use App\Domains\Theme\Http\Controllers\ThemeController;
 use Illuminate\Support\Facades\Route;
@@ -138,6 +140,29 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::put('galleries/{gallery}/images/{media}', [MediaContentController::class, 'updateGalleryImage'])->name('galleries.images.update');
             Route::delete('galleries/{gallery}/images/{media}', [MediaContentController::class, 'destroyGalleryImage'])->name('galleries.images.destroy');
             Route::put('home', [CmsController::class, 'updateHome'])->name('home.update');
+        });
+
+        Route::middleware('can:quotes.create')->prefix('quotes')->name('quotes.')->group(function () {
+            Route::get('/', [QuoteController::class, 'index'])->name('index');
+            Route::post('/', [QuoteController::class, 'store'])->name('store');
+            Route::get('clients', [QuoteSetupController::class, 'clients'])->name('clients');
+            Route::post('clients', [QuoteSetupController::class, 'saveClient'])->name('clients.store');
+            Route::put('clients/{client}', [QuoteSetupController::class, 'saveClient'])->name('clients.update');
+            Route::middleware('can:quotes.settings')->group(function () {
+                Route::get('catalogue', [QuoteSetupController::class, 'catalogue'])->name('catalogue');
+                Route::post('catalogue', [QuoteSetupController::class, 'saveItem'])->name('catalogue.store');
+                Route::put('catalogue/{item}', [QuoteSetupController::class, 'saveItem'])->name('catalogue.update');
+                Route::get('templates', [QuoteSetupController::class, 'templates'])->name('templates');
+                Route::put('templates/{template}', [QuoteSetupController::class, 'updateTemplate'])->name('templates.update');
+                Route::delete('templates/{template}', [QuoteSetupController::class, 'destroyTemplate'])->name('templates.destroy');
+                Route::get('settings', [QuoteSetupController::class, 'settings'])->name('settings');
+                Route::put('settings', [QuoteSetupController::class, 'updateSettings'])->name('settings.update');
+            });
+            Route::get('{quote}', [QuoteController::class, 'edit'])->name('edit');
+            Route::put('{quote}', [QuoteController::class, 'update'])->name('update');
+            Route::delete('{quote}', [QuoteController::class, 'destroy'])->name('destroy');
+            Route::get('{quote}/pdf', [QuoteController::class, 'pdf'])->name('pdf');
+            Route::post('{quote}/template', [QuoteController::class, 'saveAsTemplate'])->middleware('can:quotes.settings')->name('template');
         });
 
         Route::get('leads', [InboxController::class, 'leads'])->middleware('can:leads.view')->name('leads.index');

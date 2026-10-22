@@ -41,6 +41,7 @@ final class PermissionCatalogue
         'enquiries' => ['Enquiries', ['view' => 'View enquiries', 'respond' => 'Respond to enquiries']],
         'leads' => ['Seller leads', ['view' => 'View "Sell with us" leads', 'manage' => 'Manage leads']],
         'premium' => ['Premium slots', ['manage' => 'Assign premium slots']],
+        'quotes' => ['Quotations', ['create' => 'Create and edit quotations', 'approve' => 'Approve quotations above the threshold', 'send' => 'Send quotations to clients', 'view_all' => 'See every quotation, not only your own', 'settings' => 'Change quotation settings, catalogue and templates']],
         'support' => ['Support', ['view' => 'View support tickets', 'respond' => 'Respond to support tickets']],
     ];
 
@@ -93,10 +94,11 @@ final class PermissionCatalogue
             SystemRole::Auctioneer => [
                 'dashboard.view', 'listings.view', 'listings.publish', 'compliance.signoff', 'auctions.monitor', 'auctions.pause',
                 'auctions.settle', 'buyers.view', 'deposits.view', 'reports.view', 'premium.manage', 'leads.view',
+                'quotes.create', 'quotes.send',
             ],
             SystemRole::ListingsManager => [
                 'dashboard.view', 'listings.view', 'listings.create', 'listings.edit', 'listings.submit',
-                'listings.delete', 'leads.view', 'leads.manage', 'enquiries.view',
+                'listings.delete', 'leads.view', 'leads.manage', 'enquiries.view', 'quotes.create', 'quotes.send',
             ],
             SystemRole::KycOfficer => [
                 'dashboard.view', 'kyc.view', 'kyc.approve', 'kyc.reject', 'kyc.suspend', 'buyers.view',
@@ -104,7 +106,7 @@ final class PermissionCatalogue
             SystemRole::Finance => [
                 'dashboard.view', 'deposits.view', 'deposits.reconcile', 'refunds.view', 'refunds.issue',
                 'payouts.view', 'payouts.record', 'invoices.view', 'reports.view', 'reports.export',
-                'buyers.view', 'sellers.view',
+                'buyers.view', 'sellers.view', 'quotes.create', 'quotes.approve', 'quotes.send', 'quotes.view_all',
             ],
             SystemRole::ContentEditor => [
                 'dashboard.view', 'cms.manage', 'events.manage', 'events.checkin',

@@ -2,6 +2,7 @@ import {
     History,
     House,
     Inbox,
+    ReceiptText,
     MessageSquare,
     Palette,
     FileText,
@@ -21,6 +22,7 @@ import { index as enquiries } from '@/routes/admin/enquiries';
 import { index as features } from '@/routes/admin/features';
 import { index as leads } from '@/routes/admin/leads';
 import { index as listings } from '@/routes/admin/listings';
+import { index as quotes } from '@/routes/admin/quotes';
 import { index as locations } from '@/routes/admin/locations';
 import { index as roles } from '@/routes/admin/roles';
 import { edit as settings } from '@/routes/admin/settings';
@@ -44,6 +46,12 @@ export const adminNavigation: NavItem[] = [
         href: listings(),
         icon: House,
         permission: 'listings.view',
+    },
+    {
+        title: 'Quotations',
+        href: quotes(),
+        icon: ReceiptText,
+        permission: 'quotes.create',
     },
     {
         title: 'Seller leads',
