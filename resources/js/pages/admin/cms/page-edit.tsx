@@ -188,6 +188,112 @@ export default function PageEdit({ page, blockTypes }: Props) {
                                 onChange={(html) => set(i, { ...b, html })}
                             />
                         )}
+                        {b.type === 'image' && (
+                            <div className="grid gap-3 md:grid-cols-[240px_1fr]">
+                                <div className="grid gap-2">
+                                    {b.url ? (
+                                        <img
+                                            src={b.url}
+                                            alt={b.alt}
+                                            className="aspect-[4/3] w-full rounded object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex aspect-[4/3] items-center justify-center rounded bg-muted text-sm text-muted-foreground">
+                                            No image
+                                        </div>
+                                    )}
+                                    <input
+                                        type="file"
+                                        accept=".jpg,.jpeg,.png,.webp"
+                                        aria-label="Upload image"
+                                        className="text-sm"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            const data = new FormData();
+                                            data.append('file', file);
+                                            const token = decodeURIComponent(
+                                                document.cookie
+                                                    .split('; ')
+                                                    .find((c) =>
+                                                        c.startsWith(
+                                                            'XSRF-TOKEN=',
+                                                        ),
+                                                    )
+                                                    ?.split('=')[1] ?? '',
+                                            );
+                                            const res = await fetch(
+                                                pagesRoutes.images(page.id).url,
+                                                {
+                                                    method: 'POST',
+                                                    body: data,
+                                                    credentials: 'same-origin',
+                                                    headers: {
+                                                        'X-XSRF-TOKEN': token,
+                                                        Accept: 'application/json',
+                                                    },
+                                                },
+                                            );
+                                            if (res.ok) {
+                                                const json =
+                                                    (await res.json()) as {
+                                                        id: number;
+                                                        url: string;
+                                                    };
+                                                set(i, {
+                                                    ...b,
+                                                    media_id: json.id,
+                                                    url: json.url,
+                                                });
+                                            } else
+                                                setErrors({
+                                                    ...errors,
+                                                    [`blocks.${i}`]:
+                                                        'The image could not be uploaded (JPG, PNG or WebP up to 15 MB).',
+                                                });
+                                        }}
+                                    />
+                                    <InputError
+                                        message={errors[`blocks.${i}`]}
+                                    />
+                                </div>
+                                <div className="grid content-start gap-3">
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor={`b-${i}-alt`}>
+                                            Describe the image
+                                        </Label>
+                                        <Input
+                                            id={`b-${i}-alt`}
+                                            value={b.alt}
+                                            onChange={(e) =>
+                                                set(i, {
+                                                    ...b,
+                                                    alt: e.target.value,
+                                                })
+                                            }
+                                        />
+                                        <InputError
+                                            message={errors[`blocks.${i}.alt`]}
+                                        />
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor={`b-${i}-cap`}>
+                                            Caption (optional)
+                                        </Label>
+                                        <Input
+                                            id={`b-${i}-cap`}
+                                            value={b.caption}
+                                            onChange={(e) =>
+                                                set(i, {
+                                                    ...b,
+                                                    caption: e.target.value,
+                                                })
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         {b.type === 'two_column' && (
                             <div className="grid gap-3 md:grid-cols-2">
                                 <RichTextEditor

@@ -1,9 +1,18 @@
 import { Link } from '@inertiajs/react';
 import { cn } from '@/lib/utils';
-import { collections, home, menus, pages } from '@/routes/admin/cms';
+import {
+    collections,
+    galleries,
+    home,
+    menus,
+    pages,
+    posts,
+} from '@/routes/admin/cms';
 
 const items = [
     ['Pages', pages()],
+    ['Investor insights', posts()],
+    ['Gallery', galleries()],
     ['Menus', menus()],
     ['Collections', collections()],
     ['Home page', home()],

@@ -1,9 +1,15 @@
 import { Head } from '@inertiajs/react';
 import type { Block } from '@/components/content-blocks';
 import ContentBlocks from '@/components/content-blocks';
+import EnquiryForm from '@/components/enquiry-form';
 
 type Props = {
-    page: { title: string; blocks: Block[]; updatedAt: string | null };
+    page: {
+        title: string;
+        slug: string;
+        blocks: Block[];
+        updatedAt: string | null;
+    };
     seo: { title: string; description: string };
 };
 
@@ -27,6 +33,14 @@ export default function ContentPage({ page, seo }: Props) {
                 <div className="mt-8">
                     <ContentBlocks blocks={page.blocks} />
                 </div>
+                {page.slug === 'contact' && (
+                    <section aria-labelledby="send" className="mt-12">
+                        <h2 id="send" className="mb-4 font-display text-3xl">
+                            Send us a message
+                        </h2>
+                        <EnquiryForm />
+                    </section>
+                )}
             </article>
         </>
     );

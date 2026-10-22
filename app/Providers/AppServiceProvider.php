@@ -8,10 +8,13 @@ use App\Domains\Platform\Features\Flags;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use RuntimeException;
@@ -36,6 +39,9 @@ class AppServiceProvider extends ServiceProvider
         $this->configureAccess();
 
         Event::subscribe(AuditSubscriber::class);
+
+        // Public forms (Sell with us, contact): 5 submissions an hour per address.
+        RateLimiter::for('public-forms', fn (Request $request) => Limit::perHour(5)->by((string) $request->ip()));
         Flags::define();
     }
 

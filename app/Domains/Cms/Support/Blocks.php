@@ -2,6 +2,7 @@
 
 namespace App\Domains\Cms\Support;
 
+use App\Domains\Cms\Models\Page;
 use App\Domains\Listings\Support\HtmlCleaner;
 use Illuminate\Validation\ValidationException;
 
@@ -14,13 +15,13 @@ use Illuminate\Validation\ValidationException;
  */
 final class Blocks
 {
-    public const TYPES = ['rich_text' => 'Text', 'two_column' => 'Two columns', 'cta' => 'Call to action', 'faq' => 'Questions and answers'];
+    public const TYPES = ['rich_text' => 'Text', 'image' => 'Image', 'two_column' => 'Two columns', 'cta' => 'Call to action', 'faq' => 'Questions and answers'];
 
     /**
      * @param  array<int, mixed>  $blocks
      * @return list<array<string, mixed>>
      */
-    public static function clean(array $blocks): array
+    public static function clean(array $blocks, ?Page $page = null): array
     {
         $clean = [];
 
@@ -35,6 +36,7 @@ final class Blocks
                     'right' => HtmlCleaner::clean((string) ($block['right'] ?? '')) ?? '',
                 ],
                 'cta' => self::cta($block, $i),
+                'image' => self::image($block, $i, $page),
                 'faq' => [
                     'type' => 'faq',
                     'items' => array_values(array_filter(array_map(fn ($item): ?array => is_array($item) && filled($item['question'] ?? null)
@@ -46,6 +48,32 @@ final class Blocks
         }
 
         return $clean;
+    }
+
+    /**
+     * Image blocks may only use images uploaded to this page; alt text is required.
+     *
+     * @param  array<string, mixed>  $block
+     * @return array<string, mixed>
+     */
+    private static function image(array $block, int $i, ?Page $page): array
+    {
+        $id = (int) ($block['media_id'] ?? 0);
+        $owned = $page !== null && $page->getMedia('images')->contains('id', $id);
+
+        if (! $owned) {
+            throw ValidationException::withMessages(["blocks.{$i}" => __('Upload the image to this page first.')]);
+        }
+        if (blank($block['alt'] ?? null)) {
+            throw ValidationException::withMessages(["blocks.{$i}.alt" => __('Describe the image for screen readers and search engines.')]);
+        }
+
+        return [
+            'type' => 'image',
+            'media_id' => $id,
+            'alt' => mb_substr(strip_tags((string) $block['alt']), 0, 200),
+            'caption' => mb_substr(strip_tags((string) ($block['caption'] ?? '')), 0, 300),
+        ];
     }
 
     /**
@@ -87,5 +115,24 @@ final class Blocks
         }
 
         return $items === [] ? null : ['@context' => 'https://schema.org', '@type' => 'FAQPage', 'mainEntity' => $items];
+    }
+
+    /**
+     * Blocks with image URLs added, for rendering and editing.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function withImageUrls(Page $page): array
+    {
+        $media = $page->getMedia('images')->keyBy('id');
+
+        return array_map(function (array $block) use ($media): array {
+            if (($block['type'] ?? null) === 'image') {
+                $m = $media->get($block['media_id'] ?? 0);
+                $block['url'] = $m === null ? null : ($m->hasGeneratedConversion('large') ? $m->getUrl('large') : $m->getUrl());
+            }
+
+            return $block;
+        }, $page->blocks);
     }
 }
