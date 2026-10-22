@@ -23,5 +23,5 @@ it('leaves passing colours unchanged', function () {
 
 it('passes every check with the brand defaults, including fixed status colours', function () {
     expect(ThemeChecks::failures(ThemePalette::defaults()))->toBe([])
-        ->and(count(ThemeChecks::run(ThemePalette::defaults())))->toBe(36);
+        ->and(count(ThemeChecks::run(ThemePalette::defaults())))->toBe(40);
 });

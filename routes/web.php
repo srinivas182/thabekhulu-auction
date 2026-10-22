@@ -2,6 +2,8 @@
 
 use App\Domains\Access\Http\Controllers\RoleController;
 use App\Domains\Audit\Http\Controllers\AuditController;
+use App\Domains\Catalogue\Http\Controllers\CategoryController;
+use App\Domains\Catalogue\Http\Controllers\LocationController;
 use App\Domains\Identity\Http\Controllers\DashboardRedirectController;
 use App\Domains\Identity\Http\Controllers\InvitationController;
 use App\Domains\Identity\Http\Controllers\StaffController;
@@ -56,6 +58,24 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::get('roles/{role}/edit', [RoleController::class, 'edit'])->name('roles.edit');
             Route::put('roles/{role}', [RoleController::class, 'update'])->name('roles.update');
             Route::delete('roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
+        });
+
+        Route::middleware('can:categories.manage')->group(function () {
+            Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
+            Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
+            Route::get('categories/{category}', [CategoryController::class, 'edit'])->name('categories.edit');
+            Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+            Route::post('categories/{category}/fields', [CategoryController::class, 'storeField'])->name('categories.fields.store');
+            Route::put('categories/{category}/fields/{field}', [CategoryController::class, 'updateField'])->name('categories.fields.update');
+            Route::delete('categories/{category}/fields/{field}', [CategoryController::class, 'destroyField'])->name('categories.fields.destroy');
+            Route::post('categories/{category}/fields/{field}/move', [CategoryController::class, 'moveField'])->name('categories.fields.move');
+            Route::post('categories/{category}/documents', [CategoryController::class, 'storeDocument'])->name('categories.documents.store');
+            Route::put('categories/{category}/documents/{document}', [CategoryController::class, 'updateDocument'])->name('categories.documents.update');
+            Route::delete('categories/{category}/documents/{document}', [CategoryController::class, 'destroyDocument'])->name('categories.documents.destroy');
+
+            Route::get('locations', [LocationController::class, 'index'])->name('locations.index');
+            Route::post('locations/cities', [LocationController::class, 'store'])->name('locations.cities.store');
+            Route::post('locations/cities/{city}/toggle', [LocationController::class, 'toggle'])->name('locations.cities.toggle');
         });
 
         Route::get('settings/{group?}', [SettingsController::class, 'edit'])

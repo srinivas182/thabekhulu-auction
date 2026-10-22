@@ -37,7 +37,7 @@ function themeCss(string $html): string
 it('shows the theme manager for each area', function (string $scope) {
     $this->actingAs($this->admin)->get(route('admin.theme.edit', $scope))
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('admin/theme/edit')->where('scope', $scope)->has('checks', 36));
+        ->assertInertia(fn (Assert $page) => $page->component('admin/theme/edit')->where('scope', $scope)->has('checks', 40));
 })->with(['website', 'admin']);
 
 it('requires the theme permission', function () {

@@ -61,6 +61,13 @@ const PAIRS: [string, string, number, string][] = [
     ['primary', 'background', 3, 'Primary buttons against the page'],
     ['accent', 'background', 3, 'Accent and focus ring against the page'],
     ['accent', 'surface', 3, 'Accent and focus ring on cards'],
+    ['field_border', 'surface', 3, 'Form field borders on cards and panels'],
+    [
+        'field_border',
+        'background',
+        3,
+        'Form field borders on the page background',
+    ],
 ];
 
 const RADIUS: Record<string, string> = {

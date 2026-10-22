@@ -25,6 +25,7 @@ final class PermissionCatalogue
         'audit' => ['Audit log', ['view' => 'View the audit log', 'export' => 'Export the audit log']],
         'features' => ['Feature flags', ['manage' => 'Switch features on and off']],
         'categories' => ['Categories', ['manage' => 'Manage categories and document types']],
+        'compliance' => ['Compliance', ['signoff' => 'Sign off listing compliance checklist items']],
         'listings' => ['Listings', ['view' => 'View listings', 'create' => 'Create listings', 'edit' => 'Edit listings', 'submit' => 'Submit listings for review', 'publish' => 'Approve and publish listings', 'delete' => 'Delete draft listings']],
         'auctions' => ['Auctions', ['monitor' => 'Monitor live auctions', 'pause' => 'Pause an auction', 'settle' => 'Confirm winners and handle defaults']],
         'kyc' => ['KYC', ['view' => 'View verification submissions', 'approve' => 'Approve verification', 'reject' => 'Reject verification', 'suspend' => 'Suspend bidding']],
@@ -90,7 +91,7 @@ final class PermissionCatalogue
         return match ($role) {
             SystemRole::SuperAdmin => self::all(),
             SystemRole::Auctioneer => [
-                'dashboard.view', 'listings.view', 'listings.publish', 'auctions.monitor', 'auctions.pause',
+                'dashboard.view', 'listings.view', 'listings.publish', 'compliance.signoff', 'auctions.monitor', 'auctions.pause',
                 'auctions.settle', 'buyers.view', 'deposits.view', 'reports.view', 'premium.manage', 'leads.view',
             ],
             SystemRole::ListingsManager => [
