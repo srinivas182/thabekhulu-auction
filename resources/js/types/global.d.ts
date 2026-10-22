@@ -11,6 +11,11 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             auth: Auth;
+            site: {
+                header: { label: string; url: string; newTab: boolean }[];
+                footer: { label: string; url: string; newTab: boolean }[];
+                ffc: string;
+            };
             theme: {
                 scope: 'website' | 'admin';
                 logoLight: string | null;

@@ -3,6 +3,7 @@
 namespace App\Domains\Catalogue\Models;
 
 use App\Domains\Catalogue\Enums\DepositTerms;
+use App\Domains\Listings\Models\Listing;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -45,6 +46,12 @@ class Category extends Model
     public function attributeDefinitions(): HasMany
     {
         return $this->hasMany(CategoryAttribute::class)->orderBy('sort_order');
+    }
+
+    /** @return HasMany<Listing, $this> */
+    public function listings(): HasMany
+    {
+        return $this->hasMany(Listing::class);
     }
 
     /** @return HasMany<DocumentType, $this> */

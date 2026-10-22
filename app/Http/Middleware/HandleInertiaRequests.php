@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Domains\Access\Support\PermissionCatalogue;
+use App\Domains\Cms\Support\SiteNavigation;
 use App\Domains\Theme\Support\ThemeRepository;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -41,6 +42,7 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            'site' => SiteNavigation::get(),
             'theme' => [
                 'scope' => ThemeRepository::scopeFor($request),
                 ...ThemeRepository::assets(ThemeRepository::scopeFor($request)),
