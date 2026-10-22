@@ -1,6 +1,6 @@
 # Sprint 3 — Listings and CMS: detailed specification
 
-**Status:** Draft for approval · **Depends on:** Sprint 2 (merged), Sprint 1 designs (approved) · **Design source:** Thabekhulu design system + approved canvas screens (Home, Auctions, Listing, Admin listing pricing)
+**Status:** Approved (revision 2, after the investor brief) · **Depends on:** Sprint 2 (merged), Sprint 1 designs (approved) · **Design source:** Thabekhulu design system + approved canvas screens (Home, Auctions, Listing, Admin listing pricing)
 
 ## 1. Objective
 
@@ -16,7 +16,7 @@ Thabekhulu staff can set up categories, create listings with full pricing rules,
 
 Each PR: CI green on MySQL, merged before the next starts (ADR 0002).
 
-## 3. Decisions needing approval
+## 3. Technology decisions (approved)
 
 | # | Decision | Recommendation | Alternatives |
 | --- | --- | --- | --- |
@@ -159,3 +159,23 @@ All CMS output passes through the HTML sanitiser; permission `cms.manage`; every
 | Legal page texts late | Placeholders clearly marked; launch blocked until replaced (Sprint 9 checklist) |
 | Map tile usage limits on OpenStreetMap | Cache tiles via CDN or switch to MapTiler (configurable provider) |
 | Scope size (three modules) | Split into 3a/3b/3c PRs; CMS blocks limited to five types in this sprint |
+
+## 12. Revision 2: changes from the investor brief
+
+The mining-investor brief adds the following to Sprint 3. Items that need bidding, payments or KYC are built in their own sprints (see the sprint plan) but their data is captured now.
+
+| Area | Change in Sprint 3 |
+| --- | --- |
+| Mine profiles | Mining attributes seeded: commodity, right type (mining right / prospecting right / mining permit), right reference, right status, right expiry, area (ha), resource statement available (competent person's report), infrastructure, environmental authorisation, water use licence, HDSA ownership (%), deal structure (right transfer under section 11 / share sale / asset sale) |
+| Deposit terms (per listing) | Setting with two options: **security deposit** (held separately, refunded in full, never applied to price or forfeited automatically; default for Mining) or **applied to price** (earlier rule; default for Homes, Land, Malls). Enforcement in Sprints 5–7 |
+| Auction type (per listing) | Open auction (default) or **sealed tender**; stored now, engine in Sprint 6 |
+| Compliance checklist (per listing) | Items: seller authority verified, interest for sale defined, mining right and environmental approvals reviewed, bidding and sale terms legally reviewed, escrow arranged. Each signed off by a permitted user with date and note. **Deposits stay disabled until every item is signed off** (enforced in Sprint 5) |
+| Mandatory notice | Every Mining listing shows: "This listing is subject to verification. A winning bid does not by itself transfer a mining right or guarantee regulatory approval." Text editable in settings |
+| Data room | Document visibility gains a third level, **approved bidders after NDA**; access control, watermarking and download logs enforced in Sprint 4 |
+| Bidding terms | Versioned bidding and sale terms per listing (template from settings, overridable), shown on the listing |
+| Investment collections | Curated groups with live counts on the home page (e.g. Mining by commodity, Income-producing, Development land, Renovated homes): rule-based or hand-picked (3c) |
+| Investor insights | The blog is named "Investor insights" (3c) |
+| Legal pages | Add Disclaimer and Notice of automatically available records to the seeded legal pages (3c) |
+| Permissions | New: `compliance.signoff`, `quotes.create`, `quotes.approve`, `quotes.send`, `quotes.view_all` (quotation sprint) |
+
+Estimated effect: Sprint 3 stays three PRs; 3b grows by about 3 days.
