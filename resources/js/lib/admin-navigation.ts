@@ -2,6 +2,7 @@ import {
     History,
     House,
     Palette,
+    FileText,
     FolderTree,
     LayoutGrid,
     MapPin,
@@ -13,6 +14,7 @@ import {
 import { dashboard } from '@/routes/admin';
 import { index as audit } from '@/routes/admin/audit';
 import { index as categories } from '@/routes/admin/categories';
+import { pages as cmsPages } from '@/routes/admin/cms';
 import { index as features } from '@/routes/admin/features';
 import { index as listings } from '@/routes/admin/listings';
 import { index as locations } from '@/routes/admin/locations';
@@ -38,6 +40,12 @@ export const adminNavigation: NavItem[] = [
         href: listings(),
         icon: House,
         permission: 'listings.view',
+    },
+    {
+        title: 'Website content',
+        href: cmsPages(),
+        icon: FileText,
+        permission: 'cms.manage',
     },
     {
         title: 'Categories',

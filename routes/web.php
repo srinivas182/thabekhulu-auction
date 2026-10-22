@@ -4,6 +4,9 @@ use App\Domains\Access\Http\Controllers\RoleController;
 use App\Domains\Audit\Http\Controllers\AuditController;
 use App\Domains\Catalogue\Http\Controllers\CategoryController;
 use App\Domains\Catalogue\Http\Controllers\LocationController;
+use App\Domains\Cms\Http\Controllers\Admin\CmsController;
+use App\Domains\Cms\Http\Controllers\Public\HomeController;
+use App\Domains\Cms\Http\Controllers\Public\PageController;
 use App\Domains\Identity\Http\Controllers\DashboardRedirectController;
 use App\Domains\Identity\Http\Controllers\InvitationController;
 use App\Domains\Identity\Http\Controllers\StaffController;
@@ -20,7 +23,7 @@ use Illuminate\Support\Facades\Route;
 /*
 | Public website
 */
-Route::inertia('/', 'public/home')->name('home');
+Route::get('/', HomeController::class)->name('home');
 Route::get('sitemap.xml', [AuctionController::class, 'sitemap'])->name('sitemap');
 Route::get('auctions', [AuctionController::class, 'index'])->name('auctions.index');
 Route::get('auctions/{category:slug}', [AuctionController::class, 'index'])->name('auctions.category');
@@ -98,6 +101,22 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::delete('listings/{listing}/compliance/{item}', [ListingAssetController::class, 'withdrawSignOff'])->name('listings.compliance.withdraw');
         });
 
+        Route::middleware('can:cms.manage')->prefix('cms')->name('cms.')->group(function () {
+            Route::get('pages', [CmsController::class, 'pages'])->name('pages');
+            Route::post('pages', [CmsController::class, 'storePage'])->name('pages.store');
+            Route::get('pages/{page}', [CmsController::class, 'editPage'])->name('pages.edit');
+            Route::put('pages/{page}', [CmsController::class, 'updatePage'])->name('pages.update');
+            Route::delete('pages/{page}', [CmsController::class, 'destroyPage'])->name('pages.destroy');
+            Route::get('menus', [CmsController::class, 'menus'])->name('menus');
+            Route::put('menus/{menu}', [CmsController::class, 'updateMenu'])->name('menus.update');
+            Route::get('collections', [CmsController::class, 'collections'])->name('collections');
+            Route::post('collections', [CmsController::class, 'saveCollection'])->name('collections.store');
+            Route::put('collections/{collection}', [CmsController::class, 'saveCollection'])->name('collections.update');
+            Route::delete('collections/{collection}', [CmsController::class, 'destroyCollection'])->name('collections.destroy');
+            Route::get('home', [CmsController::class, 'home'])->name('home');
+            Route::put('home', [CmsController::class, 'updateHome'])->name('home.update');
+        });
+
         Route::middleware('can:categories.manage')->group(function () {
             Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
             Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
@@ -140,3 +159,9 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
     });
 
 require __DIR__.'/settings.php';
+
+/*
+| Content pages at the top level (/about, /privacy…). Registered last so
+| application routes always win; reserved words are blocked on save.
+*/
+Route::get('{slug}', PageController::class)->where('slug', '[a-z0-9]+(?:-[a-z0-9]+)*')->name('pages.show');
