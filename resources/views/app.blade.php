@@ -47,6 +47,9 @@
 
         {{-- Published theme (Sprint 2c): overrides the brand tokens in app.css. Values are validated hex colours. --}}
         <style nonce="{{ Vite::cspNonce() }}" id="theme">{!! \App\Domains\Theme\Support\ThemeRepository::css($themeScope) !!}</style>
+        @isset($structuredData)
+            <script type="application/ld+json" nonce="{{ Vite::cspNonce() }}">{!! json_encode($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) !!}</script>
+        @endisset
         <x-inertia::head>
             <title>{{ config('app.name', 'Thabekhulu Development Group') }}</title>
         </x-inertia::head>
