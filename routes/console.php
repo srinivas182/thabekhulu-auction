@@ -10,3 +10,6 @@ Artisan::command('inspire', function () {
 
 // Audit retention (spec 8): prune entries older than AUDIT_RETENTION_DAYS (7 years).
 Schedule::command('activitylog:clean --force')->dailyAt('02:30');
+
+// Listings go live at their auction start time (sprint 3 spec 5.5).
+Schedule::command('listings:go-live')->everyMinute()->withoutOverlapping();
