@@ -23,6 +23,7 @@ final class ThemePalette
         'text' => 'Text',
         'muted_text' => 'Secondary text',
         'border' => 'Borders',
+        'field_border' => 'Form field borders',
     ];
 
     /** @var array<string, string> */
@@ -61,12 +62,12 @@ final class ThemePalette
             'light' => [
                 'primary' => '#173b33', 'primary_foreground' => '#f2f3ee', 'accent' => '#6e5ba8',
                 'background' => '#f2f3ee', 'surface' => '#ffffff', 'text' => '#14201c',
-                'muted_text' => '#5e6e68', 'border' => '#d5dbd7',
+                'muted_text' => '#5e6e68', 'border' => '#d5dbd7', 'field_border' => '#7d9084',
             ],
             'dark' => [
                 'primary' => '#cfe3da', 'primary_foreground' => '#0e1d19', 'accent' => '#a595e0',
                 'background' => '#0e1d19', 'surface' => '#15271f', 'text' => '#e8ece9',
-                'muted_text' => '#a3b2ac', 'border' => '#2a3d36',
+                'muted_text' => '#a3b2ac', 'border' => '#2a3d36', 'field_border' => '#5d7268',
             ],
             'fonts' => 'thabekhulu',
             'radius' => 'soft',

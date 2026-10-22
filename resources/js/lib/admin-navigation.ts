@@ -1,7 +1,9 @@
 import {
     History,
     Palette,
+    FolderTree,
     LayoutGrid,
+    MapPin,
     Settings,
     ShieldCheck,
     ToggleRight,
@@ -9,7 +11,9 @@ import {
 } from 'lucide-react';
 import { dashboard } from '@/routes/admin';
 import { index as audit } from '@/routes/admin/audit';
+import { index as categories } from '@/routes/admin/categories';
 import { index as features } from '@/routes/admin/features';
+import { index as locations } from '@/routes/admin/locations';
 import { index as roles } from '@/routes/admin/roles';
 import { edit as settings } from '@/routes/admin/settings';
 import { edit as theme } from '@/routes/admin/theme';
@@ -26,6 +30,18 @@ export const adminNavigation: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
         permission: 'dashboard.view',
+    },
+    {
+        title: 'Categories',
+        href: categories(),
+        icon: FolderTree,
+        permission: 'categories.manage',
+    },
+    {
+        title: 'Locations',
+        href: locations(),
+        icon: MapPin,
+        permission: 'categories.manage',
     },
     {
         title: 'Staff',

@@ -50,7 +50,7 @@ final class ThemeCompiler
             '--primary-foreground' => $c['primary_foreground'],
             '--muted-foreground' => $c['muted_text'],
             '--border' => $c['border'],
-            '--input' => $c['border'],
+            '--input' => $c['field_border'],
             '--ring' => $c['accent'],
             '--brand-accent' => $c['accent'],
             '--sidebar' => $c['surface'],
