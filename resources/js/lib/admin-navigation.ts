@@ -1,6 +1,8 @@
 import {
     History,
     House,
+    Inbox,
+    MessageSquare,
     Palette,
     FileText,
     FolderTree,
@@ -15,7 +17,9 @@ import { dashboard } from '@/routes/admin';
 import { index as audit } from '@/routes/admin/audit';
 import { index as categories } from '@/routes/admin/categories';
 import { pages as cmsPages } from '@/routes/admin/cms';
+import { index as enquiries } from '@/routes/admin/enquiries';
 import { index as features } from '@/routes/admin/features';
+import { index as leads } from '@/routes/admin/leads';
 import { index as listings } from '@/routes/admin/listings';
 import { index as locations } from '@/routes/admin/locations';
 import { index as roles } from '@/routes/admin/roles';
@@ -40,6 +44,18 @@ export const adminNavigation: NavItem[] = [
         href: listings(),
         icon: House,
         permission: 'listings.view',
+    },
+    {
+        title: 'Seller leads',
+        href: leads(),
+        icon: Inbox,
+        permission: 'leads.view',
+    },
+    {
+        title: 'Enquiries',
+        href: enquiries(),
+        icon: MessageSquare,
+        permission: 'enquiries.view',
     },
     {
         title: 'Website content',

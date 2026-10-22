@@ -4,6 +4,10 @@ namespace App\Domains\Cms\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Spatie\Image\Enums\Fit;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
  * @property int $id
@@ -19,9 +23,22 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $published_at
  * @property Carbon|null $updated_at
  */
-class Page extends Model
+class Page extends Model implements HasMedia
 {
+    use InteractsWithMedia;
+
     protected $guarded = ['id'];
+
+    /** Images used by image blocks. */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('images')->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+    }
+
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('large')->queued()->fit(Fit::Max, 1600, 1600)->format('webp')->quality(82);
+    }
 
     protected function casts(): array
     {

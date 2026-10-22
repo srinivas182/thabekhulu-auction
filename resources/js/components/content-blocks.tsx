@@ -2,6 +2,13 @@ import { Link } from '@inertiajs/react';
 
 export type Block =
     | { type: 'rich_text'; html: string }
+    | {
+          type: 'image';
+          media_id: number;
+          alt: string;
+          caption: string;
+          url?: string | null;
+      }
     | { type: 'two_column'; left: string; right: string }
     | {
           type: 'cta';
@@ -29,6 +36,22 @@ export default function ContentBlocks({ blocks }: { blocks: Block[] }) {
                                 dangerouslySetInnerHTML={{ __html: b.html }}
                             />
                         );
+                    case 'image':
+                        return b.url ? (
+                            <figure key={i} className="max-w-[960px]">
+                                <img
+                                    src={b.url}
+                                    alt={b.alt}
+                                    loading="lazy"
+                                    className="w-full rounded-[18px]"
+                                />
+                                {b.caption && (
+                                    <figcaption className="mt-2 text-sm text-muted-foreground">
+                                        {b.caption}
+                                    </figcaption>
+                                )}
+                            </figure>
+                        ) : null;
                     case 'two_column':
                         return (
                             <div key={i} className="grid gap-8 md:grid-cols-2">

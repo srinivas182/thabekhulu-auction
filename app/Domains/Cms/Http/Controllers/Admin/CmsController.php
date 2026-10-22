@@ -33,7 +33,7 @@ class CmsController extends Controller
     /** Page addresses that would clash with the application's own routes. */
     public const RESERVED = ['admin', 'auctions', 'login', 'logout', 'register', 'dashboard', 'account', 'settings', 'invitations',
         'sitemap', 'storage', 'up', 'horizon', 'two-factor-challenge', 'forgot-password', 'reset-password', 'email', 'user',
-        'build', 'password', 'insights', 'gallery', 'sell-with-us', 'api', 'passkeys', 'confirm-password', 'verify-email'];
+        'build', 'password', 'insights', 'gallery', 'sell-with-us', 'enquiries', 'api', 'passkeys', 'confirm-password', 'verify-email'];
 
     private const LINK = '#^(/[A-Za-z0-9/_\-?=&.%]*|https://\S+|mailto:\S+|tel:[+0-9 ]+)$#';
 
@@ -61,7 +61,7 @@ class CmsController extends Controller
     {
         return Inertia::render('admin/cms/page-edit', [
             'page' => [
-                'id' => $page->id, 'title' => $page->title, 'slug' => $page->slug, 'status' => $page->status, 'blocks' => $page->blocks,
+                'id' => $page->id, 'title' => $page->title, 'slug' => $page->slug, 'status' => $page->status, 'blocks' => Blocks::withImageUrls($page),
                 'system' => $page->is_system, 'needsContent' => $page->needs_content,
                 'seoTitle' => $page->seo_title, 'seoDescription' => $page->seo_description,
             ],
@@ -84,7 +84,7 @@ class CmsController extends Controller
         $wasPublished = $page->status === 'published';
         $page->fill([
             'title' => $data['title'], 'slug' => $page->is_system ? $page->slug : $data['slug'], 'status' => $data['status'],
-            'blocks' => Blocks::clean($data['blocks']), 'needs_content' => (bool) ($data['needs_content'] ?? false),
+            'blocks' => Blocks::clean($data['blocks'], $page), 'needs_content' => (bool) ($data['needs_content'] ?? false),
             'seo_title' => $data['seo_title'] ?? null, 'seo_description' => $data['seo_description'] ?? null, 'updated_by' => $actor->id,
         ]);
         if (! $wasPublished && $page->status === 'published') {
