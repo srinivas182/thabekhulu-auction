@@ -3,6 +3,8 @@
 namespace App\Domains\DataRoom\Http\Controllers;
 
 use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Payments\Actions\DepositService;
+use App\Domains\Payments\Models\Deposit;
 use App\Domains\Quotes\Models\Quote;
 use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
@@ -33,6 +35,13 @@ class BuyerDashboardController extends Controller
         }
         if ($verification?->status === 'verified' && $verification->expires_at !== null && $verification->expires_at->lt(now()->addDays(30))) {
             $attention[] = ['kind' => 'expiry', 'text' => 'Your verification expires on '.$verification->expires_at->format('j F Y').'. Renew it to keep bidding.', 'url' => '/account/verification', 'action' => 'Renew'];
+        }
+        foreach ($approvals->whereIn('status', ['pending', 'approved']) as $a) {
+            $deposit = Deposit::where('bidder_approval_id', $a->id)->first();
+            if ((int) $a->listing->deposit_amount > 0 && ! in_array($deposit?->status, ['received', 'applied', 'refund_scheduled', 'refunded'], true)
+                && DepositService::complianceComplete($a->listing)) {
+                $attention[] = ['kind' => 'deposit', 'text' => "Pay your deposit for {$a->listing->title}.", 'url' => route('deposits.show', $a->listing->ulid, false), 'action' => 'Pay deposit'];
+            }
         }
         foreach ($approvals->where('status', 'approved') as $a) {
             $ndaNeeded = $a->listing->category->documentTypes()->where('visibility', 'approved_nda')->exists();

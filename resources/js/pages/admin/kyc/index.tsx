@@ -1,5 +1,6 @@
 import { Head, Link } from '@inertiajs/react';
 import { formatDateTime } from '@/lib/format';
+import { rand } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
@@ -199,11 +200,7 @@ export default function KycIndex({
                                 <div>
                                     <p className="font-medium">{f.person}</p>
                                     <p className="text-sm text-muted-foreground">
-                                        States R{' '}
-                                        {f.amount
-                                            .toLocaleString('en-ZA')
-                                            .replace(/,/g, ' ')}{' '}
-                                        ·{' '}
+                                        States {rand(f.amount)} ·{' '}
                                         <a
                                             href={f.url}
                                             target="_blank"

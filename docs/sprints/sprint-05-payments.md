@@ -8,20 +8,20 @@ Collect each bidder's deposit for a listing, hold it safely, confirm it automati
 
 ## 2. Delivery: three sub-sprints, one PR each
 
-| Sub-sprint | Contents |
-| --- | --- |
+| Sub-sprint                          | Contents                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **5a Deposits and the money trail** | Payment provider framework; deposit by EFT to the trust account with a unique reference; bank-statement import and matching; append-only ledger; receipts; **compliance gate** (no deposits until the listing's checklist is signed off); "deposit received" becomes a blocking approval item; refund-account lock |
-| **5b Escrow and gateways** | TradeSafe escrow adapter for deposits; instant-EFT and card gateway adapters for small payments (event tickets, premium slots, quotations); signed, idempotent webhooks; payment status pages |
-| **5c Refunds and reconciliation** | Refund rules by deposit terms; runner-up hold; refund schedule after close; finance approval (four eyes); refund batches and proof of payment; daily reconciliation report; finance exports |
+| **5b Escrow and gateways**          | TradeSafe escrow adapter for deposits; instant-EFT and card gateway adapters for small payments (event tickets, premium slots, quotations); signed, idempotent webhooks; payment status pages                                                                                                                      |
+| **5c Refunds and reconciliation**   | Refund rules by deposit terms; runner-up hold; refund schedule after close; finance approval (four eyes); refund batches and proof of payment; daily reconciliation report; finance exports                                                                                                                        |
 
 ## 3. Recommended payment methods
 
-| | **EFT to the trust account** (always on) | **TradeSafe escrow** (recommended for deposits) | **Ozow** instant EFT (small payments) | **Paystack** cards (small payments) |
-| --- | --- | --- | --- | --- |
-| What it is | Bidder pays by bank transfer with a unique reference; matched from bank statements | South African digital escrow, backed by Standard Bank; GraphQL API with a sandbox; escrow-secured or direct ("Relay") flows; refunds handled by TradeSafe | Instant EFT from South African banks with instant confirmation | Card payments; owned by Stripe; developer-friendly API |
-| Best for | Any deposit size; no provider fees | Large deposits held by an independent party; investor confidence | Tickets, premium slots, small fees | Card payers, international cards |
-| Confirmation | Statement import (5a); bank API later if Thabekhulu's bank offers one | Webhook | Webhook | Webhook |
-| Typical cost | Bank charges only | To confirm with TradeSafe | Around 1.5–2.5% per transaction (published comparisons; confirm) | Card rates (confirm) |
+|              | **EFT to the trust account** (always on)                                           | **TradeSafe escrow** (recommended for deposits)                                                                                                           | **Ozow** instant EFT (small payments)                            | **Paystack** cards (small payments)                    |
+| ------------ | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------ |
+| What it is   | Bidder pays by bank transfer with a unique reference; matched from bank statements | South African digital escrow, backed by Standard Bank; GraphQL API with a sandbox; escrow-secured or direct ("Relay") flows; refunds handled by TradeSafe | Instant EFT from South African banks with instant confirmation   | Card payments; owned by Stripe; developer-friendly API |
+| Best for     | Any deposit size; no provider fees                                                 | Large deposits held by an independent party; investor confidence                                                                                          | Tickets, premium slots, small fees                               | Card payers, international cards                       |
+| Confirmation | Statement import (5a); bank API later if Thabekhulu's bank offers one              | Webhook                                                                                                                                                   | Webhook                                                          | Webhook                                                |
+| Typical cost | Bank charges only                                                                  | To confirm with TradeSafe                                                                                                                                 | Around 1.5–2.5% per transaction (published comparisons; confirm) | Card rates (confirm)                                   |
 
 Instant EFT and cards are **not** used for large deposits: bank instant-EFT limits and card fees make them unsuitable for amounts like R1.2 million. Fees and limits must be confirmed directly with each provider before contracts are signed.
 
@@ -29,15 +29,15 @@ Instant EFT and cards are **not** used for large deposits: bank instant-EFT limi
 
 ## 4. Decisions needing approval
 
-| # | Decision | Recommendation | Alternative |
-| --- | --- | --- | --- |
-| P1 | Provider model | **Pluggable adapters** with super-admin enable, keys (encrypted, write-only), sandbox/live and routing per payment type; trust-account EFT always available | Hard-wire one provider |
-| P2 | Money trail | **Append-only ledger**: every movement is a new entry (received, held, applied, refunded, forfeited by decision); balances are calculated, never edited; amounts in cents | Editable balances |
-| P3 | Matching EFTs | Unique reference per deposit (e.g. `TDG-D-4821-7Q3K`, with a check character); bank statement import (CSV / OFX) matches reference and amount; anything unmatched or short goes to a finance queue | Manual matching only |
-| P4 | Compliance gate | A listing accepts deposits only when **every** compliance checklist item (Sprint 3) is signed off; enforced on the server | Warning only |
-| P5 | Refunds | Only to the bidder's **verified** account in their own name; account **locked** from deposit until refund; refunds need two finance users (prepare + approve); never automatic forfeiture of security deposits | Single approver |
-| P6 | Refund timing | Unsuccessful bidders: N days after close (setting, default 5 business days); runner-up: held until the winner completes or the hold period ends (setting); winner: per deposit terms in Sprint 7 | Manual timing |
-| P7 | Receipts | PDF receipt for every confirmed deposit and refund, numbered (`TDG-R-2026-0001`), emailed and in the buyer's account | Email text only |
+| #   | Decision        | Recommendation                                                                                                                                                                                                 | Alternative            |
+| --- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| P1  | Provider model  | **Pluggable adapters** with super-admin enable, keys (encrypted, write-only), sandbox/live and routing per payment type; trust-account EFT always available                                                    | Hard-wire one provider |
+| P2  | Money trail     | **Append-only ledger**: every movement is a new entry (received, held, applied, refunded, forfeited by decision); balances are calculated, never edited; amounts in cents                                      | Editable balances      |
+| P3  | Matching EFTs   | Unique reference per deposit (e.g. `TDG-D-4821-7Q3K`, with a check character); bank statement import (CSV / OFX) matches reference and amount; anything unmatched or short goes to a finance queue             | Manual matching only   |
+| P4  | Compliance gate | A listing accepts deposits only when **every** compliance checklist item (Sprint 3) is signed off; enforced on the server                                                                                      | Warning only           |
+| P5  | Refunds         | Only to the bidder's **verified** account in their own name; account **locked** from deposit until refund; refunds need two finance users (prepare + approve); never automatic forfeiture of security deposits | Single approver        |
+| P6  | Refund timing   | Unsuccessful bidders: N days after close (setting, default 5 business days); runner-up: held until the winner completes or the hold period ends (setting); winner: per deposit terms in Sprint 7               | Manual timing          |
+| P7  | Receipts        | PDF receipt for every confirmed deposit and refund, numbered (`TDG-R-2026-0001`), emailed and in the buyer's account                                                                                           | Email text only        |
 
 ## 5. 5a — Deposits and the money trail
 
@@ -97,9 +97,9 @@ New: `payments.providers` (super admin), `deposits.confirm` (finance: import sta
 
 ## 13. Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| Deposits held in the wrong kind of account (PPRA) | Attorney confirmation before go-live; trust-account EFT available regardless |
-| Mismatched or partial EFTs | Unique references with check character; finance queue; never auto-confirm partial amounts |
-| Refund paid to the wrong account | Verified own-name accounts only; lock from deposit to refund; two-person approval |
-| Provider outage | Trust-account EFT always available; webhook retries; reconciliation catches gaps |
+| Risk                                              | Mitigation                                                                                |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Deposits held in the wrong kind of account (PPRA) | Attorney confirmation before go-live; trust-account EFT available regardless              |
+| Mismatched or partial EFTs                        | Unique references with check character; finance queue; never auto-confirm partial amounts |
+| Refund paid to the wrong account                  | Verified own-name accounts only; lock from deposit to refund; two-person approval         |
+| Provider outage                                   | Trust-account EFT always available; webhook retries; reconciliation catches gaps          |

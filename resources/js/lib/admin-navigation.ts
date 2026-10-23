@@ -7,6 +7,7 @@ import {
     ShieldCheck,
     MessageSquare,
     Palette,
+    Banknote,
     FileLock,
     FileText,
     FolderTree,
@@ -24,6 +25,7 @@ import { settings as dataRoomSettings } from '@/routes/admin/dataroom';
 import { index as enquiries } from '@/routes/admin/enquiries';
 import { index as features } from '@/routes/admin/features';
 import { index as leads } from '@/routes/admin/leads';
+import { index as finance } from '@/routes/admin/finance';
 import { index as kyc } from '@/routes/admin/kyc';
 import { index as listings } from '@/routes/admin/listings';
 import { index as quotes } from '@/routes/admin/quotes';
@@ -57,6 +59,12 @@ export const adminNavigation: NavItem[] = [
         href: kyc(),
         icon: IdCard,
         permission: 'kyc.view',
+    },
+    {
+        title: 'Finance',
+        href: finance(),
+        icon: Banknote,
+        permission: 'deposits.view',
     },
     {
         title: 'Quotations',

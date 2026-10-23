@@ -4,6 +4,7 @@ namespace App\Domains\Verification\Support;
 
 use App\Domains\DataRoom\Settings\DataRoomSettings;
 use App\Domains\Listings\Models\Listing;
+use App\Domains\Payments\Models\Deposit;
 use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Http\Controllers\KycReviewController;
 use App\Domains\Verification\Models\BankAccount;
@@ -59,7 +60,11 @@ final class BidderEligibility
                 $pof ? 'R '.number_format($pof->amount, 0, '.', ' ')." ({$pof->status}".($pof->valid_until ? ', valid until '.$pof->valid_until->format('j M Y') : '').')' : 'Not uploaded');
         }
 
-        $items[] = ['key' => 'deposit', 'label' => 'Deposit received', 'state' => 'later', 'detail' => 'Checked automatically once online payments are live (Sprint 5)'];
+        if ((int) $approval->listing->deposit_amount > 0) {
+            $deposit = Deposit::where('bidder_approval_id', $approval->id)->first();
+            $items[] = $this->item('deposit', 'Deposit received', in_array($deposit?->status, ['received', 'applied'], true),
+                $deposit ? "{$deposit->reference} (".Deposit::STATUSES[$deposit->status].')' : 'Not started');
+        }
         if ($approval->listing->category->documentTypes()->where('visibility', 'approved_nda')->exists()) {
             $version = app(DataRoomSettings::class)->nda_version;
             $signed = DB::table('nda_acceptances')->where('listing_id', $approval->listing_id)->where('user_id', $userId)->where('nda_version', $version)->value('accepted_at');
