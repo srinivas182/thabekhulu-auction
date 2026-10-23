@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             AccessSeeder::class,
             CatalogueSeeder::class,
             CmsSeeder::class,
+            QuoteSeeder::class,
             SuperAdminSeeder::class,
         ]);
     }

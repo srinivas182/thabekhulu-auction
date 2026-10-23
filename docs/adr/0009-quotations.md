@@ -1,0 +1,14 @@
+# ADR 0009 — Quotations (Sprint 3Q)
+
+**Status:** Accepted (3Q-a; 3Q-b adds the workflow)
+
+| Decision                                                                                                                                    | Rationale                                                                  | Alternative considered                            |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ------------------------------------------------- |
+| PDFs with barryvdh/laravel-dompdf (Q1)                                                                                                      | Pure PHP: works on any host and in CI                                      | Browsershot (needs headless Chrome on the server) |
+| Money in whole cents, quantity in hundredths, VAT rate in basis points; VAT rounded per line (Q4)                                           | No floating-point errors; matches how SA tax invoices are usually prepared | Floats                                            |
+| All line amounts and totals recalculated by `SaveQuote` on the server; the builder's live totals use the same rounding but are display only | Figures sent by a browser are never trusted                                | Trust client totals                               |
+| Gap-free numbers per year from a locked `quote_sequences` row; versions keep the number (`-v2`) (Q5)                                        | Two staff can never get the same number; professional numbering            | Auto-increment IDs (gaps, guessable)              |
+| Once-off and recurring (monthly / annual) totals kept separate on screen and in the PDF                                                     | Investors must see ongoing commitments clearly                             | One combined total                                |
+| Without `quotes.view_all`, staff only see and download their own quotations                                                                 | Quotes can carry confidential pricing                                      | Everyone sees everything                          |
+| Templates are created with "Save as template" from a real quotation; seeded templates are flagged "needs review" and carry zero prices      | No second editor to maintain; nothing invented on Thabekhulu's behalf      | A separate template editor                        |
+| PDF sections never split across pages; table headers repeat                                                                                 | Readable printed quotations (found in visual review)                       | Default flow                                      |
