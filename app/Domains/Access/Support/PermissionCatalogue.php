@@ -28,6 +28,7 @@ final class PermissionCatalogue
         'compliance' => ['Compliance', ['signoff' => 'Sign off listing compliance checklist items']],
         'listings' => ['Listings', ['view' => 'View listings', 'create' => 'Create listings', 'edit' => 'Edit listings', 'submit' => 'Submit listings for review', 'publish' => 'Approve and publish listings', 'delete' => 'Delete draft listings']],
         'auctions' => ['Auctions', ['monitor' => 'Monitor live auctions', 'pause' => 'Pause an auction', 'settle' => 'Confirm winners and handle defaults']],
+        'verification' => ['Verification providers', ['providers' => 'Enable verification providers, enter their keys and route checks']],
         'kyc' => ['KYC', ['view' => 'View verification submissions', 'approve' => 'Approve verification', 'reject' => 'Reject verification', 'suspend' => 'Suspend bidding']],
         'buyers' => ['Buyers', ['view' => 'View buyers', 'manage' => 'Edit buyer accounts']],
         'sellers' => ['Sellers', ['view' => 'View sellers', 'manage' => 'Edit seller accounts']],

@@ -3,6 +3,7 @@ import {
     House,
     Inbox,
     ReceiptText,
+    ShieldCheck,
     MessageSquare,
     Palette,
     FileText,
@@ -10,7 +11,6 @@ import {
     LayoutGrid,
     MapPin,
     Settings,
-    ShieldCheck,
     ToggleRight,
     Users,
 } from 'lucide-react';
@@ -23,6 +23,7 @@ import { index as features } from '@/routes/admin/features';
 import { index as leads } from '@/routes/admin/leads';
 import { index as listings } from '@/routes/admin/listings';
 import { index as quotes } from '@/routes/admin/quotes';
+import { providers as verificationProviders } from '@/routes/admin/verification';
 import { index as locations } from '@/routes/admin/locations';
 import { index as roles } from '@/routes/admin/roles';
 import { edit as settings } from '@/routes/admin/settings';
@@ -82,6 +83,12 @@ export const adminNavigation: NavItem[] = [
         href: locations(),
         icon: MapPin,
         permission: 'categories.manage',
+    },
+    {
+        title: 'Verification',
+        href: verificationProviders(),
+        icon: ShieldCheck,
+        permission: 'verification.providers',
     },
     {
         title: 'Staff',
