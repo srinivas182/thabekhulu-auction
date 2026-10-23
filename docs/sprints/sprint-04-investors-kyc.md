@@ -8,43 +8,44 @@ Turn a registered buyer into an **approved bidder for a specific listing**: veri
 
 ## 2. Delivery: three sub-sprints, one PR each
 
-| Sub-sprint | Contents |
-| --- | --- |
-| **4a Verification framework and identity** | Provider framework (enable, keys, test, routing per check, webhooks), three provider adapters, manual-review fallback; buyer verification flow (SA ID or passport, selfie liveness, proof of address, marital status and spouse consent) |
+| Sub-sprint                                                  | Contents                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **4a Verification framework and identity**                  | Provider framework (enable, keys, test, routing per check, webhooks), three provider adapters, manual-review fallback; buyer verification flow (SA ID or passport, selfie liveness, proof of address, marital status and spouse consent)       |
 | **4b Companies, screening, funds, bank accounts, approval** | Company and trust bidders (CIPC, directors, beneficial owners, authority resolution); sanctions/PEP screening with re-screening; proof of funds; refund bank account verification and lock; KYC review queue; **per-listing bidding approval** |
-| **4c Data room and buyer dashboard** | NDA click-through per listing, document access for verified / approved bidders, watermarked downloads, download log; buyer dashboard from the approved design |
+| **4c Data room and buyer dashboard**                        | NDA click-through per listing, document access for verified / approved bidders, watermarked downloads, download log; buyer dashboard from the approved design                                                                                  |
 
 ## 3. Recommended verification providers
 
 All three are built in from the start, off until the super admin enables them. One provider is enough to go live; the others give choice on price and cover.
 
-| | **Smile ID** (recommended primary) | **VerifyID / OmniCheck** (recommended SA alternative) | **Sumsub** (recommended for foreign investors) |
-| --- | --- | --- | --- |
-| Focus | Pan-African, optimised for low-end phones and weak connections | South African, single API for local checks | Global KYC, KYB and AML platform |
-| SA ID against government records | Yes: ID number and photo from SA government sources, selfie matched to the photo on record | Yes: live Home Affairs status and DHA ID photo, with an offline fallback when DHA is down | Document and data checks; SA support stated |
-| Liveness / selfie | Yes | Biometric options (fingerprint; facial via partners) | Yes (document photo + video selfie) |
-| Foreign passports | Documents in 220+ countries | Limited (SA-focused) | Worldwide |
-| Company (CIPC) | Yes: SA company records, directors and beneficial owners | Yes: CIPC company checks | Yes: KYB |
-| Sanctions / PEP | AML check | AML/PEP/crime screening | AML screening **and ongoing monitoring** |
-| Bank account verification | Yes | Yes (banking verification) | Yes |
-| Typical use here | Default for SA citizens and SA companies | Lower-cost SA checks; backup when another provider is down | Foreign mining investors and ongoing AML monitoring |
+|                                  | **Smile ID** (recommended primary)                                                         | **VerifyID / OmniCheck** (recommended SA alternative)                                     | **Sumsub** (recommended for foreign investors)      |
+| -------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Focus                            | Pan-African, optimised for low-end phones and weak connections                             | South African, single API for local checks                                                | Global KYC, KYB and AML platform                    |
+| SA ID against government records | Yes: ID number and photo from SA government sources, selfie matched to the photo on record | Yes: live Home Affairs status and DHA ID photo, with an offline fallback when DHA is down | Document and data checks; SA support stated         |
+| Liveness / selfie                | Yes                                                                                        | Biometric options (fingerprint; facial via partners)                                      | Yes (document photo + video selfie)                 |
+| Foreign passports                | Documents in 220+ countries                                                                | Limited (SA-focused)                                                                      | Worldwide                                           |
+| Company (CIPC)                   | Yes: SA company records, directors and beneficial owners                                   | Yes: CIPC company checks                                                                  | Yes: KYB                                            |
+| Sanctions / PEP                  | AML check                                                                                  | AML/PEP/crime screening                                                                   | AML screening **and ongoing monitoring**            |
+| Bank account verification        | Yes                                                                                        | Yes (banking verification)                                                                | Yes                                                 |
+| Typical use here                 | Default for SA citizens and SA companies                                                   | Lower-cost SA checks; backup when another provider is down                                | Foreign mining investors and ongoing AML monitoring |
 
 Prices, contract terms and FICA/POPIA data-processing terms must be confirmed directly with each provider before go-live; published figures change. Thabekhulu holds the contract and keys with whichever providers they choose; the platform only stores the provider's reference and result.
 
 ## 4. Decisions needing approval
 
-| # | Decision | Recommendation | Alternative |
-| --- | --- | --- | --- |
-| K1 | Provider model | **Pluggable adapters** behind one interface; super admin enables providers and routes each check type (SA identity, passport identity, liveness, company, sanctions/PEP, bank account) to one enabled provider; **manual review** always available | Hard-wire one provider |
-| K2 | Credentials | Stored **encrypted** in the database, entered by the super admin, never shown again after saving (only the last 4 characters); sandbox / live mode per provider; "Test connection" button | Keys in server `.env` (needs a developer for every change) |
-| K3 | Data minimisation (POPIA) | Store the provider's reference, outcome, score and the fields needed for FICA records; **no raw selfie video or fingerprint data** kept on our servers; ID document images kept privately, encrypted, for the FICA retention period (5 years after the relationship ends), then deleted | Store everything |
-| K4 | Results | Every result normalised to **Passed / Needs review / Failed** with reasons; anything not a clear pass goes to the KYC review queue; staff decisions recorded with a reason | Trust provider results blindly |
-| K5 | Webhooks | Provider callbacks verified by signature, idempotent (each event processed once), queued | Polling only |
-| K6 | Bidding eligibility | **Per listing**: verified + screened + bank account verified + deposit received (Sprint 5) + NDA (if data room) + staff approval → "Approved bidder" for that listing only | One global approval |
+| #   | Decision                  | Recommendation                                                                                                                                                                                                                                                                          | Alternative                                                |
+| --- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| K1  | Provider model            | **Pluggable adapters** behind one interface; super admin enables providers and routes each check type (SA identity, passport identity, liveness, company, sanctions/PEP, bank account) to one enabled provider; **manual review** always available                                      | Hard-wire one provider                                     |
+| K2  | Credentials               | Stored **encrypted** in the database, entered by the super admin, never shown again after saving (only the last 4 characters); sandbox / live mode per provider; "Test connection" button                                                                                               | Keys in server `.env` (needs a developer for every change) |
+| K3  | Data minimisation (POPIA) | Store the provider's reference, outcome, score and the fields needed for FICA records; **no raw selfie video or fingerprint data** kept on our servers; ID document images kept privately, encrypted, for the FICA retention period (5 years after the relationship ends), then deleted | Store everything                                           |
+| K4  | Results                   | Every result normalised to **Passed / Needs review / Failed** with reasons; anything not a clear pass goes to the KYC review queue; staff decisions recorded with a reason                                                                                                              | Trust provider results blindly                             |
+| K5  | Webhooks                  | Provider callbacks verified by signature, idempotent (each event processed once), queued                                                                                                                                                                                                | Polling only                                               |
+| K6  | Bidding eligibility       | **Per listing**: verified + screened + bank account verified + deposit received (Sprint 5) + NDA (if data room) + staff approval → "Approved bidder" for that listing only                                                                                                              | One global approval                                        |
 
 ## 5. 4a — Verification framework and identity
 
 ### 5.1 Provider framework
+
 - Back office → Settings → **Verification providers** (permission `verification.providers`, super admin by default).
 - Per provider: enable/disable, mode (sandbox / live), API keys (encrypted), webhook secret, "Test connection", last successful call.
 - **Routing table:** for each check type choose the provider (only enabled providers that support the check are offered) or **Manual review**.
@@ -52,6 +53,7 @@ Prices, contract terms and FICA/POPIA data-processing terms must be confirmed di
 - Every provider call and result is logged (no personal documents in logs) and audit-logged.
 
 ### 5.2 Buyer verification flow (approved design, step 2 of 4)
+
 1. Document type: SA ID or passport (non-SA).
 2. ID number (validated: date of birth and checksum) or passport details; **one account per ID / passport** (already a rule).
 3. Document upload (front/back) or camera capture.
@@ -63,6 +65,7 @@ Prices, contract terms and FICA/POPIA data-processing terms must be confirmed di
 Statuses: Not started → In progress → Submitted → Verified / Needs review / Rejected (with reason the buyer can see) → Expired (re-verify after a set period, default 24 months).
 
 ### 5.3 Data model (4a)
+
 `verification_providers` (key, enabled, mode, encrypted credentials, health), `verification_routes` (check type → provider), `verifications` (user, type, provider, provider reference, status, outcome, score, reasons, reviewed by, reviewed at), `verification_documents` (private, encrypted, retention date), `spouse_consents`.
 
 ## 6. 4b — Companies, screening, funds, bank accounts, approval
@@ -116,9 +119,9 @@ New: `verification.providers`, `kyc.review`, `kyc.approve_company`, `bidders.app
 
 ## 12. Risks
 
-| Risk | Mitigation |
-| --- | --- |
-| Home Affairs or a provider is unavailable | Retry, then manual review; a second provider can be routed for the same check |
-| Personal data breach | Encryption at rest, private storage, no raw biometrics, access logs, retention deletion, POPIA-aligned processing terms with providers |
-| Provider lock-in | One interface; switching provider is a routing change in settings |
-| Foreign investors cannot pass SA-only checks | Passport route via a global provider (Sumsub) or manual review |
+| Risk                                         | Mitigation                                                                                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Home Affairs or a provider is unavailable    | Retry, then manual review; a second provider can be routed for the same check                                                          |
+| Personal data breach                         | Encryption at rest, private storage, no raw biometrics, access logs, retention deletion, POPIA-aligned processing terms with providers |
+| Provider lock-in                             | One interface; switching provider is a routing change in settings                                                                      |
+| Foreign investors cannot pass SA-only checks | Passport route via a global provider (Sumsub) or manual review                                                                         |

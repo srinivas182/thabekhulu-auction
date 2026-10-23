@@ -28,6 +28,8 @@ use App\Domains\Quotes\Http\Controllers\QuoteSetupController;
 use App\Domains\Quotes\Http\Controllers\QuoteWorkflowController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
 use App\Domains\Theme\Http\Controllers\ThemeController;
+use App\Domains\Verification\Http\Controllers\ProviderController;
+use App\Domains\Verification\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -35,6 +37,7 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/', HomeController::class)->name('home');
 Route::get('sitemap.xml', [AuctionController::class, 'sitemap'])->name('sitemap');
+Route::post('webhooks/verification/{provider}', WebhookController::class)->middleware('throttle:120,1')->name('webhooks.verification');
 Route::get('insights', [InsightsController::class, 'index'])->name('insights.index');
 Route::get('insights/{slug}', [InsightsController::class, 'show'])->name('insights.show');
 Route::get('gallery', [InsightsController::class, 'gallery'])->name('gallery');
@@ -187,6 +190,13 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::delete('{quote}', [QuoteController::class, 'destroy'])->name('destroy');
             Route::get('{quote}/pdf', [QuoteController::class, 'pdf'])->name('pdf');
             Route::post('{quote}/template', [QuoteController::class, 'saveAsTemplate'])->middleware('can:quotes.settings')->name('template');
+        });
+
+        Route::middleware('can:verification.providers')->prefix('verification')->name('verification.')->group(function () {
+            Route::get('providers', [ProviderController::class, 'index'])->name('providers');
+            Route::put('providers/{provider}', [ProviderController::class, 'update'])->name('providers.update');
+            Route::post('providers/{provider}/test', [ProviderController::class, 'test'])->name('providers.test');
+            Route::put('routes', [ProviderController::class, 'routes'])->name('routes');
         });
 
         Route::get('leads', [InboxController::class, 'leads'])->middleware('can:leads.view')->name('leads.index');

@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withCommands([__DIR__.'/../app/Domains/Listings/Console', __DIR__.'/../app/Domains/Quotes/Console'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        // Provider callbacks are authenticated by their signatures, not CSRF tokens.
+        $middleware->validateCsrfTokens(except: ['webhooks/*']);
 
         $middleware->alias([
             'staff' => EnsureStaff::class,
