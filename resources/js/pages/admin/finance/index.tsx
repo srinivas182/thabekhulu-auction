@@ -8,6 +8,7 @@ import {
     index,
     resolve,
 } from '@/routes/admin/finance';
+import providers from '@/routes/admin/finance/providers';
 
 type Props = {
     tab: string;
@@ -83,7 +84,20 @@ export default function Finance({
             <Head title="Finance" />
             <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
                 <div className="flex flex-wrap items-end justify-between gap-3">
-                    <h1 className="font-display text-3xl">Finance</h1>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h1 className="font-display text-3xl">Finance</h1>
+                        {(
+                            (usePage().props.auth as { permissions?: string[] })
+                                .permissions ?? []
+                        ).includes('payments.providers') && (
+                            <Link
+                                href={providers.index()}
+                                className="text-sm underline"
+                            >
+                                Payment providers
+                            </Link>
+                        )}
+                    </div>
                     {can.reconcile && (
                         <Form
                             action={importRoute().url}

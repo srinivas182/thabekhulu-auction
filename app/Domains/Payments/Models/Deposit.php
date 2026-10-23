@@ -20,6 +20,7 @@ use Illuminate\Support\Str;
  * @property int $amount
  * @property string $reference
  * @property string $method
+ * @property string|null $provider_ref
  * @property string $status
  * @property Carbon|null $received_at
  * @property Carbon|null $created_at

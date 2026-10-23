@@ -18,6 +18,9 @@ class PaymentSettings extends Settings
 
     public int $runner_up_hold_days;
 
+    /** "none" (trust-account EFT only) or an enabled escrow provider key, e.g. "tradesafe". */
+    public string $deposit_provider;
+
     public static function group(): string
     {
         return 'payments';
