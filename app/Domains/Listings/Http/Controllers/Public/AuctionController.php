@@ -9,7 +9,12 @@ use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\ListingSearch;
 use App\Domains\Listings\Public\PublicListing;
 use App\Domains\Settings\Settings\GeneralSettings;
+use App\Domains\Verification\Models\BidderApproval;
+use App\Domains\Verification\Models\BiddingEntity;
+use App\Domains\Verification\Models\Verification;
+use App\Domains\Verification\Support\BidderEligibility;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
@@ -77,6 +82,7 @@ class AuctionController extends Controller
         // the HTML, even if the server-side render service is unavailable.
         return Inertia::render('public/auctions/show', [
             'listing' => $data,
+            'bidder' => $this->bidderState($listing),
             'office' => ['phone' => $general->contact_phone, 'email' => $general->contact_email],
             'seo' => [
                 'title' => ($listing->seo_title ?: $listing->title).' | Thabekhulu auctions',
@@ -85,6 +91,33 @@ class AuctionController extends Controller
                 'canonical' => $data['url'],
             ],
         ])->withViewData(['structuredData' => $structured]);
+    }
+
+    /**
+     * Where the signed-in buyer stands for this listing (shown in the bid panel).
+     *
+     * @return array<string, mixed>|null
+     */
+    private function bidderState(Listing $listing): ?array
+    {
+        $user = request()->user();
+        if (! $user instanceof User || ! $user->isBuyer()) {
+            return null;
+        }
+
+        $approval = BidderApproval::where('listing_id', $listing->id)->where('user_id', $user->id)->first();
+        $verification = Verification::where('user_id', $user->id)->latest('id')->first();
+        $eligibility = app(BidderEligibility::class);
+
+        return [
+            'verification' => $verification?->status,
+            'approval' => $approval?->status,
+            'bidderNumber' => $approval?->status === 'approved' ? $approval->bidder_number : null,
+            'reason' => $approval !== null && in_array($approval->status, ['rejected', 'revoked'], true) ? $approval->reason : null,
+            'needsFunds' => $eligibility->needsProofOfFunds($listing),
+            'entities' => BiddingEntity::where('user_id', $user->id)->where('status', '!=', 'rejected')->get(['ulid', 'name', 'status'])
+                ->map(fn ($e) => ['ulid' => $e->ulid, 'name' => $e->name, 'verified' => $e->status === 'verified']),
+        ];
     }
 
     public function sitemap(): HttpResponse

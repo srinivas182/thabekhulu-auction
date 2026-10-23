@@ -4,6 +4,8 @@ namespace App\Domains\Verification\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
 use App\Domains\Verification\Models\BankAccount;
+use App\Domains\Verification\Models\BiddingEntity;
+use App\Domains\Verification\Models\ProofOfFunds;
 use App\Domains\Verification\Models\Screening;
 use App\Domains\Verification\Models\Verification;
 use App\Domains\Verification\Models\VerificationDocument;
@@ -55,7 +57,13 @@ class KycReviewController extends Controller
                 'review' => Verification::whereIn('status', ['review', 'submitted'])->count(),
                 'banks' => BankAccount::where('status', 'pending')->count(),
                 'screening' => $this->screeningDue()->count(),
+                'entities' => BiddingEntity::where('status', 'pending')->count(),
+                'funds' => ProofOfFunds::where('status', 'pending')->count(),
             ],
+            'entities' => $tab === 'entities' ? BiddingEntity::with('user:id,first_name,last_name')->where('status', 'pending')->oldest()->get()
+                ->map(fn ($e) => ['ulid' => $e->ulid, 'name' => $e->name, 'type' => $e->type, 'person' => $e->user->name, 'createdAt' => $e->created_at?->toIso8601String()]) : [],
+            'funds' => $tab === 'funds' ? ProofOfFunds::with('user:id,first_name,last_name')->where('status', 'pending')->oldest()->get()
+                ->map(fn ($f) => ['id' => $f->id, 'person' => $f->user->name, 'amount' => $f->amount, 'url' => route('admin.kyc.funds-document', $f), 'createdAt' => $f->created_at?->toIso8601String()]) : [],
             'banks' => $tab === 'banks' ? BankAccount::with('user:id,first_name,last_name')->where('status', 'pending')->oldest()->get()->map(fn (BankAccount $b) => [
                 'id' => $b->id, 'name' => $b->user->name, 'userId' => $b->user_id, 'bank' => $b->bank, 'holder' => $b->holder_name, 'last4' => $b->account_last4, 'createdAt' => $b->created_at?->toIso8601String(),
                 'verification' => Verification::where('user_id', $b->user_id)->latest('id')->value('ulid'),

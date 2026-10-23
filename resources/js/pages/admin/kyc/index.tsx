@@ -1,7 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
 import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { index, show } from '@/routes/admin/kyc';
+import { router } from '@inertiajs/react';
+import { Button } from '@/components/ui/button';
+import { entity as entityRoute, index, show } from '@/routes/admin/kyc';
+import fundsRoutes from '@/routes/admin/kyc/funds';
 
 type V = {
     ulid: string;
@@ -16,7 +19,27 @@ type V = {
 type Props = {
     tab: string;
     verifications: { data: V[] };
-    counts: { review: number; banks: number; screening: number };
+    counts: {
+        review: number;
+        banks: number;
+        screening: number;
+        entities: number;
+        funds: number;
+    };
+    entities: {
+        ulid: string;
+        name: string;
+        type: string;
+        person: string;
+        createdAt: string | null;
+    }[];
+    funds: {
+        id: number;
+        person: string;
+        amount: number;
+        url: string;
+        createdAt: string | null;
+    }[];
     banks: {
         id: number;
         name: string;
@@ -48,6 +71,8 @@ export default function KycIndex({
     counts,
     banks,
     screeningDue,
+    entities,
+    funds,
 }: Props) {
     const count = (t: string) =>
         t === 'review'
@@ -126,6 +151,122 @@ export default function KycIndex({
                         {verifications.data.length === 0 && (
                             <li className="px-5 py-8 text-center text-muted-foreground">
                                 Nothing here.
+                            </li>
+                        )}
+                    </ul>
+                )}
+                {tab === 'entities' && (
+                    <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+                        {entities.map((e) => (
+                            <li
+                                key={e.ulid}
+                                className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
+                            >
+                                <div>
+                                    <Link
+                                        href={entityRoute(e.ulid)}
+                                        className="font-medium underline-offset-4 hover:underline"
+                                    >
+                                        {e.name}
+                                    </Link>
+                                    <p className="text-sm text-muted-foreground">
+                                        {e.type === 'company'
+                                            ? 'Company'
+                                            : 'Trust'}{' '}
+                                        · for {e.person}
+                                    </p>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                    {formatDateTime(e.createdAt)}
+                                </p>
+                            </li>
+                        ))}
+                        {entities.length === 0 && (
+                            <li className="px-5 py-8 text-center text-muted-foreground">
+                                No companies or trusts waiting.
+                            </li>
+                        )}
+                    </ul>
+                )}
+
+                {tab === 'funds' && (
+                    <ul className="divide-y divide-border rounded-xl border border-border bg-card">
+                        {funds.map((f) => (
+                            <li
+                                key={f.id}
+                                className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
+                            >
+                                <div>
+                                    <p className="font-medium">{f.person}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        States R{' '}
+                                        {f.amount
+                                            .toLocaleString('en-ZA')
+                                            .replace(/,/g, ' ')}{' '}
+                                        ·{' '}
+                                        <a
+                                            href={f.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="underline"
+                                        >
+                                            open document
+                                        </a>
+                                    </p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button
+                                        size="sm"
+                                        onClick={() => {
+                                            const amount = window.prompt(
+                                                'Amount shown on the document (R)',
+                                                String(f.amount),
+                                            );
+                                            if (amount)
+                                                router.post(
+                                                    fundsRoutes.decide(f.id)
+                                                        .url,
+                                                    {
+                                                        decision: 'accept',
+                                                        amount: Number(
+                                                            amount.replace(
+                                                                /\D/g,
+                                                                '',
+                                                            ),
+                                                        ),
+                                                    },
+                                                    { preserveScroll: true },
+                                                );
+                                        }}
+                                    >
+                                        Accept
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            const note =
+                                                window.prompt('Reason');
+                                            if (note)
+                                                router.post(
+                                                    fundsRoutes.decide(f.id)
+                                                        .url,
+                                                    {
+                                                        decision: 'reject',
+                                                        note,
+                                                    },
+                                                    { preserveScroll: true },
+                                                );
+                                        }}
+                                    >
+                                        Reject
+                                    </Button>
+                                </div>
+                            </li>
+                        ))}
+                        {funds.length === 0 && (
+                            <li className="px-5 py-8 text-center text-muted-foreground">
+                                No proof of funds waiting.
                             </li>
                         )}
                     </ul>

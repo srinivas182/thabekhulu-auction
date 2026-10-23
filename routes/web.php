@@ -29,6 +29,8 @@ use App\Domains\Quotes\Http\Controllers\QuoteWorkflowController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
 use App\Domains\Theme\Http\Controllers\ThemeController;
 use App\Domains\Verification\Http\Controllers\BankAccountController;
+use App\Domains\Verification\Http\Controllers\BidderApprovalController;
+use App\Domains\Verification\Http\Controllers\BiddingController;
 use App\Domains\Verification\Http\Controllers\BuyerVerificationController;
 use App\Domains\Verification\Http\Controllers\KycReviewController;
 use App\Domains\Verification\Http\Controllers\ProviderController;
@@ -68,6 +70,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Buyer area placeholder; Sprint 4 builds the buyer dashboard.
     Route::inertia('account', 'account/dashboard')->name('account');
     Route::get('account/quotes', AccountQuotesController::class)->name('account.quotes');
+    Route::get('account/entities', [BiddingController::class, 'entities'])->name('account.entities');
+    Route::post('account/entities', [BiddingController::class, 'storeEntity'])->middleware('throttle:10,1')->name('account.entities.store');
+    Route::get('account/approvals', [BiddingController::class, 'approvals'])->name('account.approvals');
+    Route::post('auctions/apply/{listing}', [BiddingController::class, 'apply'])->middleware('throttle:10,1')->name('auctions.apply');
     Route::get('account/bank', [BankAccountController::class, 'show'])->name('account.bank');
     Route::post('account/bank', [BankAccountController::class, 'store'])->middleware('throttle:10,1')->name('account.bank.store');
     Route::prefix('account/verification')->name('account.verification')->group(function () {
@@ -128,6 +134,8 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('listings/{listing}/documents/{type}', [ListingAssetController::class, 'uploadDocument'])->name('listings.documents.store');
             Route::delete('listings/{listing}/documents/{document}', [ListingAssetController::class, 'destroyDocument'])->name('listings.documents.destroy');
         });
+        Route::get('listings/{listing}/bidders', [BidderApprovalController::class, 'bidders'])->middleware('can:bidders.approve')->name('listings.bidders');
+        Route::post('bidders/{approval}', [BidderApprovalController::class, 'decide'])->middleware('can:bidders.approve')->name('bidders.decide');
         Route::get('listings/{listing}/documents/{document}', [ListingAssetController::class, 'downloadDocument'])->middleware('can:listings.view')->name('listings.documents.download');
 
         Route::post('listings/{listing}/submit', [ListingWorkflowController::class, 'submit'])->middleware('can:listings.submit')->name('listings.submit');
@@ -213,6 +221,11 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('{verification}/request-info', [KycReviewController::class, 'requestInfo'])->middleware('can:kyc.reject')->name('request-info');
             Route::post('{verification}/screen', [KycReviewController::class, 'screen'])->middleware('can:kyc.approve')->name('screen');
             Route::get('banks/{bank}/proof', [KycReviewController::class, 'bankProof'])->name('bank-proof');
+            Route::get('entities/{entity}', [BidderApprovalController::class, 'entity'])->name('entity');
+            Route::get('entities/{entity}/documents/{document}', [BidderApprovalController::class, 'entityDocument'])->name('entity-document');
+            Route::post('entities/{entity}', [BidderApprovalController::class, 'decideEntity'])->middleware('can:kyc.approve_company')->name('entity.decide');
+            Route::get('funds/{funds}', [BidderApprovalController::class, 'fundsDocument'])->name('funds-document');
+            Route::post('funds/{funds}', [BidderApprovalController::class, 'decideFunds'])->middleware('can:kyc.approve')->name('funds.decide');
             Route::post('banks/{bank}', [KycReviewController::class, 'decideBank'])->name('bank');
         });
 
