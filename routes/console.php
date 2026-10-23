@@ -13,3 +13,6 @@ Schedule::command('activitylog:clean --force')->dailyAt('02:30');
 
 // Listings go live at their auction start time (sprint 3 spec 5.5).
 Schedule::command('listings:go-live')->everyMinute()->withoutOverlapping();
+
+// Quotations: expiry and reminders every morning (sprint 3Q spec 5).
+Schedule::command('quotes:daily')->dailyAt('07:00')->timezone('Africa/Johannesburg');

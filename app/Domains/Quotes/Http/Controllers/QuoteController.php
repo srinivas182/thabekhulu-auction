@@ -4,10 +4,12 @@ namespace App\Domains\Quotes\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
 use App\Domains\Listings\Models\Listing;
+use App\Domains\Quotes\Actions\QuoteWorkflow;
 use App\Domains\Quotes\Actions\SaveQuote;
 use App\Domains\Quotes\Models\CatalogueItem;
 use App\Domains\Quotes\Models\Client;
 use App\Domains\Quotes\Models\Quote;
+use App\Domains\Quotes\Models\QuoteEvent;
 use App\Domains\Quotes\Models\QuoteLine;
 use App\Domains\Quotes\Models\QuoteMilestone;
 use App\Domains\Quotes\Models\QuotePayment;
@@ -116,7 +118,22 @@ class QuoteController extends Controller
                 'unit_price' => $c->unit_price / 100, 'vat_applicable' => $c->vat_applicable, 'frequency' => $c->frequency,
             ]),
             'listings' => Listing::orderBy('title')->get(['id', 'title']),
-            'can' => ['templates' => Gate::allows('quotes.settings')],
+            'can' => [
+                'templates' => Gate::allows('quotes.settings'),
+                'approve' => Gate::allows('quotes.approve') && $quote->created_by !== $user->id,
+                'send' => Gate::allows('quotes.send'),
+            ],
+            'workflow' => [
+                'needsApproval' => app(QuoteWorkflow::class)->needsApproval($quote),
+                'threshold' => app(QuotationSettings::class)->approval_threshold,
+                'clientEmail' => $quote->client->email,
+                'clientLink' => in_array($quote->status, ['sent', 'viewed', 'accepted', 'declined'], true) ? app(QuoteWorkflow::class)->link($quote) : null,
+                'accepted' => $quote->accepted_at ? ['name' => $quote->accepted_name, 'at' => $quote->accepted_at->toIso8601String(), 'ip' => $quote->accepted_ip, 'fingerprint' => $quote->fingerprint] : null,
+                'declineReason' => $quote->decline_reason,
+                'events' => $quote->events()->with('user:id,first_name,last_name')->limit(30)->get()->map(fn (QuoteEvent $e): array => [
+                    'type' => $e->type, 'by' => $e->user?->name, 'note' => $e->note, 'at' => $e->created_at->toIso8601String(),
+                ]),
+            ],
         ]);
     }
 
