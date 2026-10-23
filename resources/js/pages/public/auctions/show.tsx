@@ -252,9 +252,22 @@ export default function AuctionShow({
                                 Documents
                             </h2>
                             <p className="mb-3 text-muted-foreground">
-                                Available once you register and verify your
-                                identity. Every download is watermarked with
-                                your name.
+                                {bidder ? (
+                                    <>
+                                        Verified and approved bidders open these
+                                        in the{' '}
+                                        <Link
+                                            href={`/data-room/${l.ulid}`}
+                                            className="underline"
+                                        >
+                                            document room
+                                        </Link>
+                                        . Every download is stamped with your
+                                        name.
+                                    </>
+                                ) : (
+                                    'Available once you register and verify your identity. Every download is stamped with your name.'
+                                )}
                             </p>
                             <ul className="divide-y divide-border rounded-[14px] border border-border bg-card">
                                 {l.documents.map((d) => (

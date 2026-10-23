@@ -5,7 +5,7 @@ ARG UID=1000
 ARG GID=1000
 
 RUN apk add --no-cache icu-libs libzip libpng libjpeg-turbo libwebp freetype \
-        nodejs npm git unzip \
+        nodejs npm git unzip ghostscript \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS icu-dev libzip-dev \
         libpng-dev libjpeg-turbo-dev libwebp-dev freetype-dev linux-headers \
     && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \

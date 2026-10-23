@@ -7,6 +7,7 @@ import {
     ShieldCheck,
     MessageSquare,
     Palette,
+    FileLock,
     FileText,
     FolderTree,
     LayoutGrid,
@@ -19,6 +20,7 @@ import { dashboard } from '@/routes/admin';
 import { index as audit } from '@/routes/admin/audit';
 import { index as categories } from '@/routes/admin/categories';
 import { pages as cmsPages } from '@/routes/admin/cms';
+import { settings as dataRoomSettings } from '@/routes/admin/dataroom';
 import { index as enquiries } from '@/routes/admin/enquiries';
 import { index as features } from '@/routes/admin/features';
 import { index as leads } from '@/routes/admin/leads';
@@ -127,6 +129,12 @@ export const adminNavigation: NavItem[] = [
         href: features(),
         icon: ToggleRight,
         permission: 'features.manage',
+    },
+    {
+        title: 'Data room',
+        href: dataRoomSettings(),
+        icon: FileLock,
+        permission: 'settings.manage',
     },
     {
         title: 'Audit log',

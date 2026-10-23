@@ -3,6 +3,7 @@
 namespace App\Domains\Verification\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\DataRoom\Settings\DataRoomSettings;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
 use App\Domains\Verification\Models\BidderApproval;
@@ -19,6 +20,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -48,7 +50,33 @@ class BidderApprovalController extends Controller
                 'fundsId' => $a->proof_of_funds_id,
             ]),
             'can' => ['approve' => Gate::allows('bidders.approve')],
+            'downloads' => $this->downloads($listing),
         ]);
+    }
+
+    /**
+     * Data-room downloads for staff, newest first, with a flag when one bidder
+     * downloads more than the daily alert level.
+     *
+     * @return array{rows: array<int, array<string, mixed>>, flagged: array<int, string>}
+     */
+    private function downloads(Listing $listing): array
+    {
+        $alert = app(DataRoomSettings::class)->daily_download_alert;
+        $rows = DB::table('document_downloads as d')
+            ->join('users as u', 'u.id', '=', 'd.user_id')->join('listing_documents as f', 'f.id', '=', 'd.listing_document_id')
+            ->where('d.listing_id', $listing->id)->orderByDesc('d.created_at')->limit(200)
+            ->get(['u.first_name', 'u.last_name', 'd.user_id', 'd.bidder_number', 'f.original_name', 'd.ip_address', 'd.created_at']);
+
+        $flagged = DB::table('document_downloads as d')->join('users as u', 'u.id', '=', 'd.user_id')
+            ->where('d.listing_id', $listing->id)->where('d.created_at', '>=', now()->subDay())
+            ->groupBy('d.user_id', 'u.first_name', 'u.last_name')->havingRaw('count(*) > ?', [$alert])
+            ->get(['u.first_name', 'u.last_name'])->map(fn ($r) => "{$r->first_name} {$r->last_name}")->all();
+
+        return [
+            'rows' => $rows->map(fn ($r) => ['name' => "{$r->first_name} {$r->last_name}", 'bidderNumber' => $r->bidder_number, 'file' => $r->original_name, 'ip' => $r->ip_address, 'at' => Carbon::parse((string) $r->created_at)->toIso8601String()])->all(),
+            'flagged' => $flagged,
+        ];
     }
 
     public function decide(Request $request, BidderApproval $approval, #[CurrentUser] User $actor): RedirectResponse
