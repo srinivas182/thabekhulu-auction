@@ -5,6 +5,8 @@ use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
+use App\Domains\Payments\Models\Deposit;
+use App\Domains\Payments\Support\DepositReference;
 use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\BiddingEntity;
@@ -53,6 +55,15 @@ function readyBuyer(User $buyer): void
         'account_type' => 'savings', 'holder_name' => 'Naledi Dube', 'status' => 'verified', 'verified_at' => now()]);
 }
 
+/** A confirmed deposit for an application (Sprint 5: "deposit received" blocks approval). */
+function paidDeposit(BidderApproval $approval): void
+{
+    Deposit::firstOrCreate(['bidder_approval_id' => $approval->id], [
+        'listing_id' => $approval->listing_id, 'user_id' => $approval->user_id, 'amount' => 100,
+        'reference' => DepositReference::make('0'), 'status' => 'received', 'received_at' => now(),
+    ]);
+}
+
 function pdf(): UploadedFile
 {
     return UploadedFile::fake()->create('doc.pdf', 40, 'application/pdf');
@@ -83,10 +94,12 @@ it('blocks approval until every required item is complete, then assigns a bidder
     expect(ProofOfFunds::first()->valid_until->toDateString())->toBe(now()->addDays(90)->toDateString());
 
     $checklist = app(BidderEligibility::class)->checklist($approval->fresh());
-    expect(collect($checklist)->pluck('state', 'key')->all())->toMatchArray(['identity' => 'ok', 'screening' => 'ok', 'bank' => 'ok', 'funds' => 'ok', 'deposit' => 'later', 'nda' => 'missing']);
+    expect(collect($checklist)->pluck('state', 'key')->all())->toMatchArray(['identity' => 'ok', 'screening' => 'ok', 'bank' => 'ok', 'funds' => 'ok', 'deposit' => 'missing', 'nda' => 'missing']);
     $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve'])->assertSessionHasErrors('decision'); // NDA not signed
 
     $this->actingAs($this->buyer)->post(route('dataroom.nda', $listing->ulid), ['typed_name' => 'Naledi Dube', 'agree' => '1'])->assertSessionHasNoErrors();
+    $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve'])->assertSessionHasErrors('decision'); // no deposit yet
+    paidDeposit($approval);
 
     $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve'])->assertSessionHasNoErrors();
     $approval->refresh();
@@ -100,6 +113,7 @@ it('approves bidders per listing only', function () {
     $b = auctionListing('homes', 900000);
 
     $this->actingAs($this->buyer)->post(route('auctions.apply', $a));
+    paidDeposit(BidderApproval::firstOrFail());
     $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', BidderApproval::firstOrFail()), ['decision' => 'approve']);
 
     $this->actingAs($this->buyer)->get("/auctions/homes/emalahleni/{$a->slug}")->assertInertia(fn (Assert $p) => $p->where('bidder.approval', 'approved')->where('bidder.bidderNumber', fn ($n) => strlen($n) === 4));
@@ -156,6 +170,7 @@ it('registers a company with its controllers encrypted and requires a verified e
 
     $this->actingAs($this->auctioneer)->post(route('admin.kyc.entity.decide', $entity), ['decision' => 'verify'])->assertForbidden();
     $this->actingAs($this->officer)->post(route('admin.kyc.entity.decide', $entity), ['decision' => 'verify'])->assertSessionHasNoErrors();
+    paidDeposit($approval);
     $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve'])->assertSessionHasNoErrors();
 });
 
@@ -163,6 +178,7 @@ it('withdraws an approval with a reason', function () {
     readyBuyer($this->buyer);
     $this->actingAs($this->buyer)->post(route('auctions.apply', auctionListing('homes', 900000)));
     $approval = BidderApproval::firstOrFail();
+    paidDeposit($approval);
     $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve']);
 
     $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'revoke'])->assertSessionHasErrors('reason');

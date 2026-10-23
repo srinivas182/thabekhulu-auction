@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateTime } from '@/lib/format';
+import { rand } from '@/lib/money';
 import {
     approve,
     returnMethod as returnRoute,
@@ -97,7 +98,7 @@ export default function QuoteWorkflowPanel({
                         <>
                             <p className="text-sm text-muted-foreground">
                                 {workflow.needsApproval
-                                    ? `Above R ${workflow.threshold.toLocaleString('en-ZA').replace(/,/g, ' ')}: an approver must check this quotation before it is sent.`
+                                    ? `Above ${rand(workflow.threshold)}: an approver must check this quotation before it is sent.`
                                     : 'An approver will check this quotation before it is sent.'}
                             </p>
                             <Button onClick={() => post(submit(ulid).url)}>

@@ -21,6 +21,8 @@ use App\Domains\Listings\Http\Controllers\ListingAssetController;
 use App\Domains\Listings\Http\Controllers\ListingController;
 use App\Domains\Listings\Http\Controllers\ListingWorkflowController;
 use App\Domains\Listings\Http\Controllers\Public\AuctionController;
+use App\Domains\Payments\Http\Controllers\BuyerDepositController;
+use App\Domains\Payments\Http\Controllers\FinanceController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Quotes\Http\Controllers\Public\AccountQuotesController;
@@ -72,6 +74,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardRedirectController::class)->name('dashboard');
     // Buyer area placeholder; Sprint 4 builds the buyer dashboard.
     Route::get('account', BuyerDashboardController::class)->name('account');
+    Route::get('deposits/{listing}', [BuyerDepositController::class, 'show'])->name('deposits.show');
+    Route::post('deposits/{listing}', [BuyerDepositController::class, 'open'])->middleware('throttle:10,1')->name('deposits.open');
+    Route::get('receipts/{number}', [BuyerDepositController::class, 'receipt'])->name('receipts.download');
     Route::get('data-room/{listing}', [DataRoomController::class, 'show'])->name('dataroom.show');
     Route::post('data-room/{listing}/nda', [DataRoomController::class, 'acceptNda'])->middleware('throttle:10,1')->name('dataroom.nda');
     Route::get('data-room/{listing}/documents/{document}', [DataRoomController::class, 'download'])->middleware('throttle:60,1')->name('dataroom.download');
@@ -218,7 +223,14 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('{quote}/template', [QuoteController::class, 'saveAsTemplate'])->middleware('can:quotes.settings')->name('template');
         });
 
+        Route::middleware('can:deposits.view')->prefix('finance')->name('finance.')->group(function () {
+            Route::get('/', [FinanceController::class, 'index'])->name('index');
+            Route::post('imports', [FinanceController::class, 'import'])->middleware('can:deposits.reconcile')->name('import');
+            Route::post('lines/{line}', [FinanceController::class, 'resolve'])->middleware('can:deposits.reconcile')->name('resolve');
+        });
         Route::middleware('can:settings.manage')->group(function () {
+            Route::get('finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');
+            Route::put('finance/settings', [FinanceController::class, 'updateSettings'])->name('finance.settings.update');
             Route::get('data-room/settings', [NdaSettingsController::class, 'edit'])->name('dataroom.settings');
             Route::put('data-room/settings', [NdaSettingsController::class, 'update'])->name('dataroom.settings.update');
         });

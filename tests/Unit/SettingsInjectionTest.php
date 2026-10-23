@@ -8,7 +8,8 @@
  */
 it('never injects settings into constructors', function () {
     $offenders = [];
-    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(app_path()));
+    $root = dirname(__DIR__, 2); // unit tests don't boot Laravel, so no app_path()
+    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root.'/app'));
 
     foreach ($files as $file) {
         if ($file->getExtension() !== 'php') {
@@ -16,7 +17,7 @@ it('never injects settings into constructors', function () {
         }
         $code = (string) file_get_contents($file->getPathname());
         if (preg_match('/function __construct\([^)]*\b\w+Settings \$/s', $code)) {
-            $offenders[] = str_replace(base_path().'/', '', $file->getPathname());
+            $offenders[] = str_replace($root.'/', '', $file->getPathname());
         }
     }
 
