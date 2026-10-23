@@ -31,7 +31,7 @@ use Inertia\Response;
  */
 class BuyerVerificationController extends Controller
 {
-    private const MARITAL = ['single' => 'Single', 'married_icop' => 'Married in community of property', 'married_ocop' => 'Married out of community of property', 'divorced' => 'Divorced', 'widowed' => 'Widowed'];
+    public const MARITAL = ['single' => 'Single', 'married_icop' => 'Married in community of property', 'married_ocop' => 'Married out of community of property', 'divorced' => 'Divorced', 'widowed' => 'Widowed'];
 
     private const DOC_RULE = ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'];
 
@@ -45,7 +45,7 @@ class BuyerVerificationController extends Controller
                 'status' => $v->status, 'statusLabel' => Verification::STATUSES[$v->status] ?? $v->status,
                 'documentType' => $v->document_type, 'idNumberLast4' => $v->id_number ? substr($v->id_number, -4) : null,
                 'passportCountry' => $v->passport_country, 'maritalStatus' => $v->marital_status,
-                'spouseName' => $v->spouse['name'] ?? null, 'documents' => $kinds, 'rejectionReason' => $v->rejection_reason,
+                'spouseName' => $v->spouse['name'] ?? null, 'documents' => $kinds, 'rejectionReason' => $v->rejection_reason, 'infoRequested' => $v->info_requested,
                 'verifiedAt' => $v->verified_at?->format('j F Y'), 'expiresAt' => $v->expires_at?->format('j F Y'),
             ],
             'maritalOptions' => self::MARITAL,

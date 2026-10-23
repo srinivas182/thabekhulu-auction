@@ -26,6 +26,9 @@ use Illuminate\Support\Str;
  * @property array<string, mixed>|null $spouse
  * @property array<string, array<string, mixed>>|null $checks
  * @property string|null $rejection_reason
+ * @property string|null $info_requested
+ * @property int|null $reviewed_by
+ * @property Carbon|null $reviewed_at
  * @property Carbon|null $submitted_at
  * @property Carbon|null $verified_at
  * @property Carbon|null $expires_at
@@ -50,6 +53,11 @@ class Verification extends Model
             'id_number' => 'encrypted', 'spouse' => 'encrypted:array', 'checks' => 'array', 'date_of_birth' => 'date',
             'submitted_at' => 'datetime', 'verified_at' => 'datetime', 'expires_at' => 'datetime', 'reviewed_at' => 'datetime',
         ];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'ulid';
     }
 
     public static function hashIdNumber(string $number): string

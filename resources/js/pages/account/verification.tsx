@@ -20,6 +20,7 @@ type V = {
     spouseName: string | null;
     documents: string[];
     rejectionReason: string | null;
+    infoRequested: string | null;
     verifiedAt: string | null;
     expiresAt: string | null;
 };
@@ -226,6 +227,18 @@ export default function Verification({
                             </section>
                         ) : (
                             <>
+                                {v?.infoRequested &&
+                                    v.status === 'in_progress' && (
+                                        <p
+                                            role="alert"
+                                            className="rounded-[10px] bg-brand-accent-soft px-4 py-3 text-brand-accent"
+                                        >
+                                            <strong>
+                                                We need a little more:
+                                            </strong>{' '}
+                                            {v.infoRequested}
+                                        </p>
+                                    )}
                                 {v?.status === 'rejected' && (
                                     <p
                                         role="alert"
