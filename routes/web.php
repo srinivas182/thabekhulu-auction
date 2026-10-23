@@ -25,6 +25,7 @@ use App\Domains\Payments\Http\Controllers\BuyerDepositController;
 use App\Domains\Payments\Http\Controllers\FinanceController;
 use App\Domains\Payments\Http\Controllers\PaymentProviderController;
 use App\Domains\Payments\Http\Controllers\PaymentWebhookController;
+use App\Domains\Payments\Http\Controllers\RefundController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Quotes\Http\Controllers\Public\AccountQuotesController;
@@ -233,6 +234,17 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::put('deposit-provider', [PaymentProviderController::class, 'depositProvider'])->name('deposit');
             Route::put('{provider}', [PaymentProviderController::class, 'update'])->name('update');
             Route::post('{provider}/test', [PaymentProviderController::class, 'test'])->name('test');
+        });
+        Route::middleware('can:refunds.view')->prefix('finance/refunds')->name('finance.refunds.')->group(function () {
+            Route::get('/', [RefundController::class, 'index'])->name('index');
+            Route::post('schedule', [RefundController::class, 'schedule'])->middleware('can:refunds.issue')->name('schedule');
+            Route::post('prepare', [RefundController::class, 'prepare'])->middleware('can:refunds.issue')->name('prepare');
+            Route::delete('{refund}', [RefundController::class, 'cancel'])->middleware('can:refunds.issue')->name('cancel');
+            Route::get('batches/{batch}', [RefundController::class, 'batch'])->name('batch');
+            Route::post('batches/{batch}/approve', [RefundController::class, 'approve'])->middleware('can:refunds.approve')->name('approve');
+            Route::post('batches/{batch}/paid', [RefundController::class, 'recordPayment'])->middleware('can:refunds.issue')->name('paid');
+            Route::get('batches/{batch}/bank-file', [RefundController::class, 'bankFile'])->middleware('can:refunds.issue')->name('bank-file');
+            Route::get('ledger.csv', [RefundController::class, 'ledgerExport'])->name('ledger');
         });
         Route::middleware('can:deposits.view')->prefix('finance')->name('finance.')->group(function () {
             Route::get('/', [FinanceController::class, 'index'])->name('index');

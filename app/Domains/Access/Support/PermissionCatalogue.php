@@ -35,7 +35,7 @@ final class PermissionCatalogue
         'buyers' => ['Buyers', ['view' => 'View buyers', 'manage' => 'Edit buyer accounts']],
         'sellers' => ['Sellers', ['view' => 'View sellers', 'manage' => 'Edit seller accounts']],
         'deposits' => ['Deposits', ['view' => 'View deposits', 'reconcile' => 'Reconcile manual payments']],
-        'refunds' => ['Refunds', ['view' => 'View refunds', 'issue' => 'Issue refunds']],
+        'refunds' => ['Refunds', ['view' => 'View refunds', 'issue' => 'Schedule refunds and prepare refund batches', 'approve' => 'Approve refund batches (never your own)']],
         'payouts' => ['Seller payouts', ['view' => 'View payouts', 'record' => 'Record payouts']],
         'invoices' => ['Invoices', ['view' => 'View invoices']],
         'reports' => ['Reports', ['view' => 'View reports', 'export' => 'Export reports']],
@@ -107,7 +107,7 @@ final class PermissionCatalogue
                 'dashboard.view', 'kyc.view', 'kyc.approve', 'kyc.reject', 'kyc.suspend', 'kyc.approve_company', 'buyers.view',
             ],
             SystemRole::Finance => [
-                'dashboard.view', 'deposits.view', 'deposits.reconcile', 'refunds.view', 'refunds.issue',
+                'dashboard.view', 'deposits.view', 'deposits.reconcile', 'refunds.view', 'refunds.issue', 'refunds.approve',
                 'payouts.view', 'payouts.record', 'invoices.view', 'reports.view', 'reports.export',
                 'buyers.view', 'sellers.view', 'quotes.create', 'quotes.approve', 'quotes.send', 'quotes.view_all',
             ],

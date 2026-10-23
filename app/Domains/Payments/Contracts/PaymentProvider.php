@@ -47,4 +47,12 @@ interface PaymentProvider
      * @param  array<string, string>  $credentials
      */
     public function confirm(Request $request, array $credentials, string $mode): ?ConfirmedPayment;
+
+    /**
+     * Refunds a deposit held by this provider in full. Returns the provider's
+     * reference for the refund; throws if the provider refuses.
+     *
+     * @param  array<string, string>  $credentials
+     */
+    public function refund(Deposit $deposit, array $credentials, string $mode, string $comment): string;
 }

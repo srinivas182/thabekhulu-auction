@@ -31,7 +31,7 @@
     <div class="muted">{{ $receipt->number }} · issued {{ $receipt->issued_at->setTimezone($tz)->format('j F Y, H:i') }} SAST</div>
 
     <table>
-        <tr><td class="label">Received from</td><td>{{ $receipt->deposit->user->name }}</td></tr>
+        <tr><td class="label">{{ $receipt->kind === 'refund' ? 'Refunded to' : 'Received from' }}</td><td>{{ $receipt->deposit->user->name }}</td></tr>
         <tr><td class="label">Property</td><td>{{ $receipt->deposit->listing->title }}</td></tr>
         <tr><td class="label">Deposit reference</td><td>{{ $receipt->deposit->reference }}</td></tr>
         <tr><td class="label">Deposit terms</td><td>{{ $receipt->deposit->listing->deposit_terms->value === 'security' ? 'Refundable security deposit, not part of the purchase price' : 'Counts toward the purchase price if you win' }}</td></tr>
@@ -39,7 +39,11 @@
     </table>
 
     <div class="note">
-        This deposit is held under the Rules of Auction for this property. If you do not win, it is refunded to your verified bank account in your own name. Keep this receipt for your records.
+        @if ($receipt->kind === 'refund')
+            This deposit has been refunded in full to your verified bank account in your own name (or through the escrow provider that held it). Keep this receipt for your records.
+        @else
+            This deposit is held under the Rules of Auction for this property. If you do not win, it is refunded to your verified bank account in your own name. Keep this receipt for your records.
+        @endif
     </div>
 </body>
 </html>
