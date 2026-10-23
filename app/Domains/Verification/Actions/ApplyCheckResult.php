@@ -21,8 +21,11 @@ class ApplyCheckResult
         $checks[$check] = ['provider' => $provider] + $result->toArray() + ['at' => now()->toIso8601String()];
         $verification->checks = $checks;
 
-        if (in_array($verification->status, ['verified', 'rejected'], true)) {
-            $verification->save(); // a staff decision stands; the result is kept for the record
+        // Only a decision made by a staff member stands; automatic outcomes are
+        // always recalculated from every check, so one passing check can never
+        // verify a buyer while another still needs review.
+        if ($verification->getAttribute('reviewed_by') !== null && in_array($verification->status, ['verified', 'rejected'], true)) {
+            $verification->save();
 
             return;
         }
