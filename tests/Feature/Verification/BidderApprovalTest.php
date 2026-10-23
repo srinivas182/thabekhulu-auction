@@ -83,7 +83,10 @@ it('blocks approval until every required item is complete, then assigns a bidder
     expect(ProofOfFunds::first()->valid_until->toDateString())->toBe(now()->addDays(90)->toDateString());
 
     $checklist = app(BidderEligibility::class)->checklist($approval->fresh());
-    expect(collect($checklist)->pluck('state', 'key')->all())->toMatchArray(['identity' => 'ok', 'screening' => 'ok', 'bank' => 'ok', 'funds' => 'ok', 'deposit' => 'later', 'nda' => 'later']);
+    expect(collect($checklist)->pluck('state', 'key')->all())->toMatchArray(['identity' => 'ok', 'screening' => 'ok', 'bank' => 'ok', 'funds' => 'ok', 'deposit' => 'later', 'nda' => 'missing']);
+    $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve'])->assertSessionHasErrors('decision'); // NDA not signed
+
+    $this->actingAs($this->buyer)->post(route('dataroom.nda', $listing->ulid), ['typed_name' => 'Naledi Dube', 'agree' => '1'])->assertSessionHasNoErrors();
 
     $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve'])->assertSessionHasNoErrors();
     $approval->refresh();

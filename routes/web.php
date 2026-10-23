@@ -9,6 +9,9 @@ use App\Domains\Cms\Http\Controllers\Admin\MediaContentController;
 use App\Domains\Cms\Http\Controllers\Public\HomeController;
 use App\Domains\Cms\Http\Controllers\Public\InsightsController;
 use App\Domains\Cms\Http\Controllers\Public\PageController;
+use App\Domains\DataRoom\Http\Controllers\BuyerDashboardController;
+use App\Domains\DataRoom\Http\Controllers\DataRoomController;
+use App\Domains\DataRoom\Http\Controllers\NdaSettingsController;
 use App\Domains\Identity\Http\Controllers\DashboardRedirectController;
 use App\Domains\Identity\Http\Controllers\InvitationController;
 use App\Domains\Identity\Http\Controllers\StaffController;
@@ -68,7 +71,10 @@ Route::middleware(['guest', 'throttle:invitations'])->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardRedirectController::class)->name('dashboard');
     // Buyer area placeholder; Sprint 4 builds the buyer dashboard.
-    Route::inertia('account', 'account/dashboard')->name('account');
+    Route::get('account', BuyerDashboardController::class)->name('account');
+    Route::get('data-room/{listing}', [DataRoomController::class, 'show'])->name('dataroom.show');
+    Route::post('data-room/{listing}/nda', [DataRoomController::class, 'acceptNda'])->middleware('throttle:10,1')->name('dataroom.nda');
+    Route::get('data-room/{listing}/documents/{document}', [DataRoomController::class, 'download'])->middleware('throttle:60,1')->name('dataroom.download');
     Route::get('account/quotes', AccountQuotesController::class)->name('account.quotes');
     Route::get('account/entities', [BiddingController::class, 'entities'])->name('account.entities');
     Route::post('account/entities', [BiddingController::class, 'storeEntity'])->middleware('throttle:10,1')->name('account.entities.store');
@@ -210,6 +216,11 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::delete('{quote}', [QuoteController::class, 'destroy'])->name('destroy');
             Route::get('{quote}/pdf', [QuoteController::class, 'pdf'])->name('pdf');
             Route::post('{quote}/template', [QuoteController::class, 'saveAsTemplate'])->middleware('can:quotes.settings')->name('template');
+        });
+
+        Route::middleware('can:settings.manage')->group(function () {
+            Route::get('data-room/settings', [NdaSettingsController::class, 'edit'])->name('dataroom.settings');
+            Route::put('data-room/settings', [NdaSettingsController::class, 'update'])->name('dataroom.settings.update');
         });
 
         Route::middleware('can:kyc.view')->prefix('kyc')->name('kyc.')->group(function () {

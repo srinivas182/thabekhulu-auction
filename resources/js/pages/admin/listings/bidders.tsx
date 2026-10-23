@@ -34,11 +34,21 @@ type Props = {
     };
     approvals: A[];
     can: { approve: boolean };
+    downloads: {
+        rows: {
+            name: string;
+            bidderNumber: string | null;
+            file: string;
+            ip: string | null;
+            at: string;
+        }[];
+        flagged: string[];
+    };
 };
 
 const opts = { preserveScroll: true };
 
-export default function Bidders({ listing, approvals, can }: Props) {
+export default function Bidders({ listing, approvals, can, downloads }: Props) {
     const errors = (usePage().props.errors ?? {}) as Record<string, string>;
     const ask = (q: string, f: (t: string) => void) => {
         const t = window.prompt(q);
@@ -235,6 +245,69 @@ export default function Bidders({ listing, approvals, can }: Props) {
                         </li>
                     )}
                 </ul>
+                <section
+                    aria-labelledby="dl-h"
+                    className="rounded-xl border border-border bg-card p-5"
+                >
+                    <h2 id="dl-h" className="font-semibold">
+                        Document downloads
+                    </h2>
+                    {downloads.flagged.length > 0 && (
+                        <p
+                            role="alert"
+                            className="mt-2 rounded-md border border-status-closing px-3 py-2 text-sm text-status-closing"
+                        >
+                            Unusually many downloads in the last 24 hours:{' '}
+                            {downloads.flagged.join(', ')}
+                        </p>
+                    )}
+                    {downloads.rows.length === 0 ? (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            No downloads yet.
+                        </p>
+                    ) : (
+                        <div className="mt-2 overflow-x-auto">
+                            <table className="w-full min-w-[640px] text-sm">
+                                <thead className="text-left text-muted-foreground">
+                                    <tr>
+                                        <th className="py-1.5 font-medium">
+                                            When
+                                        </th>
+                                        <th className="font-medium">Bidder</th>
+                                        <th className="font-medium">
+                                            Document
+                                        </th>
+                                        <th className="font-medium">
+                                            IP address
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {downloads.rows.map((r, i) => (
+                                        <tr
+                                            key={i}
+                                            className="border-t border-border"
+                                        >
+                                            <td className="py-1.5">
+                                                {formatDateTime(r.at)}
+                                            </td>
+                                            <td>
+                                                {r.name}
+                                                {r.bidderNumber
+                                                    ? ` (#${r.bidderNumber})`
+                                                    : ''}
+                                            </td>
+                                            <td>{r.file}</td>
+                                            <td className="font-mono text-xs">
+                                                {r.ip}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </section>
             </div>
         </>
     );

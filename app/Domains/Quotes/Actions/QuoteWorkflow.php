@@ -21,11 +21,9 @@ use Illuminate\Validation\ValidationException;
  */
 class QuoteWorkflow
 {
-    public function __construct(private readonly QuotationSettings $settings) {}
-
     public function needsApproval(Quote $quote): bool
     {
-        return $quote->once_total > $this->settings->approval_threshold * 100;
+        return $quote->once_total > app(QuotationSettings::class)->approval_threshold * 100;
     }
 
     public function submitForApproval(User $actor, Quote $quote): void
@@ -57,7 +55,7 @@ class QuoteWorkflow
         $this->expect($quote, ['draft', 'approved']);
         $this->ensureHasLines($quote);
         if ($quote->status === 'draft' && $this->needsApproval($quote)) {
-            throw ValidationException::withMessages(['quote' => __('This quotation is above R :amount and needs approval before it is sent.', ['amount' => number_format($this->settings->approval_threshold, 0, '.', ' ')])]);
+            throw ValidationException::withMessages(['quote' => __('This quotation is above R :amount and needs approval before it is sent.', ['amount' => number_format(app(QuotationSettings::class)->approval_threshold, 0, '.', ' ')])]);
         }
 
         $quote->load(['lines', 'milestones', 'payments', 'client']);
@@ -125,7 +123,7 @@ class QuoteWorkflow
             $next->fill([
                 'version' => (int) Quote::where('number', $quote->number)->max('version') + 1, 'status' => 'draft',
                 'created_by' => $actor->id, 'issue_date' => now()->toDateString(),
-                'valid_until' => now()->addDays($this->settings->validity_days)->toDateString(),
+                'valid_until' => now()->addDays(app(QuotationSettings::class)->validity_days)->toDateString(),
             ])->save();
 
             foreach (['lines', 'milestones', 'payments'] as $relation) {
@@ -160,7 +158,7 @@ class QuoteWorkflow
             $expired++;
         });
 
-        $remindOn = now((string) config('platform.display_timezone'))->addDays($this->settings->reminder_days)->toDateString();
+        $remindOn = now((string) config('platform.display_timezone'))->addDays(app(QuotationSettings::class)->reminder_days)->toDateString();
         Quote::with('client')->whereIn('status', ['sent', 'viewed'])->whereDate('valid_until', $remindOn)
             ->whereDoesntHave('events', fn ($e) => $e->where('type', 'reminded'))
             ->each(function (Quote $q) use (&$reminded): void {

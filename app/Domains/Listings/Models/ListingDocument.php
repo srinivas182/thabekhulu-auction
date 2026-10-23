@@ -28,4 +28,10 @@ class ListingDocument extends Model
     {
         return $this->belongsTo(DocumentType::class);
     }
+
+    /** @return BelongsTo<Listing, $this> */
+    public function listing(): BelongsTo
+    {
+        return $this->belongsTo(Listing::class);
+    }
 }

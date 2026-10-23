@@ -2,6 +2,7 @@
 
 namespace App\Domains\Verification\Support;
 
+use App\Domains\DataRoom\Settings\DataRoomSettings;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Http\Controllers\KycReviewController;
@@ -9,6 +10,8 @@ use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Screening;
 use App\Domains\Verification\Models\Verification;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The per-listing approval checklist (sprint 4 spec 6, decision K6).
@@ -17,13 +20,11 @@ use App\Domains\Verification\Models\Verification;
  */
 final class BidderEligibility
 {
-    public function __construct(private readonly AuctionSettings $settings) {}
-
     public function needsProofOfFunds(Listing $listing): bool
     {
         $listing->loadMissing('category');
 
-        return $listing->category->slug === 'mining' || (int) $listing->minimum_price >= $this->settings->proof_of_funds_threshold;
+        return $listing->category->slug === 'mining' || (int) $listing->minimum_price >= app(AuctionSettings::class)->proof_of_funds_threshold;
     }
 
     /**
@@ -60,7 +61,9 @@ final class BidderEligibility
 
         $items[] = ['key' => 'deposit', 'label' => 'Deposit received', 'state' => 'later', 'detail' => 'Checked automatically once online payments are live (Sprint 5)'];
         if ($approval->listing->category->documentTypes()->where('visibility', 'approved_nda')->exists()) {
-            $items[] = ['key' => 'nda', 'label' => 'Data-room NDA signed', 'state' => 'later', 'detail' => 'Added with the data room (Sprint 4c)'];
+            $version = app(DataRoomSettings::class)->nda_version;
+            $signed = DB::table('nda_acceptances')->where('listing_id', $approval->listing_id)->where('user_id', $userId)->where('nda_version', $version)->value('accepted_at');
+            $items[] = $this->item('nda', 'Data-room NDA signed', $signed !== null, $signed !== null ? 'Version '.$version.', '.Carbon::parse((string) $signed)->format('j M Y') : 'Not signed');
         }
 
         return $items;
