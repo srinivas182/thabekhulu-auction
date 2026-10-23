@@ -84,6 +84,18 @@ final class PaystackProvider implements PaymentProvider
         return $url;
     }
 
+    public function refund(Deposit $deposit, array $credentials, string $mode, string $comment): string
+    {
+        $r = Http::timeout(20)->withToken((string) ($credentials['secret_key'] ?? ''))->post(self::BASE.'/refund', [
+            'transaction' => (string) $deposit->provider_ref, 'merchant_note' => $comment,
+        ]);
+        if (! $r->successful() || ! $r->json('status')) {
+            throw new RuntimeException('Paystack did not accept the refund.');
+        }
+
+        return (string) $r->json('data.id', $deposit->provider_ref);
+    }
+
     public function confirm(Request $request, array $credentials, string $mode): ?ConfirmedPayment
     {
         $secret = (string) ($credentials['secret_key'] ?? '');

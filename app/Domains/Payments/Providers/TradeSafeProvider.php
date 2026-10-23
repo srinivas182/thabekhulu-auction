@@ -149,6 +149,21 @@ final class TradeSafeProvider implements PaymentProvider
         return new ConfirmedPayment((string) $tx['reference'], $cents, (string) $tx['id'], $tx['id'].':FUNDS_RECEIVED');
     }
 
+    /** transactionCancel refunds the buyer when a deposit was made (state REFUNDED). */
+    public function refund(Deposit $deposit, array $credentials, string $mode, string $comment): string
+    {
+        $state = data_get($this->graphql(
+            'mutation transactionCancel($id: ID!, $comment: String) { transactionCancel(id: $id, comment: $comment) { state } }',
+            ['id' => (string) $deposit->provider_ref, 'comment' => $comment], $credentials, $mode,
+        ), 'transactionCancel.state');
+
+        if ($state !== 'REFUNDED') {
+            throw new RuntimeException("TradeSafe did not refund the deposit (state: {$state}).");
+        }
+
+        return (string) $deposit->provider_ref;
+    }
+
     /**
      * @param  array<string, mixed>  $variables
      * @param  array<string, string>  $credentials

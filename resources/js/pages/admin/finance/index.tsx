@@ -9,6 +9,7 @@ import {
     resolve,
 } from '@/routes/admin/finance';
 import providers from '@/routes/admin/finance/providers';
+import refundRoutes from '@/routes/admin/finance/refunds';
 
 type Props = {
     tab: string;
@@ -95,6 +96,17 @@ export default function Finance({
                                 className="text-sm underline"
                             >
                                 Payment providers
+                            </Link>
+                        )}
+                        {(
+                            (usePage().props.auth as { permissions?: string[] })
+                                .permissions ?? []
+                        ).includes('refunds.view') && (
+                            <Link
+                                href={refundRoutes.index()}
+                                className="text-sm underline"
+                            >
+                                Refunds
                             </Link>
                         )}
                     </div>

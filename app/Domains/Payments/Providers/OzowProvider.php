@@ -61,6 +61,11 @@ final class OzowProvider implements PaymentProvider
         throw new RuntimeException('Ozow is not available yet.');
     }
 
+    public function refund(Deposit $deposit, array $credentials, string $mode, string $comment): string
+    {
+        throw new RuntimeException('Ozow is not available yet.');
+    }
+
     public function confirm(Request $request, array $credentials, string $mode): ?ConfirmedPayment
     {
         return null;
