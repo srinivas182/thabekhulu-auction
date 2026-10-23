@@ -28,6 +28,7 @@ use App\Domains\Quotes\Http\Controllers\QuoteSetupController;
 use App\Domains\Quotes\Http\Controllers\QuoteWorkflowController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
 use App\Domains\Theme\Http\Controllers\ThemeController;
+use App\Domains\Verification\Http\Controllers\BuyerVerificationController;
 use App\Domains\Verification\Http\Controllers\ProviderController;
 use App\Domains\Verification\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +66,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Buyer area placeholder; Sprint 4 builds the buyer dashboard.
     Route::inertia('account', 'account/dashboard')->name('account');
     Route::get('account/quotes', AccountQuotesController::class)->name('account.quotes');
+    Route::prefix('account/verification')->name('account.verification')->group(function () {
+        Route::get('/', [BuyerVerificationController::class, 'show']);
+        Route::post('identity', [BuyerVerificationController::class, 'identity'])->name('.identity');
+        Route::post('selfie', [BuyerVerificationController::class, 'selfie'])->name('.selfie');
+        Route::post('address', [BuyerVerificationController::class, 'address'])->name('.address');
+        Route::post('submit', [BuyerVerificationController::class, 'submit'])->middleware('throttle:5,1')->name('.submit');
+    });
 });
 
 /*
