@@ -28,7 +28,9 @@ use App\Domains\Quotes\Http\Controllers\QuoteSetupController;
 use App\Domains\Quotes\Http\Controllers\QuoteWorkflowController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
 use App\Domains\Theme\Http\Controllers\ThemeController;
+use App\Domains\Verification\Http\Controllers\BankAccountController;
 use App\Domains\Verification\Http\Controllers\BuyerVerificationController;
+use App\Domains\Verification\Http\Controllers\KycReviewController;
 use App\Domains\Verification\Http\Controllers\ProviderController;
 use App\Domains\Verification\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +68,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Buyer area placeholder; Sprint 4 builds the buyer dashboard.
     Route::inertia('account', 'account/dashboard')->name('account');
     Route::get('account/quotes', AccountQuotesController::class)->name('account.quotes');
+    Route::get('account/bank', [BankAccountController::class, 'show'])->name('account.bank');
+    Route::post('account/bank', [BankAccountController::class, 'store'])->middleware('throttle:10,1')->name('account.bank.store');
     Route::prefix('account/verification')->name('account.verification')->group(function () {
         Route::get('/', [BuyerVerificationController::class, 'show']);
         Route::post('identity', [BuyerVerificationController::class, 'identity'])->name('.identity');
@@ -198,6 +202,18 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::delete('{quote}', [QuoteController::class, 'destroy'])->name('destroy');
             Route::get('{quote}/pdf', [QuoteController::class, 'pdf'])->name('pdf');
             Route::post('{quote}/template', [QuoteController::class, 'saveAsTemplate'])->middleware('can:quotes.settings')->name('template');
+        });
+
+        Route::middleware('can:kyc.view')->prefix('kyc')->name('kyc.')->group(function () {
+            Route::get('/', [KycReviewController::class, 'index'])->name('index');
+            Route::get('{verification}', [KycReviewController::class, 'show'])->name('show');
+            Route::get('{verification}/documents/{document}', [KycReviewController::class, 'document'])->name('document');
+            Route::post('{verification}/approve', [KycReviewController::class, 'approve'])->middleware('can:kyc.approve')->name('approve');
+            Route::post('{verification}/reject', [KycReviewController::class, 'reject'])->middleware('can:kyc.reject')->name('reject');
+            Route::post('{verification}/request-info', [KycReviewController::class, 'requestInfo'])->middleware('can:kyc.reject')->name('request-info');
+            Route::post('{verification}/screen', [KycReviewController::class, 'screen'])->middleware('can:kyc.approve')->name('screen');
+            Route::get('banks/{bank}/proof', [KycReviewController::class, 'bankProof'])->name('bank-proof');
+            Route::post('banks/{bank}', [KycReviewController::class, 'decideBank'])->name('bank');
         });
 
         Route::middleware('can:verification.providers')->prefix('verification')->name('verification.')->group(function () {

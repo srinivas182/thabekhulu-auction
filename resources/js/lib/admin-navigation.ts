@@ -1,6 +1,7 @@
 import {
     History,
     House,
+    IdCard,
     Inbox,
     ReceiptText,
     ShieldCheck,
@@ -21,6 +22,7 @@ import { pages as cmsPages } from '@/routes/admin/cms';
 import { index as enquiries } from '@/routes/admin/enquiries';
 import { index as features } from '@/routes/admin/features';
 import { index as leads } from '@/routes/admin/leads';
+import { index as kyc } from '@/routes/admin/kyc';
 import { index as listings } from '@/routes/admin/listings';
 import { index as quotes } from '@/routes/admin/quotes';
 import { providers as verificationProviders } from '@/routes/admin/verification';
@@ -47,6 +49,12 @@ export const adminNavigation: NavItem[] = [
         href: listings(),
         icon: House,
         permission: 'listings.view',
+    },
+    {
+        title: 'KYC review',
+        href: kyc(),
+        icon: IdCard,
+        permission: 'kyc.view',
     },
     {
         title: 'Quotations',
