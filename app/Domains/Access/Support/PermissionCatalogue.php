@@ -29,7 +29,8 @@ final class PermissionCatalogue
         'listings' => ['Listings', ['view' => 'View listings', 'create' => 'Create listings', 'edit' => 'Edit listings', 'submit' => 'Submit listings for review', 'publish' => 'Approve and publish listings', 'delete' => 'Delete draft listings']],
         'auctions' => ['Auctions', ['monitor' => 'Monitor live auctions', 'pause' => 'Pause an auction', 'settle' => 'Confirm winners and handle defaults']],
         'verification' => ['Verification providers', ['providers' => 'Enable verification providers, enter their keys and route checks']],
-        'kyc' => ['KYC', ['view' => 'View verification submissions', 'approve' => 'Approve verification', 'reject' => 'Reject verification', 'suspend' => 'Suspend bidding']],
+        'kyc' => ['KYC', ['view' => 'View verification submissions', 'approve' => 'Approve verification', 'reject' => 'Reject verification', 'suspend' => 'Suspend bidding', 'approve_company' => 'Verify company and trust bidders']],
+        'bidders' => ['Bidders', ['approve' => 'Approve bidders for a listing']],
         'buyers' => ['Buyers', ['view' => 'View buyers', 'manage' => 'Edit buyer accounts']],
         'sellers' => ['Sellers', ['view' => 'View sellers', 'manage' => 'Edit seller accounts']],
         'deposits' => ['Deposits', ['view' => 'View deposits', 'reconcile' => 'Reconcile manual payments']],
@@ -95,14 +96,14 @@ final class PermissionCatalogue
             SystemRole::Auctioneer => [
                 'dashboard.view', 'listings.view', 'listings.publish', 'compliance.signoff', 'auctions.monitor', 'auctions.pause',
                 'auctions.settle', 'buyers.view', 'deposits.view', 'reports.view', 'premium.manage', 'leads.view',
-                'quotes.create', 'quotes.send',
+                'quotes.create', 'quotes.send', 'bidders.approve', 'kyc.view',
             ],
             SystemRole::ListingsManager => [
                 'dashboard.view', 'listings.view', 'listings.create', 'listings.edit', 'listings.submit',
                 'listings.delete', 'leads.view', 'leads.manage', 'enquiries.view', 'quotes.create', 'quotes.send',
             ],
             SystemRole::KycOfficer => [
-                'dashboard.view', 'kyc.view', 'kyc.approve', 'kyc.reject', 'kyc.suspend', 'buyers.view',
+                'dashboard.view', 'kyc.view', 'kyc.approve', 'kyc.reject', 'kyc.suspend', 'kyc.approve_company', 'buyers.view',
             ],
             SystemRole::Finance => [
                 'dashboard.view', 'deposits.view', 'deposits.reconcile', 'refunds.view', 'refunds.issue',

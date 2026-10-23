@@ -1,12 +1,13 @@
 import { Head, Link } from '@inertiajs/react';
 import { FileText, Lock } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
+import type { BidderState } from '@/components/auctions/bidder-panel';
+import BidderPanel from '@/components/auctions/bidder-panel';
 import Countdown from '@/components/auctions/countdown';
 import StatusBadge from '@/components/auctions/status-badge';
 import type { Fact, ListingCardData } from '@/components/auctions/types';
 import { useMounted } from '@/hooks/use-mounted';
 import { rand } from '@/lib/money';
-import { register } from '@/routes';
 
 const ListingMap = lazy(() => import('@/components/auctions/listing-map'));
 
@@ -25,6 +26,7 @@ type Detail = ListingCardData & {
 };
 type Props = {
     listing: Detail;
+    bidder: BidderState;
     office: { phone: string; email: string };
     seo: {
         title: string;
@@ -34,7 +36,12 @@ type Props = {
     };
 };
 
-export default function AuctionShow({ listing: l, office, seo }: Props) {
+export default function AuctionShow({
+    bidder,
+    listing: l,
+    office,
+    seo,
+}: Props) {
     const [photo, setPhoto] = useState(0);
     const mounted = useMounted();
     const place = [l.suburb, l.city, l.province].filter(Boolean).join(', ');
@@ -392,16 +399,11 @@ export default function AuctionShow({ listing: l, office, seo }: Props) {
                             ? 'Your deposit is a refundable security deposit, held separately and refunded in full if you don’t win. It is not part of the purchase price.'
                             : 'Your deposit is refunded if you don’t win. If you win, it counts toward the purchase price.'}
                     </p>
-                    <Link
-                        href={register()}
-                        className="flex min-h-[52px] items-center justify-center rounded-[10px] bg-primary px-5 text-[17px] font-semibold text-primary-foreground"
-                    >
-                        Register to bid
-                    </Link>
-                    <p className="text-[13px] leading-relaxed text-muted-foreground">
-                        Online bidding opens with buyer verification. Register
-                        now to be ready.
-                    </p>
+                    <BidderPanel
+                        state={bidder}
+                        ulid={l.ulid}
+                        minimum={l.minimum}
+                    />
                 </aside>
             </div>
         </>

@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRight,
@@ -27,6 +27,7 @@ import {
     submit,
     update,
     withdraw,
+    bidders,
 } from '@/routes/admin/listings';
 import compliance from '@/routes/admin/listings/compliance';
 import documentsRoutes from '@/routes/admin/listings/documents';
@@ -496,6 +497,18 @@ export default function ListingEdit(props: Props) {
                                 Reopen as draft
                             </Button>
                         )}
+                        {(
+                            (usePage().props.auth as { permissions?: string[] })
+                                .permissions ?? []
+                        ).includes('bidders.approve') &&
+                            ['scheduled', 'live'].includes(l.status) && (
+                                <Link
+                                    href={bidders(l.ulid)}
+                                    className="inline-flex h-9 items-center rounded-md border border-input px-3 text-sm font-medium"
+                                >
+                                    Bidders
+                                </Link>
+                            )}
                         {can.delete && (
                             <Button
                                 variant="ghost"

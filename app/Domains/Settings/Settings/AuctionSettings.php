@@ -33,6 +33,9 @@ class AuctionSettings extends Settings
 
     public int $new_badge_days;
 
+    /** Rand: proof of funds needed at or above this minimum price (and for all Mining listings). */
+    public int $proof_of_funds_threshold;
+
     public static function group(): string
     {
         return 'auction';
