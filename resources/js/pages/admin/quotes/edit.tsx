@@ -3,6 +3,8 @@ import { ArrowDown, ArrowUp, FileDown, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import QuotesNav from '@/components/quotes-nav';
+import type { Workflow } from '@/components/quote-workflow';
+import QuoteWorkflowPanel from '@/components/quote-workflow';
 import RichTextEditor from '@/components/rich-text-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,7 +74,8 @@ type Props = {
     clients: { id: number; name: string; company: string | null }[];
     catalogue: CatalogueItem[];
     listings: { id: number; title: string }[];
-    can: { templates: boolean };
+    can: { templates: boolean; approve: boolean; send: boolean };
+    workflow: Workflow;
 };
 
 const select =
@@ -116,6 +119,7 @@ export default function QuoteEdit({
     catalogue,
     listings,
     can,
+    workflow,
 }: Props) {
     const ro = !quote.editable;
     const [f, setF] = useState({
@@ -242,6 +246,12 @@ export default function QuoteEdit({
                     </div>
                 </div>
                 <QuotesNav current="Quotations" />
+                <QuoteWorkflowPanel
+                    ulid={quote.ulid}
+                    status={quote.status}
+                    workflow={workflow}
+                    can={can}
+                />
                 {errors.quote && (
                     <p
                         role="alert"

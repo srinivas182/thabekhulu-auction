@@ -2,7 +2,9 @@
 
 namespace App\Domains\Quotes\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -19,6 +21,12 @@ class QuoteEvent extends Model
     public const UPDATED_AT = null;
 
     protected $guarded = ['id'];
+
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
 
     protected function casts(): array
     {

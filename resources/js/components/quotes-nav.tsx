@@ -6,15 +6,20 @@ import {
     index,
     settings,
     templates,
+    reports,
 } from '@/routes/admin/quotes';
 
 export default function QuotesNav({ current }: { current: string }) {
     const perms =
         (usePage().props.auth as { permissions?: string[] }).permissions ?? [];
     const canSetup = perms.includes('quotes.settings');
+    const canReports = perms.includes('quotes.view_all');
     const items: [string, ReturnType<typeof index>][] = [
         ['Quotations', index()],
         ['Clients', clients()],
+        ...(canReports
+            ? ([['Reports', reports()]] as [string, ReturnType<typeof index>][])
+            : []),
         ...(canSetup
             ? ([
                   ['Catalogue', catalogue()],

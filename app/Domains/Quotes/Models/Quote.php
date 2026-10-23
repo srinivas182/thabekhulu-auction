@@ -39,6 +39,9 @@ use Illuminate\Support\Str;
  * @property string|null $fingerprint
  * @property string|null $accepted_name
  * @property Carbon|null $accepted_at
+ * @property string|null $accepted_ip
+ * @property string|null $accepted_agent
+ * @property string|null $decline_reason
  * @property Carbon|null $sent_at
  * @property Carbon|null $updated_at
  * @property-read Client $client

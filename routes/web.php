@@ -20,8 +20,12 @@ use App\Domains\Listings\Http\Controllers\ListingWorkflowController;
 use App\Domains\Listings\Http\Controllers\Public\AuctionController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
+use App\Domains\Quotes\Http\Controllers\Public\AccountQuotesController;
+use App\Domains\Quotes\Http\Controllers\Public\ClientQuoteController;
 use App\Domains\Quotes\Http\Controllers\QuoteController;
+use App\Domains\Quotes\Http\Controllers\QuoteReportController;
 use App\Domains\Quotes\Http\Controllers\QuoteSetupController;
+use App\Domains\Quotes\Http\Controllers\QuoteWorkflowController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
 use App\Domains\Theme\Http\Controllers\ThemeController;
 use Illuminate\Support\Facades\Route;
@@ -57,6 +61,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', DashboardRedirectController::class)->name('dashboard');
     // Buyer area placeholder; Sprint 4 builds the buyer dashboard.
     Route::inertia('account', 'account/dashboard')->name('account');
+    Route::get('account/quotes', AccountQuotesController::class)->name('account.quotes');
+});
+
+/*
+| Quotations for clients: signed, expiring links (no account needed)
+*/
+Route::middleware('signed')->prefix('q')->name('quotes.public.')->group(function () {
+    Route::get('{quote}', [ClientQuoteController::class, 'show'])->name('show');
+    Route::get('{quote}/pdf', [ClientQuoteController::class, 'pdf'])->name('pdf');
+    Route::post('{quote}/accept', [ClientQuoteController::class, 'accept'])->middleware('throttle:10,1')->name('accept');
+    Route::post('{quote}/decline', [ClientQuoteController::class, 'decline'])->middleware('throttle:10,1')->name('decline');
 });
 
 /*
@@ -158,6 +173,15 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
                 Route::get('settings', [QuoteSetupController::class, 'settings'])->name('settings');
                 Route::put('settings', [QuoteSetupController::class, 'updateSettings'])->name('settings.update');
             });
+            Route::middleware('can:quotes.view_all')->group(function () {
+                Route::get('reports', [QuoteReportController::class, 'index'])->name('reports');
+                Route::get('reports/export', [QuoteReportController::class, 'export'])->name('reports.export');
+            });
+            Route::post('{quote}/submit', [QuoteWorkflowController::class, 'submit'])->name('submit');
+            Route::post('{quote}/approve', [QuoteWorkflowController::class, 'approve'])->middleware('can:quotes.approve')->name('approve');
+            Route::post('{quote}/return', [QuoteWorkflowController::class, 'returnToDraft'])->middleware('can:quotes.approve')->name('return');
+            Route::post('{quote}/send', [QuoteWorkflowController::class, 'send'])->middleware('can:quotes.send')->name('send');
+            Route::post('{quote}/version', [QuoteWorkflowController::class, 'newVersion'])->name('version');
             Route::get('{quote}', [QuoteController::class, 'edit'])->name('edit');
             Route::put('{quote}', [QuoteController::class, 'update'])->name('update');
             Route::delete('{quote}', [QuoteController::class, 'destroy'])->name('destroy');
