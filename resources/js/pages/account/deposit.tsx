@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { randCents as rand } from '@/lib/cents';
 import { rand as randWhole } from '@/lib/money';
 import { cn } from '@/lib/utils';
-import { open } from '@/routes/deposits';
+import { usePage } from '@inertiajs/react';
+import { open, pay } from '@/routes/deposits';
 
 type Props = {
     listing: {
@@ -25,6 +26,8 @@ type Props = {
         receipts: { number: string; amount: number; url: string }[];
     } | null;
     bank: { bank: string; name: string; number: string; branch: string } | null;
+    escrow: { key: string; name: string } | null;
+    returned: string | null;
 };
 
 function Copyable({
@@ -77,7 +80,11 @@ export default function DepositPage({
     gateOpen,
     deposit,
     bank,
+    escrow,
+    returned,
 }: Props) {
+    const payError = ((usePage().props.errors ?? {}) as Record<string, string>)
+        .pay;
     const received =
         deposit &&
         ['received', 'refund_scheduled', 'refunded', 'applied'].includes(
@@ -157,6 +164,51 @@ export default function DepositPage({
                         <h2 id="pay-h" className="font-display text-2xl">
                             Pay by bank transfer (EFT)
                         </h2>
+                        {returned === 'success' && (
+                            <p
+                                role="status"
+                                className="rounded-[10px] bg-brand-accent-soft p-3 text-brand-accent"
+                            >
+                                Thank you. We’re confirming your payment with{' '}
+                                {escrow?.name ?? 'the provider'} and will email
+                                your receipt.
+                            </p>
+                        )}
+                        {escrow && (
+                            <div className="grid gap-2 rounded-[14px] border border-border p-4">
+                                <p className="font-semibold">
+                                    Pay securely with {escrow.name}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    Your deposit is held in escrow by an
+                                    independent party until it is refunded or
+                                    applied. EFT and instant EFT are available
+                                    on the next page.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        router.post(
+                                            pay(listing.ulid).url,
+                                            {},
+                                            { preserveScroll: true },
+                                        )
+                                    }
+                                    className="min-h-12 w-fit rounded-[10px] bg-primary px-6 font-semibold text-primary-foreground"
+                                >
+                                    Pay with {escrow.name}
+                                </button>
+                                {payError && (
+                                    <p className="text-sm text-destructive">
+                                        {payError}
+                                    </p>
+                                )}
+                                <p className="pt-1 text-sm text-muted-foreground">
+                                    Or pay by EFT directly into our trust
+                                    account:
+                                </p>
+                            </div>
+                        )}
                         {deposit.status === 'part_paid' && (
                             <p className="rounded-[10px] bg-brand-accent-soft p-3 text-brand-accent">
                                 We’ve received {rand(deposit.paid)}. Please pay

@@ -8,6 +8,7 @@ use App\Domains\Payments\Actions\DepositService;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Models\Receipt;
 use App\Domains\Payments\Settings\PaymentSettings;
+use App\Domains\Payments\Support\PaymentRegistry;
 use App\Domains\Payments\Support\ReceiptPdf;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Http\Controllers\Controller;
@@ -37,6 +38,8 @@ class BuyerDepositController extends Controller
                 'amount' => $deposit->amount, 'paid' => $deposit->balance(),
                 'receipts' => $deposit->receipts->map(fn (Receipt $r) => ['number' => $r->number, 'amount' => $r->amount, 'url' => route('receipts.download', $r->number)]),
             ],
+            'escrow' => ($p = app(PaymentRegistry::class)->forDeposits()) ? ['key' => $p->key(), 'name' => $p->name()] : null,
+            'returned' => request()->query('status'),
             'bank' => $settings->trustAccountReady() ? [
                 'bank' => $settings->trust_bank, 'name' => $settings->trust_account_name, 'number' => $settings->trust_account_number, 'branch' => $settings->trust_branch_code,
             ] : null,
@@ -50,6 +53,27 @@ class BuyerDepositController extends Controller
         $deposits->open($approval, $user);
 
         return back();
+    }
+
+    /** Sends the buyer to the escrow provider's payment page (link valid briefly, never stored). */
+    public function pay(Listing $listing, #[CurrentUser] User $user, PaymentRegistry $registry): \Symfony\Component\HttpFoundation\Response
+    {
+        abort_unless($user->isBuyer(), 403);
+        $provider = $registry->forDeposits() ?? abort(404);
+        $approval = BidderApproval::where('listing_id', $listing->id)->where('user_id', $user->id)->firstOrFail();
+        $deposit = Deposit::where('bidder_approval_id', $approval->id)->firstOrFail();
+        abort_if(in_array($deposit->status, ['received', 'refund_scheduled', 'refunded', 'applied'], true), 422);
+
+        try {
+            $url = $provider->checkoutUrl($deposit, $registry->credentials($provider->key()), $registry->setting($provider->key())->mode, route('deposits.show', $listing->ulid));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['pay' => __(':name is unavailable right now. You can still pay by EFT using the details below.', ['name' => $provider->name()])]);
+        }
+        $deposit->save();
+
+        return Inertia::location($url);
     }
 
     public function receipt(string $number, #[CurrentUser] User $user): HttpResponse

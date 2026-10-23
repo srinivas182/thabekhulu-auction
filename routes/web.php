@@ -23,6 +23,8 @@ use App\Domains\Listings\Http\Controllers\ListingWorkflowController;
 use App\Domains\Listings\Http\Controllers\Public\AuctionController;
 use App\Domains\Payments\Http\Controllers\BuyerDepositController;
 use App\Domains\Payments\Http\Controllers\FinanceController;
+use App\Domains\Payments\Http\Controllers\PaymentProviderController;
+use App\Domains\Payments\Http\Controllers\PaymentWebhookController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Quotes\Http\Controllers\Public\AccountQuotesController;
@@ -47,6 +49,8 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/', HomeController::class)->name('home');
 Route::get('sitemap.xml', [AuctionController::class, 'sitemap'])->name('sitemap');
+Route::post('webhooks/payments/tradesafe/{secret}', [PaymentWebhookController::class, 'tradesafe'])->middleware('throttle:120,1')->name('webhooks.payments.tradesafe');
+Route::post('webhooks/payments/{provider}', PaymentWebhookController::class)->middleware('throttle:120,1')->name('webhooks.payments');
 Route::post('webhooks/verification/{provider}', WebhookController::class)->middleware('throttle:120,1')->name('webhooks.verification');
 Route::get('insights', [InsightsController::class, 'index'])->name('insights.index');
 Route::get('insights/{slug}', [InsightsController::class, 'show'])->name('insights.show');
@@ -75,6 +79,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Buyer area placeholder; Sprint 4 builds the buyer dashboard.
     Route::get('account', BuyerDashboardController::class)->name('account');
     Route::get('deposits/{listing}', [BuyerDepositController::class, 'show'])->name('deposits.show');
+    Route::post('deposits/{listing}/pay', [BuyerDepositController::class, 'pay'])->middleware('throttle:10,1')->name('deposits.pay');
     Route::post('deposits/{listing}', [BuyerDepositController::class, 'open'])->middleware('throttle:10,1')->name('deposits.open');
     Route::get('receipts/{number}', [BuyerDepositController::class, 'receipt'])->name('receipts.download');
     Route::get('data-room/{listing}', [DataRoomController::class, 'show'])->name('dataroom.show');
@@ -223,6 +228,12 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('{quote}/template', [QuoteController::class, 'saveAsTemplate'])->middleware('can:quotes.settings')->name('template');
         });
 
+        Route::middleware('can:payments.providers')->prefix('finance/providers')->name('finance.providers.')->group(function () {
+            Route::get('/', [PaymentProviderController::class, 'index'])->name('index');
+            Route::put('deposit-provider', [PaymentProviderController::class, 'depositProvider'])->name('deposit');
+            Route::put('{provider}', [PaymentProviderController::class, 'update'])->name('update');
+            Route::post('{provider}/test', [PaymentProviderController::class, 'test'])->name('test');
+        });
         Route::middleware('can:deposits.view')->prefix('finance')->name('finance.')->group(function () {
             Route::get('/', [FinanceController::class, 'index'])->name('index');
             Route::post('imports', [FinanceController::class, 'import'])->middleware('can:deposits.reconcile')->name('import');
