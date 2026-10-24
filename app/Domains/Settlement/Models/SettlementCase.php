@@ -30,6 +30,11 @@ class SettlementCase extends Model
 {
     public const STEPS = ['agreement_signed' => 'Sale agreement signed', 'balance_paid' => 'Balance paid or guarantees delivered', 'attorney_appointed' => 'Transfer attorney appointed'];
 
+    /** Transfer stages after completion (S8); Mining adds section 11 consent before registration. */
+    public const TRANSFER_STAGES = ['lodged' => 'Lodged at the Deeds Office', 'registered' => 'Registered in the buyer’s name'];
+
+    public const MINING_STAGES = ['s11_applied' => 'Section 11 consent applied for', 's11_granted' => 'Section 11 consent granted', 'registered' => 'Transfer registered'];
+
     public const STATUSES = ['offered' => 'Offered to runner-up', 'open' => 'In progress', 'completed' => 'Completed', 'defaulted' => 'Defaulted', 'declined' => 'Offer declined', 'expired' => 'Offer expired'];
 
     protected $guarded = ['id', 'ulid'];

@@ -14,6 +14,7 @@ type C = {
     balanceDue: string | null;
     offerExpires: string | null;
     steps: { label: string; done: boolean }[];
+    transfer: { key: string; label: string; doneOn: string | null }[];
 };
 
 export default function Purchases({ cases }: { cases: C[] }) {
@@ -94,6 +95,35 @@ export default function Purchases({ cases }: { cases: C[] }) {
                                     </div>
                                 </div>
                             )}
+                            {c.status === 'completed' &&
+                                c.transfer.length > 0 && (
+                                    <ul
+                                        aria-label="Transfer progress"
+                                        className="grid gap-1.5 text-sm"
+                                    >
+                                        {c.transfer.map((t) => (
+                                            <li
+                                                key={t.key}
+                                                className="flex items-center gap-2"
+                                            >
+                                                {t.doneOn ? (
+                                                    <Check
+                                                        className="size-4 text-status-live"
+                                                        aria-hidden="true"
+                                                    />
+                                                ) : (
+                                                    <span className="inline-block size-4 rounded-full border border-input" />
+                                                )}
+                                                {t.label}
+                                                {t.doneOn && (
+                                                    <span className="text-muted-foreground">
+                                                        · {t.doneOn}
+                                                    </span>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
                             {c.status === 'open' && (
                                 <ul className="grid gap-1.5 text-sm">
                                     {c.steps.map((s) => (
