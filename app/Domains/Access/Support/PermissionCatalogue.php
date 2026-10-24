@@ -37,7 +37,7 @@ final class PermissionCatalogue
         'deposits' => ['Deposits', ['view' => 'View deposits', 'reconcile' => 'Reconcile manual payments']],
         'refunds' => ['Refunds', ['view' => 'View refunds', 'issue' => 'Schedule refunds and prepare refund batches', 'approve' => 'Approve refund batches (never your own)']],
         'settlement' => ['Settlement', ['manage' => 'Record settlement steps and completion', 'confirm_default' => 'Confirm a default and its forfeiture (second person)']],
-        'payouts' => ['Seller payouts', ['view' => 'View payouts', 'record' => 'Record payouts']],
+        'payouts' => ['Seller payouts', ['view' => 'View payouts', 'record' => 'Prepare payouts, issue invoices and record payment', 'approve' => 'Approve payouts (never your own)']],
         'invoices' => ['Invoices', ['view' => 'View invoices']],
         'reports' => ['Reports', ['view' => 'View reports', 'export' => 'Export reports']],
         'cms' => ['Website content', ['manage' => 'Manage pages, blog, gallery and menus']],
@@ -109,7 +109,7 @@ final class PermissionCatalogue
             ],
             SystemRole::Finance => [
                 'dashboard.view', 'deposits.view', 'deposits.reconcile', 'refunds.view', 'refunds.issue', 'refunds.approve', 'settlement.confirm_default',
-                'payouts.view', 'payouts.record', 'invoices.view', 'reports.view', 'reports.export',
+                'payouts.view', 'payouts.record', 'payouts.approve', 'invoices.view', 'reports.view', 'reports.export',
                 'buyers.view', 'sellers.view', 'quotes.create', 'quotes.approve', 'quotes.send', 'quotes.view_all',
             ],
             SystemRole::ContentEditor => [

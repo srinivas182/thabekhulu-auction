@@ -13,6 +13,12 @@ import {
     step,
 } from '@/routes/admin/settlement';
 import defaultRoutes from '@/routes/admin/settlement/default';
+import {
+    invoice as invoiceRoute,
+    payout as payoutRoute,
+    transfer as transferRoute,
+} from '@/routes/admin/settlement';
+import payoutRoutes from '@/routes/admin/settlement/payout';
 
 type Props = {
     case: {
@@ -51,7 +57,37 @@ type Props = {
         declaredByMe: boolean;
         confirmedBy: string | null;
     } | null;
-    can: { manage: boolean; declare: boolean; confirm: boolean };
+    can: {
+        manage: boolean;
+        declare: boolean;
+        confirm: boolean;
+        payout: boolean;
+        approvePayout: boolean;
+    };
+    money: {
+        figures: {
+            deal: string;
+            price: number;
+            fee: number;
+            vat: number;
+            amount: number;
+            vatRate: number;
+        };
+        payout: {
+            id: number;
+            status: string;
+            payee: string;
+            reference: string | null;
+            amount: number;
+            preparedByMe: boolean;
+            preparedBy: string | null;
+            approvedBy: string | null;
+        } | null;
+        invoice: { number: string; total: number; url: string } | null;
+    } | null;
+    transfer: {
+        stages: { key: string; label: string; doneOn: string | null }[];
+    } | null;
 };
 
 export default function SettlementShow({
@@ -59,6 +95,8 @@ export default function SettlementShow({
     steps,
     default: d,
     can,
+    money,
+    transfer,
 }: Props) {
     const errors = (usePage().props.errors ?? {}) as Record<string, string>;
     const [cost, setCost] = useState('');
@@ -227,7 +265,7 @@ export default function SettlementShow({
                     </section>
                 </div>
 
-                <aside className="grid content-start gap-5">
+                <aside className="grid min-w-0 content-start gap-5 [&_*]:min-w-0">
                     <section
                         aria-labelledby="dep-h"
                         className="rounded-xl border border-border bg-card p-5 text-sm"
@@ -388,6 +426,330 @@ export default function SettlementShow({
                             </p>
                         )}
                     </section>
+                    {money && (
+                        <section
+                            aria-labelledby="pay-h"
+                            className="grid gap-3 rounded-xl border border-border bg-card p-5 text-sm"
+                        >
+                            <h2 id="pay-h" className="font-semibold">
+                                Seller payout
+                            </h2>
+                            <dl className="grid gap-1">
+                                <div className="flex justify-between">
+                                    <dt className="text-muted-foreground">
+                                        Price
+                                    </dt>
+                                    <dd className="tabular">
+                                        {randCents(money.figures.price)}
+                                    </dd>
+                                </div>
+                                {money.figures.deal === 'commission' ? (
+                                    <>
+                                        <div className="flex justify-between">
+                                            <dt className="text-muted-foreground">
+                                                Platform fee
+                                            </dt>
+                                            <dd className="tabular">
+                                                − {randCents(money.figures.fee)}
+                                            </dd>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <dt className="text-muted-foreground">
+                                                VAT on the fee (
+                                                {money.figures.vatRate / 100}%)
+                                            </dt>
+                                            <dd className="tabular">
+                                                − {randCents(money.figures.vat)}
+                                            </dd>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <p className="text-muted-foreground">
+                                        Thabekhulu-renovated: the seller
+                                        receives the fixed seller price.
+                                    </p>
+                                )}
+                                <div className="flex justify-between border-t border-border pt-1 font-semibold">
+                                    <dt>To the seller</dt>
+                                    <dd className="tabular">
+                                        {randCents(money.figures.amount)}
+                                    </dd>
+                                </div>
+                            </dl>
+                            {!money.payout && can.payout && (
+                                <Form
+                                    action={payoutRoute(c.ulid).url}
+                                    method="post"
+                                    options={opts}
+                                    className="grid gap-2 border-t border-border pt-3"
+                                >
+                                    {({ processing, errors: e }) => (
+                                        <>
+                                            <Label htmlFor="payee">
+                                                Payee (seller)
+                                            </Label>
+                                            <Input id="payee" name="payee" />
+                                            {e.payee && (
+                                                <p className="text-destructive">
+                                                    {e.payee}
+                                                </p>
+                                            )}
+                                            <Label htmlFor="pref">
+                                                Bank and account (as given to
+                                                the bank)
+                                            </Label>
+                                            <Input
+                                                id="pref"
+                                                name="payee_reference"
+                                            />
+                                            <Button
+                                                size="sm"
+                                                disabled={processing}
+                                                className="w-fit"
+                                            >
+                                                Prepare payout
+                                            </Button>
+                                        </>
+                                    )}
+                                </Form>
+                            )}
+                            {money.payout && (
+                                <div className="grid gap-2 border-t border-border pt-3">
+                                    <p>
+                                        <strong>
+                                            {money.payout.status === 'paid'
+                                                ? 'Paid'
+                                                : money.payout.status ===
+                                                    'approved'
+                                                  ? 'Approved: pay at the bank'
+                                                  : 'Waiting for approval'}
+                                        </strong>{' '}
+                                        · {money.payout.payee} · prepared by{' '}
+                                        {money.payout.preparedBy}
+                                        {money.payout.approvedBy
+                                            ? ` · approved by ${money.payout.approvedBy}`
+                                            : ''}
+                                    </p>
+                                    {money.payout.status === 'prepared' &&
+                                        can.approvePayout &&
+                                        (money.payout.preparedByMe ? (
+                                            <p className="rounded-md bg-muted px-3 py-2">
+                                                You prepared this payout;
+                                                another finance user must
+                                                approve it.
+                                            </p>
+                                        ) : (
+                                            <Button
+                                                size="sm"
+                                                className="w-fit"
+                                                onClick={() =>
+                                                    window.confirm(
+                                                        `Approve the payout of ${randCents(money.payout!.amount)}?`,
+                                                    ) &&
+                                                    router.post(
+                                                        payoutRoutes.approve(
+                                                            money.payout!.id,
+                                                        ).url,
+                                                        {},
+                                                        opts,
+                                                    )
+                                                }
+                                            >
+                                                Approve payout
+                                            </Button>
+                                        ))}
+                                    {money.payout.status === 'approved' &&
+                                        can.payout && (
+                                            <Form
+                                                action={
+                                                    payoutRoutes.paid(
+                                                        money.payout.id,
+                                                    ).url
+                                                }
+                                                method="post"
+                                                options={opts}
+                                                className="flex flex-wrap items-center gap-2"
+                                            >
+                                                {({
+                                                    processing,
+                                                    errors: e,
+                                                }) => (
+                                                    <>
+                                                        <input
+                                                            type="file"
+                                                            name="proof"
+                                                            accept=".pdf,.jpg,.jpeg,.png"
+                                                            aria-label="Bank payment confirmation"
+                                                            className="text-xs"
+                                                        />
+                                                        <Button
+                                                            size="sm"
+                                                            disabled={
+                                                                processing
+                                                            }
+                                                        >
+                                                            Record payment
+                                                        </Button>
+                                                        {e.proof && (
+                                                            <span className="text-destructive">
+                                                                {e.proof}
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </Form>
+                                        )}
+                                </div>
+                            )}
+                            {money.figures.deal === 'commission' &&
+                                (money.invoice ? (
+                                    <p className="border-t border-border pt-3">
+                                        Tax invoice{' '}
+                                        <a
+                                            href={money.invoice.url}
+                                            className="font-semibold underline"
+                                        >
+                                            {money.invoice.number}
+                                        </a>{' '}
+                                        · {randCents(money.invoice.total)} incl.
+                                        VAT
+                                    </p>
+                                ) : (
+                                    can.payout && (
+                                        <Form
+                                            action={invoiceRoute(c.ulid).url}
+                                            method="post"
+                                            options={opts}
+                                            className="grid gap-2 border-t border-border pt-3"
+                                        >
+                                            {({ processing, errors: e }) => (
+                                                <>
+                                                    <Label htmlFor="rec">
+                                                        Invoice to (seller)
+                                                    </Label>
+                                                    <Input
+                                                        id="rec"
+                                                        name="recipient"
+                                                    />
+                                                    {e.recipient && (
+                                                        <p className="text-destructive">
+                                                            {e.recipient}
+                                                        </p>
+                                                    )}
+                                                    <Label htmlFor="radd">
+                                                        Address
+                                                    </Label>
+                                                    <Input
+                                                        id="radd"
+                                                        name="recipient_address"
+                                                    />
+                                                    <Label htmlFor="rvat">
+                                                        Seller VAT number (if
+                                                        registered)
+                                                    </Label>
+                                                    <Input
+                                                        id="rvat"
+                                                        name="recipient_vat_number"
+                                                    />
+                                                    {e.recipient_vat_number && (
+                                                        <p className="text-destructive">
+                                                            {
+                                                                e.recipient_vat_number
+                                                            }
+                                                        </p>
+                                                    )}
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        disabled={processing}
+                                                        className="w-fit"
+                                                    >
+                                                        Issue tax invoice
+                                                    </Button>
+                                                </>
+                                            )}
+                                        </Form>
+                                    )
+                                ))}
+                            {(errors.payout || errors.invoice) && (
+                                <p className="text-destructive">
+                                    {errors.payout ?? errors.invoice}
+                                </p>
+                            )}
+                        </section>
+                    )}
+
+                    {transfer && (
+                        <section
+                            aria-labelledby="tr-h"
+                            className="grid gap-3 rounded-xl border border-border bg-card p-5 text-sm"
+                        >
+                            <h2 id="tr-h" className="font-semibold">
+                                Transfer
+                            </h2>
+                            <ul className="grid gap-1.5">
+                                {transfer.stages.map((t) => (
+                                    <li
+                                        key={t.key}
+                                        className="flex items-center gap-2"
+                                    >
+                                        {t.doneOn ? (
+                                            <Check
+                                                className="size-4 text-status-live"
+                                                aria-hidden="true"
+                                            />
+                                        ) : (
+                                            <span className="inline-block size-4 rounded-full border border-input" />
+                                        )}
+                                        {t.label}
+                                        {t.doneOn && (
+                                            <span className="text-muted-foreground">
+                                                · {t.doneOn}
+                                            </span>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                            {can.manage && (
+                                <Form
+                                    action={transferRoute(c.ulid).url}
+                                    method="post"
+                                    options={opts}
+                                    className="grid gap-2 border-t border-border pt-3 2xl:grid-cols-[1fr_150px_auto] 2xl:items-end"
+                                >
+                                    {({ processing }) => (
+                                        <>
+                                            <select
+                                                name="stage"
+                                                aria-label="Stage"
+                                                className="h-9 rounded-md border border-input bg-background px-2"
+                                            >
+                                                {transfer.stages.map((t) => (
+                                                    <option
+                                                        key={t.key}
+                                                        value={t.key}
+                                                    >
+                                                        {t.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <Input
+                                                type="date"
+                                                name="done_on"
+                                                aria-label="Date"
+                                            />
+                                            <Button
+                                                size="sm"
+                                                disabled={processing}
+                                            >
+                                                Record
+                                            </Button>
+                                        </>
+                                    )}
+                                </Form>
+                            )}
+                        </section>
+                    )}
                 </aside>
             </div>
         </>

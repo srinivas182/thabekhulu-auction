@@ -38,6 +38,7 @@ use App\Domains\Quotes\Http\Controllers\QuoteReportController;
 use App\Domains\Quotes\Http\Controllers\QuoteSetupController;
 use App\Domains\Quotes\Http\Controllers\QuoteWorkflowController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
+use App\Domains\Settlement\Http\Controllers\PayoutController;
 use App\Domains\Settlement\Http\Controllers\SettlementController;
 use App\Domains\Theme\Http\Controllers\ThemeController;
 use App\Domains\Verification\Http\Controllers\BankAccountController;
@@ -262,6 +263,12 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('{case}/complete', [SettlementController::class, 'complete'])->middleware('can:settlement.manage')->name('complete');
             Route::post('{case}/default', [SettlementController::class, 'declareDefault'])->middleware('can:auctions.settle')->name('default');
             Route::post('{case}/default/confirm', [SettlementController::class, 'confirmDefault'])->middleware('can:settlement.confirm_default')->name('default.confirm');
+            Route::post('{case}/payout', [PayoutController::class, 'prepare'])->middleware('can:payouts.record')->name('payout');
+            Route::post('payouts/{payout}/approve', [PayoutController::class, 'approve'])->middleware('can:payouts.approve')->name('payout.approve');
+            Route::post('payouts/{payout}/paid', [PayoutController::class, 'paid'])->middleware('can:payouts.record')->name('payout.paid');
+            Route::post('{case}/invoice', [PayoutController::class, 'invoice'])->middleware('can:payouts.record')->name('invoice');
+            Route::get('invoices/{invoice}', [PayoutController::class, 'invoicePdf'])->middleware('can:payouts.view')->name('invoice.pdf');
+            Route::post('{case}/transfer', [PayoutController::class, 'stage'])->middleware('can:settlement.manage')->name('transfer');
         });
         Route::middleware('can:refunds.view')->prefix('finance/refunds')->name('finance.refunds.')->group(function () {
             Route::get('/', [RefundController::class, 'index'])->name('index');
