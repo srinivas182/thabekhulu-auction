@@ -28,6 +28,7 @@ import {
     update,
     withdraw,
     bidders,
+    auction as auctionMonitor,
 } from '@/routes/admin/listings';
 import compliance from '@/routes/admin/listings/compliance';
 import documentsRoutes from '@/routes/admin/listings/documents';
@@ -507,6 +508,18 @@ export default function ListingEdit(props: Props) {
                                     className="inline-flex h-9 items-center rounded-md border border-input px-3 text-sm font-medium"
                                 >
                                     Bidders
+                                </Link>
+                            )}
+                        {(
+                            (usePage().props.auth as { permissions?: string[] })
+                                .permissions ?? []
+                        ).includes('auctions.monitor') &&
+                            l.status === 'live' && (
+                                <Link
+                                    href={auctionMonitor(l.ulid)}
+                                    className="inline-flex h-9 items-center rounded-md border border-input px-3 text-sm font-medium"
+                                >
+                                    Auction
                                 </Link>
                             )}
                         {can.delete && (

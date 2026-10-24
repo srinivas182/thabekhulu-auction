@@ -2,6 +2,8 @@
 
 use App\Domains\Access\Http\Controllers\RoleController;
 use App\Domains\Audit\Http\Controllers\AuditController;
+use App\Domains\Bidding\Http\Controllers\AuctionMonitorController;
+use App\Domains\Bidding\Http\Controllers\BidController;
 use App\Domains\Catalogue\Http\Controllers\CategoryController;
 use App\Domains\Catalogue\Http\Controllers\LocationController;
 use App\Domains\Cms\Http\Controllers\Admin\CmsController;
@@ -90,6 +92,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('account/entities', [BiddingController::class, 'entities'])->name('account.entities');
     Route::post('account/entities', [BiddingController::class, 'storeEntity'])->middleware('throttle:10,1')->name('account.entities.store');
     Route::get('account/approvals', [BiddingController::class, 'approvals'])->name('account.approvals');
+    Route::post('auctions/bid/{listing}', [BidController::class, 'store'])->middleware('throttle:30,1')->name('auctions.bid');
     Route::post('auctions/apply/{listing}', [BiddingController::class, 'apply'])->middleware('throttle:10,1')->name('auctions.apply');
     Route::get('account/bank', [BankAccountController::class, 'show'])->name('account.bank');
     Route::post('account/bank', [BankAccountController::class, 'store'])->middleware('throttle:10,1')->name('account.bank.store');
@@ -150,6 +153,12 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::delete('listings/{listing}/media/item/{media}', [ListingAssetController::class, 'destroyMedia'])->name('listings.media.destroy');
             Route::post('listings/{listing}/documents/{type}', [ListingAssetController::class, 'uploadDocument'])->name('listings.documents.store');
             Route::delete('listings/{listing}/documents/{document}', [ListingAssetController::class, 'destroyDocument'])->name('listings.documents.destroy');
+        });
+        Route::middleware('can:auctions.monitor')->group(function () {
+            Route::get('listings/{listing}/auction', [AuctionMonitorController::class, 'show'])->name('listings.auction');
+            Route::get('listings/{listing}/bidders-record', [AuctionMonitorController::class, 'biddersRecord'])->name('listings.bidders-record');
+            Route::post('listings/{listing}/auction/pause', [AuctionMonitorController::class, 'pause'])->middleware('can:auctions.pause')->name('listings.auction.pause');
+            Route::post('bids/{bid}/void', [AuctionMonitorController::class, 'void'])->middleware('can:auctions.void_bid')->name('bids.void');
         });
         Route::get('listings/{listing}/bidders', [BidderApprovalController::class, 'bidders'])->middleware('can:bidders.approve')->name('listings.bidders');
         Route::post('bidders/{approval}', [BidderApprovalController::class, 'decide'])->middleware('can:bidders.approve')->name('bidders.decide');

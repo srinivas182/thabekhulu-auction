@@ -1,8 +1,10 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePoll } from '@inertiajs/react';
 import { FileText, Lock } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
 import type { BidderState } from '@/components/auctions/bidder-panel';
 import BidderPanel from '@/components/auctions/bidder-panel';
+import type { AuctionLive } from '@/components/auctions/bid-form';
+import BidForm from '@/components/auctions/bid-form';
 import Countdown from '@/components/auctions/countdown';
 import StatusBadge from '@/components/auctions/status-badge';
 import type { Fact, ListingCardData } from '@/components/auctions/types';
@@ -27,6 +29,7 @@ type Detail = ListingCardData & {
 type Props = {
     listing: Detail;
     bidder: BidderState;
+    auction: AuctionLive | null;
     office: { phone: string; email: string };
     seo: {
         title: string;
@@ -37,6 +40,7 @@ type Props = {
 };
 
 export default function AuctionShow({
+    auction,
     bidder,
     listing: l,
     office,
@@ -46,6 +50,11 @@ export default function AuctionShow({
     const mounted = useMounted();
     const place = [l.suburb, l.city, l.province].filter(Boolean).join(', ');
     const open = l.status.key !== 'soon';
+    usePoll(
+        5000,
+        { only: ['auction'] },
+        { autoStart: open && !!auction && !auction.closed },
+    );
 
     return (
         <>
@@ -378,12 +387,18 @@ export default function AuctionShow({
                         className="text-[15px] font-semibold text-muted-foreground"
                     >
                         {open
-                            ? `Auction closes ${l.closesLabel ?? '—'} SAST`
+                            ? auction && auction.extensions > 0
+                                ? `Auction closes ${auction.endsAtText} (extended)`
+                                : `Auction closes ${l.closesLabel ?? '—'} SAST`
                             : `Bidding opens ${l.opensLabel ?? '—'} SAST`}
                     </h2>
-                    {(open ? l.endsAt : l.startsAt) && (
+                    {(open ? (auction?.endsAt ?? l.endsAt) : l.startsAt) && (
                         <Countdown
-                            to={(open ? l.endsAt : l.startsAt)!}
+                            to={
+                                (open
+                                    ? (auction?.endsAt ?? l.endsAt)
+                                    : l.startsAt)!
+                            }
                             label={
                                 open
                                     ? 'Time left in this auction'
@@ -395,10 +410,12 @@ export default function AuctionShow({
                         <p className="text-[13px] text-muted-foreground">
                             {l.auctionType === 'sealed'
                                 ? 'Sealed tender: bids stay confidential until the close'
-                                : 'Minimum bid'}
+                                : auction?.current
+                                  ? `Current bid · ${auction.bidCount} ${auction.bidCount === 1 ? 'bid' : 'bids'}`
+                                  : 'Minimum bid'}
                         </p>
                         <p className="tabular mt-0.5 text-4xl font-bold">
-                            {rand(l.minimum)}
+                            {rand(auction?.current ?? l.minimum)}
                         </p>
                         <p className="mt-1 text-sm text-muted-foreground">
                             Deposit to bid:{' '}
@@ -412,11 +429,59 @@ export default function AuctionShow({
                             ? 'Your deposit is a refundable security deposit, held separately and refunded in full if you don’t win. It is not part of the purchase price.'
                             : 'Your deposit is refunded if you don’t win. If you win, it counts toward the purchase price.'}
                     </p>
-                    <BidderPanel
-                        state={bidder}
-                        ulid={l.ulid}
-                        minimum={l.minimum}
-                    />
+                    {auction?.mine?.canBid &&
+                    bidder?.approval === 'approved' ? (
+                        <BidForm
+                            auction={auction}
+                            ulid={l.ulid}
+                            depositTerms={l.depositTerms}
+                        />
+                    ) : (
+                        <BidderPanel
+                            state={bidder}
+                            ulid={l.ulid}
+                            minimum={l.minimum}
+                        />
+                    )}
+                    {auction && auction.recent.length > 0 && (
+                        <section
+                            aria-labelledby="feed-h"
+                            className="border-t border-border pt-4"
+                        >
+                            <h3 id="feed-h" className="text-sm font-semibold">
+                                Latest bids
+                            </h3>
+                            <ol
+                                aria-live="polite"
+                                className="mt-2 grid gap-1.5 text-sm"
+                            >
+                                {auction.recent.map((b, i) => (
+                                    <li
+                                        key={`${b.time}-${b.number}-${i}`}
+                                        className="flex justify-between gap-3"
+                                    >
+                                        <span>
+                                            Bidder #{b.number}
+                                            {b.kind === 'proxy' ? (
+                                                <span className="text-muted-foreground">
+                                                    {' '}
+                                                    (maximum)
+                                                </span>
+                                            ) : null}
+                                        </span>
+                                        <span className="tabular">
+                                            <strong>
+                                                {rand(b.amount)}
+                                            </strong>{' '}
+                                            <span className="text-muted-foreground">
+                                                {b.time}
+                                            </span>
+                                        </span>
+                                    </li>
+                                ))}
+                            </ol>
+                        </section>
+                    )}
                 </aside>
             </div>
         </>

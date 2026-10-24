@@ -2,6 +2,7 @@
 
 namespace App\Domains\Listings\Http\Controllers\Public;
 
+use App\Domains\Bidding\Support\AuctionView;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Catalogue\Models\Province;
@@ -83,6 +84,7 @@ class AuctionController extends Controller
         return Inertia::render('public/auctions/show', [
             'listing' => $data,
             'bidder' => $this->bidderState($listing),
+            'auction' => AuctionView::for($listing, request()->user()),
             'office' => ['phone' => $general->contact_phone, 'email' => $general->contact_email],
             'seo' => [
                 'title' => ($listing->seo_title ?: $listing->title).' | Thabekhulu auctions',
