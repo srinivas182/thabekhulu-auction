@@ -113,7 +113,15 @@ class BidEngine
     {
         // Built after the commit, so other bidders don't wait on the lock while the feed is read.
         $snapshot = clone $state;
-        DB::afterCommit(fn () => AuctionUpdated::dispatch($listing->ulid, AuctionView::publicPart($listing, $snapshot)));
+        DB::afterCommit(function () use ($listing, $snapshot) {
+            // The live feed is a convenience (pages fall back to polling): a WebSocket outage
+            // must never fail a bid or a close (found in Sprint 7a testing).
+            try {
+                AuctionUpdated::dispatch($listing->ulid, AuctionView::publicPart($listing, $snapshot));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        });
 
         if ($previousLeader !== null && $previousLeader !== $state->leader_approval_id) {
             $loser = BidderApproval::with('user')->find($previousLeader)?->user;

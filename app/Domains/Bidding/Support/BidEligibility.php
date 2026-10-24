@@ -5,6 +5,7 @@ namespace App\Domains\Bidding\Support;
 use App\Domains\Bidding\Models\AuctionState;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Models\Deposit;
+use App\Domains\Settlement\Models\Suspension;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Screening;
 use App\Domains\Verification\Models\Verification;
@@ -54,6 +55,9 @@ final class BidEligibility
         $fail = fn (string $m) => throw ValidationException::withMessages(['bid' => $m]);
         if (! $user->isBuyer()) {
             $fail(__('Staff accounts cannot bid.'));
+        }
+        if (($suspension = Suspension::activeFor($user->id)) !== null) {
+            $fail(__('Your bidding is suspended until :date after a default.', ['date' => $suspension->until->format('j F Y')]));
         }
 
         $approval = BidderApproval::where('listing_id', $listing->id)->where('user_id', $user->id)->first();

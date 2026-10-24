@@ -11,6 +11,8 @@ use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Actions\RefundService;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Settings\PaymentSettings;
+use App\Domains\Settlement\Actions\SettlementService;
+use App\Domains\Settlement\Models\SettlementCase;
 use App\Domains\Verification\Models\BidderApproval;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -93,7 +95,11 @@ class AuctionCloser
 
         foreach (Deposit::with('user')->where('listing_id', $listing->id)->where('status', 'received')->get() as $deposit) {
             if ($deposit->bidder_approval_id === $winner) {
-                $deposit->user->notify(new AuctionResult($listing, 'won', $amount, null));
+                // Once only, so resuming an interrupted hand-off never opens a second case.
+                if (! SettlementCase::where('listing_id', $listing->id)->where('bidder_approval_id', $winner)->exists()) {
+                    $deposit->user->notify(new AuctionResult($listing, 'won', $amount, null));
+                    app(SettlementService::class)->open($listing, $winner, (int) $amount);
+                }
 
                 continue;
             }
@@ -115,5 +121,27 @@ class AuctionCloser
 
         // Applications that never paid a deposit simply end.
         BidderApproval::where('listing_id', $listing->id)->where('status', 'pending')->update(['status' => 'rejected', 'reason' => 'The auction closed.']);
+        DB::table('auction_results')->where('listing_id', $listing->id)->update(['handed_off_at' => now()]);
+    }
+
+    /**
+     * Completes any hand-off that was interrupted after the result was recorded
+     * (crash, deploy, outage). Safe to repeat: settlement opens once and
+     * refunds already scheduled are refused.
+     */
+    public function resumeHandOffs(): int
+    {
+        $done = 0;
+        foreach (DB::table('auction_results')->whereNull('handed_off_at')->where('closed_at', '<=', now()->subMinute())->get() as $r) {
+            $listing = Listing::find((int) $r->listing_id);
+            if ($listing === null) {
+                continue;
+            }
+            Audit::record('bidding', 'hand_off_resumed', "Completed the interrupted hand-off for {$listing->title}", $listing);
+            $this->handOff($listing, $r->winner_approval_id ? (int) $r->winner_approval_id : null, $r->winning_amount ? (int) $r->winning_amount : null, $r->runner_up_approval_id ? (int) $r->runner_up_approval_id : null);
+            $done++;
+        }
+
+        return $done;
     }
 }

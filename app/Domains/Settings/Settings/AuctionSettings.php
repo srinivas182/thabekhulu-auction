@@ -36,6 +36,15 @@ class AuctionSettings extends Settings
     /** Rand: proof of funds needed at or above this minimum price (and for all Mining listings). */
     public int $proof_of_funds_threshold;
 
+    /** Business days for the winner to sign the sale agreement (S2). */
+    public int $settlement_agreement_business_days;
+
+    /** Days for the balance to be paid or guarantees delivered (S2). */
+    public int $settlement_balance_days;
+
+    /** Days the runner-up has to accept an offer after a default (S4). */
+    public int $runner_up_accept_days;
+
     // Increment bands, lowest first: each item is [up to (rand, or null for no limit), increment (rand)].
     // Plain `array` only: spatie/laravel-settings can't parse typed array docblocks (ADR 0008).
     public array $increment_bands; // @phpstan-ignore missingType.iterableValue

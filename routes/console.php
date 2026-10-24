@@ -22,3 +22,6 @@ Schedule::command('auctions:closing-alerts')->everyMinute()->withoutOverlapping(
 
 // Sprint 6c: close ended auctions (soft close respected) and hand deposits to refunds.
 Schedule::command('auctions:close')->everyMinute()->withoutOverlapping()->onOneServer();
+
+// Sprint 7a: expire runner-up offers and remind buyers of settlement deadlines.
+Schedule::command('settlement:daily')->dailyAt('07:30')->timezone('Africa/Johannesburg')->onOneServer();

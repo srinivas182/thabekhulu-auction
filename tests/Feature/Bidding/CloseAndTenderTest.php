@@ -2,9 +2,11 @@
 
 use App\Domains\Access\Enums\SystemRole;
 use App\Domains\Audit\Models\AuditEntry;
+use App\Domains\Bidding\Actions\AuctionCloser;
 use App\Domains\Bidding\Actions\BidEngine;
 use App\Domains\Bidding\Actions\TenderService;
 use App\Domains\Bidding\Models\AuctionState;
+use App\Domains\Bidding\Models\Bid;
 use App\Domains\Bidding\Notifications\AuctionResult;
 use App\Domains\Bidding\Support\ShillReport;
 use App\Domains\Catalogue\Models\Category;
@@ -16,6 +18,7 @@ use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Models\LedgerEntry;
 use App\Domains\Payments\Models\Refund;
 use App\Domains\Payments\Support\DepositReference;
+use App\Domains\Settlement\Models\SettlementCase;
 use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Screening;
@@ -213,4 +216,41 @@ it('finishes the close for everyone when one deposit cannot be refunded', functi
         ->and(Refund::whereHas('deposit', fn ($q) => $q->where('user_id', $c->id))->exists())->toBeTrue()
         ->and(AuditEntry::where('event', 'refund_not_scheduled')->exists())->toBeTrue();
     Notification::assertSentTo($c, AuctionResult::class);
+});
+
+it('never lets a live-feed outage fail a bid or a close', function () {
+    // Reverb configured but unreachable: broadcasts fail, bidding and closing must not.
+    config(['broadcasting.default' => 'reverb', 'broadcasting.connections.reverb.key' => 'k', 'broadcasting.connections.reverb.secret' => 's',
+        'broadcasting.connections.reverb.app_id' => '1', 'broadcasting.connections.reverb.options.host' => '127.0.0.1', 'broadcasting.connections.reverb.options.port' => 9,
+        'broadcasting.connections.reverb.options.scheme' => 'http']);
+    $l = closeListing();
+    $a = paidBidder($l, 'Alice', '1111');
+
+    app(BidEngine::class)->place($l, $a, 1000000);
+    expect(Bid::count())->toBe(1);
+
+    $l->update(['ends_at' => now()->subSecond()]);
+    AuctionState::query()->update(['ends_at' => now()->subSecond()]);
+    $this->artisan('auctions:close')->assertSuccessful();
+
+    expect($l->fresh()->status)->toBe(ListingStatus::Sold)
+        ->and(SettlementCase::where('listing_id', $l->id)->count())->toBe(1)
+        ->and(DB::table('auction_results')->where('listing_id', $l->id)->value('handed_off_at'))->not->toBeNull();
+});
+
+it('completes an interrupted hand-off exactly once', function () {
+    $l = closeListing();
+    [$a, $b] = [paidBidder($l, 'Alice', '1111'), paidBidder($l, 'Bongani', '2222')];
+    app(BidEngine::class)->place($l, $b, 1000000);
+    app(BidEngine::class)->place($l, $a, 1100000);
+    // Simulate a crash between recording the result and handing deposits on.
+    DB::transaction(fn () => app(AuctionCloser::class)->record($l, 'open', 'sold', approvalOf($l, $a)->id, 1100000, approvalOf($l, $b)->id, 1000000, 2));
+    $this->travel(2)->minutes();
+
+    $this->artisan('auctions:close')->assertSuccessful();
+    $this->artisan('auctions:close')->assertSuccessful();
+
+    expect(SettlementCase::where('listing_id', $l->id)->count())->toBe(1)
+        ->and(Refund::whereHas('deposit', fn ($q) => $q->where('user_id', $b->id))->count())->toBe(1)
+        ->and(AuditEntry::where('event', 'hand_off_resumed')->count())->toBe(1);
 });

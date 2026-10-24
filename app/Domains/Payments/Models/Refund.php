@@ -23,7 +23,7 @@ use Illuminate\Support\Carbon;
  */
 class Refund extends Model
 {
-    public const REASONS = ['unsuccessful' => 'Did not win', 'runner_up_released' => 'Runner-up hold ended', 'withdrawn' => 'Listing withdrawn', 'other' => 'Other'];
+    public const REASONS = ['unsuccessful' => 'Did not win', 'runner_up_released' => 'Runner-up hold ended', 'withdrawn' => 'Listing withdrawn', 'security_released' => 'Security deposit released after completion', 'default_excess' => 'Excess after a capped forfeiture', 'other' => 'Other'];
 
     public const STATUSES = ['scheduled' => 'Scheduled', 'batched' => 'In a batch', 'paid' => 'Paid', 'failed' => 'Failed', 'cancelled' => 'Cancelled'];
 
