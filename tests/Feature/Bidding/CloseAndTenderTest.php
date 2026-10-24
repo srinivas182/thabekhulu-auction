@@ -120,7 +120,7 @@ it('keeps sealed offers raise-only and hidden until a two-person opening', funct
             return array_keys($e->errors())[0];
         }
 
-return null;
+        return null;
     };
 
     expect($err(fn () => $t->submit($l, $a, 900000)))->toBe('amount');
