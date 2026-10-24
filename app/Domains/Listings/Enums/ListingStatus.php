@@ -42,7 +42,8 @@ enum ListingStatus: string
     /** Shown on the website, including finished auctions with their result. Bidding, applying and data rooms use isPublic(). */
     public function isShown(): bool
     {
-        return $this->isPublic() || in_array($this, [self::Closed, self::Sold, self::NoBids], true);
+        // No-bids listings are hidden (PRD) and can be relisted.
+        return $this->isPublic() || in_array($this, [self::Closed, self::Sold], true);
     }
 
     /** Listings managers can still edit content. */

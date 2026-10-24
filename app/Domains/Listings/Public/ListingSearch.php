@@ -2,6 +2,7 @@
 
 namespace App\Domains\Listings\Public;
 
+use App\Domains\Catalogue\Models\City;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use Illuminate\Database\Eloquent\Builder;
@@ -39,6 +40,17 @@ final class ListingSearch
                     $q->where('status', ListingStatus::Live)->where('ends_at', '<=', now()->addHours($hours));
                 }
             });
+
+        // Premium slots (S10): when browsing a category, active slots come first by position.
+        if (($f['category'] ?? null) !== null) {
+            $cityId = ($f['city'] ?? null) !== null ? City::where('slug', $f['city'])->value('id') : null;
+            $today = now((string) config('platform.display_timezone'))->toDateString();
+            $query->orderByRaw(
+                'coalesce((select min(ps.position) from premium_slots ps where ps.listing_id = listings.id and ps.category_id = listings.category_id'
+                .' and (ps.city_id is null or ps.city_id = ?) and date(ps.starts_on) <= ? and date(ps.ends_on) >= ?), 99)', // DATE(): portable across MySQL and SQLite
+                [$cityId ?? 0, $today, $today],
+            );
+        }
 
         match ($f['sort'] ?? 'closing') {
             'newest' => $query->latest('approved_at'),

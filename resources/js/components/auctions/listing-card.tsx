@@ -27,11 +27,36 @@ export default function ListingCard({ listing }: { listing: ListingCardData }) {
                     label={listing.status.label}
                     className="absolute top-3 left-3"
                 />
-                {listing.featured && (
-                    <span className="absolute top-3 right-3 rounded-full bg-brand-accent-soft px-2.5 py-1 text-[13px] font-semibold text-brand-accent">
-                        Premium
-                    </span>
-                )}
+                {(() => {
+                    const badges = [
+                        ...new Set([
+                            ...(listing.featured ? ['premium'] : []),
+                            ...(listing.badges ?? []),
+                        ]),
+                    ];
+                    const label: Record<string, string> = {
+                        premium: 'Premium',
+                        new: 'New',
+                        hot: 'Hot',
+                        renovated: 'Renovated',
+                    };
+
+                    return badges.length > 0 ? (
+                        <ul
+                            aria-label="Badges"
+                            className="absolute top-3 right-3 flex flex-wrap justify-end gap-1.5"
+                        >
+                            {badges.map((b) => (
+                                <li
+                                    key={b}
+                                    className="rounded-full bg-brand-accent-soft px-2.5 py-1 text-[13px] font-semibold text-brand-accent"
+                                >
+                                    {label[b] ?? b}
+                                </li>
+                            ))}
+                        </ul>
+                    ) : null;
+                })()}
             </div>
             <div className="p-5">
                 <p className="text-sm text-muted-foreground">

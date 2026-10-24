@@ -6,6 +6,7 @@ use App\Domains\Catalogue\Enums\DocumentVisibility;
 use App\Domains\Catalogue\Models\CategoryAttribute;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
+use App\Domains\Premium\Support\Badges;
 use App\Domains\Settings\Settings\AuctionSettings;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
@@ -46,6 +47,7 @@ final class PublicListing
             'closesLabel' => $listing->ends_at?->copy()->setTimezone((string) config('platform.display_timezone'))->format('j F Y, H:i'),
             'renovated' => $listing->renovation_cost > 0,
             'featured' => $listing->is_featured,
+            'badges' => Badges::for($listing),
             'auctionType' => $listing->auction_type->value,
             'facts' => self::facts($listing, cardOnly: true),
             'position' => self::position($listing),

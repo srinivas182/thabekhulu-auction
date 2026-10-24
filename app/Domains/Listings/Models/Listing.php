@@ -178,6 +178,6 @@ class Listing extends Model implements HasMedia
      */
     public function scopeShown(Builder $query): void
     {
-        $query->whereIn('status', [ListingStatus::Scheduled, ListingStatus::Live, ListingStatus::Closed, ListingStatus::Sold, ListingStatus::NoBids]);
+        $query->whereIn('status', [ListingStatus::Scheduled, ListingStatus::Live, ListingStatus::Closed, ListingStatus::Sold]);
     }
 }

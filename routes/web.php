@@ -33,6 +33,7 @@ use App\Domains\Payments\Http\Controllers\PaymentWebhookController;
 use App\Domains\Payments\Http\Controllers\RefundController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
+use App\Domains\Premium\Http\PremiumController;
 use App\Domains\Quotes\Http\Controllers\Public\AccountQuotesController;
 use App\Domains\Quotes\Http\Controllers\Public\ClientQuoteController;
 use App\Domains\Quotes\Http\Controllers\QuoteController;
@@ -261,6 +262,12 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::put('deposit-provider', [PaymentProviderController::class, 'depositProvider'])->name('deposit');
             Route::put('{provider}', [PaymentProviderController::class, 'update'])->name('update');
             Route::post('{provider}/test', [PaymentProviderController::class, 'test'])->name('test');
+        });
+        Route::post('listings/{listing}/relist', [ListingController::class, 'relist'])->middleware('can:listings.publish')->name('listings.relist');
+        Route::middleware('can:premium.manage')->prefix('premium')->name('premium.')->group(function () {
+            Route::get('/', [PremiumController::class, 'index'])->name('index');
+            Route::post('/', [PremiumController::class, 'store'])->name('store');
+            Route::delete('{slot}', [PremiumController::class, 'destroy'])->name('destroy');
         });
         Route::prefix('events')->name('events.')->group(function () {
             Route::middleware('can:events.manage')->group(function () {

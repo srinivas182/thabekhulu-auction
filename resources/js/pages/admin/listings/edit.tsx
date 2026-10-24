@@ -29,6 +29,7 @@ import {
     withdraw,
     bidders,
     auction as auctionMonitor,
+    relist,
 } from '@/routes/admin/listings';
 import compliance from '@/routes/admin/listings/compliance';
 import documentsRoutes from '@/routes/admin/listings/documents';
@@ -522,6 +523,24 @@ export default function ListingEdit(props: Props) {
                                     Auction
                                 </Link>
                             )}
+                        {l.status === 'no_bids' && (
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    window.confirm(
+                                        'Relist this listing? Old bids are voided, earlier applicants must apply again, and it returns to Draft for new dates.',
+                                    ) &&
+                                    router.post(
+                                        relist(l.ulid).url,
+                                        {},
+                                        { preserveScroll: true },
+                                    )
+                                }
+                                className="inline-flex h-9 items-center rounded-md border border-input px-3 text-sm font-medium"
+                            >
+                                Relist
+                            </button>
+                        )}
                         {can.delete && (
                             <Button
                                 variant="ghost"

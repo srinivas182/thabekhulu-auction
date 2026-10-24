@@ -8,6 +8,7 @@ use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\CategoryAttribute;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Listings\Actions\ListingWorkflow;
+use App\Domains\Listings\Actions\Relist;
 use App\Domains\Listings\Enums\AuctionType;
 use App\Domains\Listings\Enums\ComplianceItem;
 use App\Domains\Listings\Enums\DealType;
@@ -411,5 +412,13 @@ class ListingController extends Controller
         }
 
         return $slug;
+    }
+
+    public function relist(Listing $listing, Relist $relist, #[CurrentUser] User $actor): RedirectResponse
+    {
+        $relist->handle($listing, $actor);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Relisted as a draft. Set new dates and send it for review.')]);
+
+        return back();
     }
 }

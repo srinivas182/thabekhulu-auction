@@ -19,6 +19,7 @@ export type ListingCardData = {
     closesLabel: string | null;
     renovated: boolean;
     featured: boolean;
+    badges?: string[];
     auctionType: 'open' | 'sealed';
     facts: Fact[];
     position: { lat: number; lng: number } | null;
