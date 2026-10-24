@@ -111,8 +111,9 @@ class BidEngine
      */
     public static function announce(Listing $listing, AuctionState $state, ?int $previousLeader = null): void
     {
-        $public = AuctionView::publicPart($listing, $state);
-        AuctionUpdated::dispatch($listing->ulid, $public);
+        // Built after the commit, so other bidders don't wait on the lock while the feed is read.
+        $snapshot = clone $state;
+        DB::afterCommit(fn () => AuctionUpdated::dispatch($listing->ulid, AuctionView::publicPart($listing, $snapshot)));
 
         if ($previousLeader !== null && $previousLeader !== $state->leader_approval_id) {
             $loser = BidderApproval::with('user')->find($previousLeader)?->user;

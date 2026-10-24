@@ -42,6 +42,20 @@ final class BidEligibility
             $fail(__('This auction has closed.'));
         }
 
+        return $this->bidder($listing, $user, $now);
+    }
+
+    /**
+     * The bidder checks shared by open bidding and sealed tenders: approved
+     * for this listing, deposit received, identity and screening valid.
+     */
+    public function bidder(Listing $listing, User $user, CarbonImmutable $now): BidderApproval
+    {
+        $fail = fn (string $m) => throw ValidationException::withMessages(['bid' => $m]);
+        if (! $user->isBuyer()) {
+            $fail(__('Staff accounts cannot bid.'));
+        }
+
         $approval = BidderApproval::where('listing_id', $listing->id)->where('user_id', $user->id)->first();
         if ($approval === null || $approval->status !== 'approved' || $approval->bidder_number === null) {
             $fail(__('You’re not approved to bid on this listing yet.'));

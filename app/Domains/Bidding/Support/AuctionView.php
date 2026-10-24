@@ -3,9 +3,10 @@
 namespace App\Domains\Bidding\Support;
 
 use App\Domains\Bidding\Actions\BidEngine;
-use App\Domains\Bidding\Http\Controllers\BidController;
+use App\Domains\Bidding\Actions\TenderService;
 use App\Domains\Bidding\Models\AuctionState;
 use App\Domains\Bidding\Models\Bid;
+use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Verification\Models\BidderApproval;
@@ -21,8 +22,11 @@ final class AuctionView
     /** @return array<string, mixed>|null */
     public static function for(Listing $listing, ?User $user): ?array
     {
-        if ($listing->auction_type->value !== 'open' || ! $listing->status->isPublic()) {
+        if (! $listing->status->isShown() || $listing->status === ListingStatus::Scheduled) {
             return null;
+        }
+        if ($listing->auction_type->value === 'sealed') {
+            return self::sealed($listing, $user);
         }
 
         $state = BidEngine::state($listing);
@@ -44,6 +48,43 @@ final class AuctionView
     }
 
     /**
+     * Sealed tender: the deadline and, for the bidder, their own offer only.
+     *
+     * @return array<string, mixed>
+     */
+    private static function sealed(Listing $listing, ?User $user): array
+    {
+        $tz = (string) config('platform.display_timezone');
+        $mine = null;
+        if ($user !== null && $user->isBuyer()) {
+            $approval = BidderApproval::where('listing_id', $listing->id)->where('user_id', $user->id)->where('status', 'approved')->first();
+            if ($approval !== null) {
+                $mine = [
+                    'bidderNumber' => $approval->bidder_number,
+                    'canBid' => Deposit::where('bidder_approval_id', $approval->id)->where('status', 'received')->exists() || (int) $listing->deposit_amount === 0,
+                    'offer' => app(TenderService::class)->ownOffer($listing, $approval->id)['amount'] ?? null,
+                ];
+            }
+        }
+
+        return [
+            'kind' => 'sealed', 'endsAt' => $listing->ends_at?->toIso8601String(), 'endsAtText' => $listing->ends_at?->setTimezone($tz)->format('j F Y, H:i').' SAST',
+            'closed' => $listing->status !== ListingStatus::Live || ($listing->ends_at?->isPast() ?? true),
+            'outcome' => self::outcome($listing), 'otpFrom' => StepUp::threshold($listing), 'minimum' => (int) $listing->minimum_price, 'mine' => $mine,
+        ];
+    }
+
+    private static function outcome(Listing $listing): ?string
+    {
+        return match ($listing->status) {
+            ListingStatus::Sold => 'sold',
+            ListingStatus::NoBids => 'no_bids',
+            ListingStatus::Closed => 'closed',
+            default => null,
+        };
+    }
+
+    /**
      * What everyone may see, also sent in the live feed event (B7).
      *
      * @return array<string, mixed>
@@ -54,6 +95,8 @@ final class AuctionView
         $recent = Bid::where('listing_id', $listing->id)->whereNull('voided_at')->orderByDesc('id')->limit(10)->get();
 
         return [
+            'kind' => 'open',
+            'outcome' => self::outcome($listing),
             'current' => $state->current_amount,
             'leaderNumber' => $state->leader_approval_id ? BidderApproval::whereKey($state->leader_approval_id)->value('bidder_number') : null,
             'next' => Increments::next($state->current_amount, (int) $listing->minimum_price),
@@ -62,8 +105,8 @@ final class AuctionView
             'extensions' => $state->extensions,
             'bidCount' => $state->bid_count,
             'paused' => $state->paused_at !== null,
-            'closed' => $state->ends_at->isPast(),
-            'otpFrom' => BidController::otpThreshold($listing),
+            'closed' => $state->ends_at->isPast() || $listing->status !== ListingStatus::Live,
+            'otpFrom' => StepUp::threshold($listing),
             'recent' => $recent->map(fn (Bid $b) => ['number' => $b->bidder_number, 'amount' => $b->amount, 'kind' => $b->kind, 'time' => $b->placed_at->setTimezone($tz)->format('H:i:s')])->values()->all(),
         ];
     }

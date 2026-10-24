@@ -19,3 +19,6 @@ Schedule::command('quotes:daily')->dailyAt('07:00')->timezone('Africa/Johannesbu
 
 // Sprint 6b: closing-soon alerts (each once per bidder).
 Schedule::command('auctions:closing-alerts')->everyMinute()->withoutOverlapping()->onOneServer();
+
+// Sprint 6c: close ended auctions (soft close respected) and hand deposits to refunds.
+Schedule::command('auctions:close')->everyMinute()->withoutOverlapping()->onOneServer();

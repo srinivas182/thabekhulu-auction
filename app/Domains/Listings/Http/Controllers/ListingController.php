@@ -20,6 +20,7 @@ use App\Domains\Listings\Support\Pricing;
 use App\Domains\Settings\Settings\AuctionSettings;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -375,7 +376,8 @@ class ListingController extends Controller
                 ListingStatus::Draft, ListingStatus::ChangesRequested => true,
                 ListingStatus::InReview, ListingStatus::Scheduled => Gate::allows('listings.publish'),
                 ListingStatus::Live => $user->isSuperAdmin(),
-                ListingStatus::Withdrawn => false,
+                // After the close, pricing and times are part of the auction record.
+                ListingStatus::Withdrawn, ListingStatus::Closed, ListingStatus::Sold, ListingStatus::NoBids => false,
             };
         }
 
@@ -393,7 +395,7 @@ class ListingController extends Controller
         ];
     }
 
-    private function local(?Carbon $time): ?string
+    private function local(?CarbonInterface $time): ?string
     {
         return $time?->copy()->setTimezone((string) config('platform.display_timezone'))->format('Y-m-d\TH:i');
     }

@@ -102,6 +102,16 @@ final class PublicListing
      */
     public static function status(Listing $listing): array
     {
+        $finished = match ($listing->status) {
+            ListingStatus::Closed => ['key' => 'closed', 'label' => 'Closed'],
+            ListingStatus::Sold => ['key' => 'sold', 'label' => 'Sold'],
+            ListingStatus::NoBids => ['key' => 'closed', 'label' => 'Closed, no bids'],
+            default => null,
+        };
+        if ($finished !== null) {
+            return $finished;
+        }
+
         if ($listing->status === ListingStatus::Scheduled) {
             return ['key' => 'soon', 'label' => 'Opens '.($listing->starts_at?->setTimezone((string) config('platform.display_timezone'))->format('j M') ?? 'soon')];
         }

@@ -5,6 +5,7 @@ import type { BidderState } from '@/components/auctions/bidder-panel';
 import BidderPanel from '@/components/auctions/bidder-panel';
 import type { AuctionLive } from '@/components/auctions/bid-form';
 import BidForm from '@/components/auctions/bid-form';
+import TenderForm from '@/components/auctions/tender-form';
 import { useLiveAuction } from '@/hooks/use-live-auction';
 import Countdown from '@/components/auctions/countdown';
 import StatusBadge from '@/components/auctions/status-badge';
@@ -434,13 +435,28 @@ export default function AuctionShow({
                             ? 'Your deposit is a refundable security deposit, held separately and refunded in full if you don’t win. It is not part of the purchase price.'
                             : 'Your deposit is refunded if you don’t win. If you win, it counts toward the purchase price.'}
                     </p>
-                    {auction?.mine?.canBid &&
-                    bidder?.approval === 'approved' ? (
-                        <BidForm
-                            auction={auction}
-                            ulid={l.ulid}
-                            depositTerms={l.depositTerms}
-                        />
+                    {auction?.outcome ? (
+                        <p
+                            role="status"
+                            className="rounded-[10px] bg-muted p-4 font-semibold"
+                        >
+                            {auction.outcome === 'sold'
+                                ? 'This auction has closed. The property is sold, subject to the conditions of sale.'
+                                : auction.outcome === 'no_bids'
+                                  ? 'This auction closed without a valid bid.'
+                                  : 'This auction has closed. Results are being finalised.'}
+                        </p>
+                    ) : auction?.mine?.canBid &&
+                      bidder?.approval === 'approved' ? (
+                        auction.kind === 'sealed' ? (
+                            <TenderForm auction={auction} ulid={l.ulid} />
+                        ) : (
+                            <BidForm
+                                auction={auction}
+                                ulid={l.ulid}
+                                depositTerms={l.depositTerms}
+                            />
+                        )
                     ) : (
                         <BidderPanel
                             state={bidder}
