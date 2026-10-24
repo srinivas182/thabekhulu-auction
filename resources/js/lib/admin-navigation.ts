@@ -12,6 +12,9 @@ import {
     CalendarDays,
     Crown,
     Gavel,
+    BarChart3,
+    BookUser,
+    ShieldAlert,
     FileText,
     FolderTree,
     LayoutGrid,
@@ -31,7 +34,12 @@ import { index as leads } from '@/routes/admin/leads';
 import { index as finance } from '@/routes/admin/finance';
 import { index as eventsAdmin } from '@/routes/admin/events';
 import { index as premiumAdmin } from '@/routes/admin/premium';
+import { index as compliance } from '@/routes/admin/compliance';
 import { index as kyc } from '@/routes/admin/kyc';
+import {
+    finance as financeReports,
+    register as investorRegister,
+} from '@/routes/admin/reports';
 import { index as settlement } from '@/routes/admin/settlement';
 import { index as listings } from '@/routes/admin/listings';
 import { index as quotes } from '@/routes/admin/quotes';
@@ -89,6 +97,24 @@ export const adminNavigation: NavItem[] = [
         href: premiumAdmin(),
         icon: Crown,
         permission: 'premium.manage',
+    },
+    {
+        title: 'Investor register',
+        href: investorRegister(),
+        icon: BookUser,
+        permission: 'buyers.view',
+    },
+    {
+        title: 'Financial reports',
+        href: financeReports(),
+        icon: BarChart3,
+        permission: 'reports.view',
+    },
+    {
+        title: 'Suspicious activity',
+        href: compliance(),
+        icon: ShieldAlert,
+        permission: 'compliance.review',
     },
     {
         title: 'Quotations',
