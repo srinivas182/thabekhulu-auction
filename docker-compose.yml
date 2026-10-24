@@ -33,6 +33,12 @@ services:
         command: php artisan horizon
         restart: unless-stopped
 
+    # Live auction feed (WebSockets); nginx proxies /app and /apps to it.
+    reverb:
+        <<: *php
+        command: php artisan reverb:start --host=0.0.0.0 --port=8080
+        restart: unless-stopped
+
     scheduler:
         <<: *php
         command: php artisan schedule:work

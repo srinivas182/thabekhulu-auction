@@ -6,6 +6,7 @@ import { bid } from '@/routes/auctions';
 
 export type AuctionLive = {
     current: number | null;
+    leaderNumber?: string | null;
     next: number;
     endsAt: string;
     endsAtText: string;

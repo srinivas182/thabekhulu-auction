@@ -26,6 +26,7 @@ const nav = [
     ['Companies and trusts', '/account/entities'],
     ['Bidding approvals', '/account/approvals'],
     ['Quotations', '/account/quotes'],
+    ['Alerts', '/account/notifications'],
     ['Profile and security', '/settings/profile'],
 ] as const;
 

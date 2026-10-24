@@ -59,6 +59,7 @@ class AuctionMonitorController extends Controller
                 Audit::record('bidding', 'resumed', "Resumed bidding on {$listing->title}; close moved to {$state->ends_at}", $listing, $actor);
             }
             $state->save();
+            BidEngine::announce($listing, $state);
         });
 
         return back();
@@ -77,6 +78,7 @@ class AuctionMonitorController extends Controller
             MaxBid::where('listing_id', $bid->listing_id)->where('bidder_approval_id', $bid->bidder_approval_id)->update(['voided_at' => now()]);
             $last = Bid::where('listing_id', $bid->listing_id)->whereNull('voided_at')->orderByDesc('id')->first();
             $state->forceFill(['current_amount' => $last?->amount, 'leader_approval_id' => $last?->bidder_approval_id])->save();
+            BidEngine::announce(Listing::findOrFail($bid->listing_id), $state);
         });
 
         Audit::record('bidding', 'bid_voided', "Voided bid #{$bid->bidder_number} R ".number_format($bid->amount, 0, '.', ' ').": {$reason}", null, $actor);

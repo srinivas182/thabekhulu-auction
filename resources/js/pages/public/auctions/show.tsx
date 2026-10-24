@@ -1,10 +1,11 @@
-import { Head, Link, usePoll } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { FileText, Lock } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
 import type { BidderState } from '@/components/auctions/bidder-panel';
 import BidderPanel from '@/components/auctions/bidder-panel';
 import type { AuctionLive } from '@/components/auctions/bid-form';
 import BidForm from '@/components/auctions/bid-form';
+import { useLiveAuction } from '@/hooks/use-live-auction';
 import Countdown from '@/components/auctions/countdown';
 import StatusBadge from '@/components/auctions/status-badge';
 import type { Fact, ListingCardData } from '@/components/auctions/types';
@@ -40,7 +41,7 @@ type Props = {
 };
 
 export default function AuctionShow({
-    auction,
+    auction: initialAuction,
     bidder,
     listing: l,
     office,
@@ -50,10 +51,13 @@ export default function AuctionShow({
     const mounted = useMounted();
     const place = [l.suburb, l.city, l.province].filter(Boolean).join(', ');
     const open = l.status.key !== 'soon';
-    usePoll(
-        5000,
-        { only: ['auction'] },
-        { autoStart: open && !!auction && !auction.closed },
+    const userId =
+        (usePage().props.auth as { user?: { id: number } | null } | undefined)
+            ?.user?.id ?? null;
+    const { auction, live, outbid, clearOutbid } = useLiveAuction(
+        l.ulid,
+        initialAuction,
+        userId,
     );
 
     return (
@@ -442,6 +446,31 @@ export default function AuctionShow({
                             ulid={l.ulid}
                             minimum={l.minimum}
                         />
+                    )}
+                    {outbid && (
+                        <p
+                            role="alert"
+                            className="flex items-center justify-between gap-3 rounded-[10px] bg-brand-accent-soft px-3.5 py-3 text-sm text-brand-accent"
+                        >
+                            <span>
+                                You’ve been outbid: the bid is now{' '}
+                                <strong>{rand(outbid)}</strong>.
+                            </span>
+                            <button
+                                type="button"
+                                onClick={clearOutbid}
+                                className="font-semibold underline"
+                            >
+                                OK
+                            </button>
+                        </p>
+                    )}
+                    {auction && !auction.closed && (
+                        <p className="text-xs text-muted-foreground">
+                            {live
+                                ? '● Live: bids appear instantly'
+                                : 'Updating every few seconds'}
+                        </p>
                     )}
                     {auction && auction.recent.length > 0 && (
                         <section

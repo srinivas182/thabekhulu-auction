@@ -22,9 +22,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
+        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
-    ->withCommands([__DIR__.'/../app/Domains/Listings/Console', __DIR__.'/../app/Domains/Quotes/Console'])
+    ->withCommands([__DIR__.'/../app/Domains/Listings/Console', __DIR__.'/../app/Domains/Quotes/Console', __DIR__.'/../app/Domains/Bidding/Console'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         // Provider callbacks are authenticated by their signatures, not CSRF tokens.

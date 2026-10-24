@@ -23,6 +23,7 @@ use App\Domains\Listings\Http\Controllers\ListingAssetController;
 use App\Domains\Listings\Http\Controllers\ListingController;
 use App\Domains\Listings\Http\Controllers\ListingWorkflowController;
 use App\Domains\Listings\Http\Controllers\Public\AuctionController;
+use App\Domains\Notifications\Http\NotificationPreferenceController;
 use App\Domains\Payments\Http\Controllers\BuyerDepositController;
 use App\Domains\Payments\Http\Controllers\FinanceController;
 use App\Domains\Payments\Http\Controllers\PaymentProviderController;
@@ -94,6 +95,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('account/approvals', [BiddingController::class, 'approvals'])->name('account.approvals');
     Route::post('auctions/bid/{listing}', [BidController::class, 'store'])->middleware('throttle:30,1')->name('auctions.bid');
     Route::post('auctions/apply/{listing}', [BiddingController::class, 'apply'])->middleware('throttle:10,1')->name('auctions.apply');
+    Route::get('account/notifications', [NotificationPreferenceController::class, 'show'])->name('account.notifications');
+    Route::put('account/notifications', [NotificationPreferenceController::class, 'update'])->name('account.notifications.update');
     Route::get('account/bank', [BankAccountController::class, 'show'])->name('account.bank');
     Route::post('account/bank', [BankAccountController::class, 'store'])->middleware('throttle:10,1')->name('account.bank.store');
     Route::prefix('account/verification')->name('account.verification')->group(function () {
@@ -261,6 +264,8 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('lines/{line}', [FinanceController::class, 'resolve'])->middleware('can:deposits.reconcile')->name('resolve');
         });
         Route::middleware('can:settings.manage')->group(function () {
+            Route::get('notifications/whatsapp', [NotificationPreferenceController::class, 'settings'])->name('notifications.whatsapp');
+            Route::put('notifications/whatsapp', [NotificationPreferenceController::class, 'updateSettings'])->name('notifications.whatsapp.update');
             Route::get('finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');
             Route::put('finance/settings', [FinanceController::class, 'updateSettings'])->name('finance.settings.update');
             Route::get('data-room/settings', [NdaSettingsController::class, 'edit'])->name('dataroom.settings');
