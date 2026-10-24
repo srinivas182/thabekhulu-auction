@@ -37,6 +37,7 @@ use App\Domains\Payments\Http\Controllers\RefundController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Premium\Http\PremiumController;
+use App\Domains\Privacy\Http\RetentionController;
 use App\Domains\Quotes\Http\Controllers\Public\AccountQuotesController;
 use App\Domains\Quotes\Http\Controllers\Public\ClientQuoteController;
 use App\Domains\Quotes\Http\Controllers\QuoteController;
@@ -293,6 +294,9 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::delete('{slot}', [PremiumController::class, 'destroy'])->name('destroy');
         });
         Route::get('newsletter/export', [GrowthController::class, 'export'])->middleware('can:cms.manage')->name('newsletter.export');
+        // Super admin only (checked in the controller; super admins hold every permission).
+        Route::get('settings/retention', [RetentionController::class, 'show'])->middleware('can:settings.manage')->name('settings.retention');
+        Route::put('settings/retention', [RetentionController::class, 'update'])->middleware('can:settings.manage')->name('settings.retention.update');
         Route::middleware('can:compliance.review')->prefix('compliance')->name('compliance.')->group(function () {
             Route::get('/', [ComplianceController::class, 'index'])->name('index');
             Route::get('{ulid}', [ComplianceController::class, 'show'])->name('show');

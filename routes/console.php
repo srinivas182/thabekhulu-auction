@@ -31,3 +31,8 @@ Schedule::command('growth:alerts')->hourly()->withoutOverlapping()->onOneServer(
 
 // Sprint 8c: gather suspicious-activity signals for review.
 Schedule::command('compliance:scan')->hourly()->withoutOverlapping()->onOneServer();
+
+// Sprint 9a: weekly retention run; purges only once the attorney's approval is recorded.
+// The command reads the approval when it runs: never read settings here, or every artisan command
+// (including the migration that creates them) would fail at start-up (found in Sprint 9a).
+Schedule::command('privacy:retention --scheduled')->weeklyOn(0, '03:00')->timezone('Africa/Johannesburg')->onOneServer();
