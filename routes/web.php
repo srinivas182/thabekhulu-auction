@@ -14,6 +14,8 @@ use App\Domains\Cms\Http\Controllers\Public\PageController;
 use App\Domains\DataRoom\Http\Controllers\BuyerDashboardController;
 use App\Domains\DataRoom\Http\Controllers\DataRoomController;
 use App\Domains\DataRoom\Http\Controllers\NdaSettingsController;
+use App\Domains\Events\Http\Controllers\EventAdminController;
+use App\Domains\Events\Http\Controllers\EventController;
 use App\Domains\Identity\Http\Controllers\DashboardRedirectController;
 use App\Domains\Identity\Http\Controllers\InvitationController;
 use App\Domains\Identity\Http\Controllers\StaffController;
@@ -55,6 +57,11 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/', HomeController::class)->name('home');
 Route::get('sitemap.xml', [AuctionController::class, 'sitemap'])->name('sitemap');
+Route::get('events', [EventController::class, 'index'])->name('events.index');
+Route::get('events/{slug}', [EventController::class, 'show'])->name('events.show');
+Route::post('events/{slug}/order', [EventController::class, 'order'])->middleware('throttle:5,1')->name('events.order');
+Route::get('tickets/{order}', [EventController::class, 'tickets'])->middleware('signed')->name('events.tickets');
+Route::get('tickets/{order}/pdf', [EventController::class, 'ticketsPdf'])->middleware('signed')->name('events.tickets.pdf');
 Route::post('webhooks/payments/tradesafe/{secret}', [PaymentWebhookController::class, 'tradesafe'])->middleware('throttle:120,1')->name('webhooks.payments.tradesafe');
 Route::post('webhooks/payments/{provider}', PaymentWebhookController::class)->middleware('throttle:120,1')->name('webhooks.payments');
 Route::post('webhooks/verification/{provider}', WebhookController::class)->middleware('throttle:120,1')->name('webhooks.verification');
@@ -254,6 +261,19 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::put('deposit-provider', [PaymentProviderController::class, 'depositProvider'])->name('deposit');
             Route::put('{provider}', [PaymentProviderController::class, 'update'])->name('update');
             Route::post('{provider}/test', [PaymentProviderController::class, 'test'])->name('test');
+        });
+        Route::prefix('events')->name('events.')->group(function () {
+            Route::middleware('can:events.manage')->group(function () {
+                Route::get('/', [EventAdminController::class, 'index'])->name('index');
+                Route::get('create', [EventAdminController::class, 'create'])->name('create');
+                Route::post('/', [EventAdminController::class, 'store'])->name('store');
+                Route::get('{event}/edit', [EventAdminController::class, 'edit'])->name('edit');
+                Route::put('{event}', [EventAdminController::class, 'update'])->name('update');
+                Route::put('{event}/status', [EventAdminController::class, 'status'])->name('status');
+                Route::get('{event}/attendees', [EventAdminController::class, 'attendees'])->name('attendees');
+            });
+            Route::get('{event}/check-in', [EventAdminController::class, 'checkInPage'])->middleware('can:events.checkin')->name('checkin');
+            Route::post('{event}/check-in', [EventAdminController::class, 'checkIn'])->middleware(['can:events.checkin', 'throttle:120,1'])->name('checkin.store');
         });
         Route::prefix('settlement')->name('settlement.')->group(function () {
             Route::get('/', [SettlementController::class, 'index'])->name('index');
