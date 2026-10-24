@@ -166,7 +166,7 @@ class BuyerVerificationController extends Controller
     /** The verification the buyer may still change; starts one if none is open. */
     private function editable(User $user): Verification
     {
-        abort_unless($user->isBuyer(), 403);
+        abort_unless($user->isBuyer() || $user->isSeller(), 403); // sellers verify too (Sprint 8a)
         $v = $this->current($user);
 
         if ($v !== null && in_array($v->status, ['submitted', 'review', 'verified'], true)) {

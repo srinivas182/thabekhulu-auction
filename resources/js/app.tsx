@@ -36,6 +36,7 @@ void createInertiaApp({
                 return null;
             case name.startsWith('public/'):
             case name.startsWith('account/'):
+            case name.startsWith('seller/'):
                 return PublicLayout;
             case name.startsWith('auth/'):
                 return AuthLayout;

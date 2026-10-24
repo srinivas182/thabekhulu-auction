@@ -3,16 +3,20 @@
 namespace App\Domains\Leads\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\Catalogue\Models\Category;
 use App\Domains\Leads\Models\Enquiry;
 use App\Domains\Leads\Models\EnquiryReply;
 use App\Domains\Leads\Models\Lead;
 use App\Domains\Leads\Models\LeadNote;
 use App\Domains\Leads\Notifications\EnquiryReplyMail;
+use App\Domains\Listings\Models\Listing;
+use App\Domains\Sellers\Http\Controllers\SellerController;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\Rule;
@@ -59,6 +63,12 @@ class InboxController extends Controller
             'statuses' => Lead::STATUSES,
             'staff' => User::staff()->whereNull('deactivated_at')->orderBy('first_name')->get(['id', 'first_name', 'last_name'])->map(fn (User $u) => ['id' => $u->id, 'name' => $u->name]),
             'canManage' => Gate::allows('leads.manage'),
+            // Sprint 8a: seller documents and turning the lead into a draft listing.
+            'documents' => DB::table('lead_documents')->where('lead_id', $lead->id)->get(['id', 'kind'])
+                ->map(fn ($d) => ['kind' => SellerController::DOC_KINDS[$d->kind] ?? $d->kind, 'url' => route('admin.leads.document', [$lead, $d->id])])->values(),
+            'fromSeller' => $lead->user_id !== null,
+            'listing' => $lead->listing_id ? ['url' => route('admin.listings.edit', Listing::whereKey($lead->listing_id)->value('ulid'))] : null,
+            'categories' => Gate::allows('listings.create') && $lead->listing_id === null ? Category::orderBy('name')->get(['id', 'name']) : [],
         ]);
     }
 
