@@ -147,6 +147,6 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     /** Private alerts (outbid) for this buyer only; see routes/channels.php. */
     public function receivesBroadcastNotificationsOn(): string
     {
-        return 'bidder.'.$this->id;
+        return 'bidder.'.$this->ulid; // the browser only knows the ulid; internal ids never leave the server
     }
 }

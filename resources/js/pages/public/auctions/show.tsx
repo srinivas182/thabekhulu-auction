@@ -51,13 +51,14 @@ export default function AuctionShow({
     const mounted = useMounted();
     const place = [l.suburb, l.city, l.province].filter(Boolean).join(', ');
     const open = l.status.key !== 'soon';
-    const userId =
-        (usePage().props.auth as { user?: { id: number } | null } | undefined)
-            ?.user?.id ?? null;
+    // Guests have no user at runtime even though the shared Auth type says otherwise.
+    const userUlid =
+        (usePage().props.auth?.user as { ulid: string } | null | undefined)
+            ?.ulid ?? null;
     const { auction, live, outbid, clearOutbid } = useLiveAuction(
         l.ulid,
         initialAuction,
-        userId,
+        userUlid,
     );
 
     return (

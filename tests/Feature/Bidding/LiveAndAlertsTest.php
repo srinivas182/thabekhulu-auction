@@ -124,10 +124,12 @@ it('authorises private alert channels for their owner only', function () {
     // Channel rules were registered on the boot-time (null) broadcaster: register them on Reverb.
     Broadcast::forgetDrivers();
     require base_path('routes/channels.php');
-    $payload = fn (User $u) => ['socket_id' => '1234.5678', 'channel_name' => "private-bidder.{$u->id}"];
+    $payload = fn (User $u) => ['socket_id' => '1234.5678', 'channel_name' => "private-bidder.{$u->ulid}"];
 
     $this->actingAs($this->a)->post('/broadcasting/auth', $payload($this->a))->assertOk()->assertJsonStructure(['auth']);
     $this->actingAs($this->b)->post('/broadcasting/auth', $payload($this->a))->assertForbidden();
+    expect($this->a->receivesBroadcastNotificationsOn())->toBe("bidder.{$this->a->ulid}"); // the browser subscribes with the ulid it knows
+    $this->actingAs($this->a)->get('/')->assertInertia(fn ($p) => $p->where('auth.user.ulid', $this->a->ulid)->missing('auth.user.id'));
 });
 
 it('allows the WebSocket origin in the content security policy', function () {

@@ -13,7 +13,7 @@ type PublicUpdate = Omit<AuctionLive, 'mine'> & { leaderNumber: string | null };
 export function useLiveAuction(
     ulid: string,
     initial: AuctionLive | null,
-    userId?: number | null,
+    userUlid?: string | null,
 ) {
     const [auction, setAuction] = useState(initial);
     const [live, setLive] = useState(false);
@@ -54,8 +54,8 @@ export function useLiveAuction(
                                 : prev,
                         ),
                 );
-                if (userId) {
-                    e.private(`bidder.${userId}`).notification(
+                if (userUlid) {
+                    e.private(`bidder.${userUlid}`).notification(
                         (n: {
                             kind?: string;
                             listing?: string;
@@ -83,7 +83,7 @@ export function useLiveAuction(
                 cleanup = () => {
                     connection?.unbind('state_change', update);
                     e.leave(`listing.${ulid}`);
-                    if (userId) e.leave(`bidder.${userId}`);
+                    if (userUlid) e.leave(`bidder.${userUlid}`);
                 };
             })
             .catch(() => setLive(false)); // no WebSocket: polling below keeps the page current
@@ -92,7 +92,7 @@ export function useLiveAuction(
             stopped = true;
             cleanup();
         };
-    }, [ulid, userId, initial?.closed]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [ulid, userUlid, initial?.closed]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
         if (live || !initial || initial.closed) return;
