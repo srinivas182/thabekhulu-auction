@@ -6,9 +6,11 @@ use App\Domains\Bidding\Support\AuctionView;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Catalogue\Models\Province;
+use App\Domains\Events\Models\Event;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\ListingSearch;
 use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Platform\Support\Seo;
 use App\Domains\Settings\Settings\GeneralSettings;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\BiddingEntity;
@@ -18,6 +20,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -86,12 +89,8 @@ class AuctionController extends Controller
             'bidder' => $this->bidderState($listing),
             'auction' => AuctionView::for($listing, request()->user()),
             'office' => ['phone' => $general->contact_phone, 'email' => $general->contact_email],
-            'seo' => [
-                'title' => ($listing->seo_title ?: $listing->title).' | Thabekhulu auctions',
-                'description' => $listing->seo_description ?: (string) $listing->summary,
-                'image' => $data['image'],
-                'canonical' => $data['url'],
-            ],
+            'seo' => Seo::make(($listing->seo_title ?: $listing->title).' | Thabekhulu auctions', $listing->seo_description ?: (string) $listing->summary, $data['image'], $data['url'], 'product'),
+            'watching' => request()->user() !== null && DB::table('watchlist_items')->where('user_id', request()->user()->id)->where('listing_id', $listing->id)->exists(),
         ])->withViewData(['structuredData' => $structured]);
     }
 
@@ -127,6 +126,10 @@ class AuctionController extends Controller
         $urls = [route('home'), route('auctions.index')];
         foreach (Category::where('is_visible', true)->orderBy('sort_order')->get() as $c) {
             $urls[] = route('auctions.category', $c);
+        }
+        $urls[] = route('events.index');
+        foreach (Event::where('status', 'published')->where('ends_at', '>', now())->pluck('slug') as $slug) {
+            $urls[] = route('events.show', $slug);
         }
         Listing::public()->with(['category', 'city'])->each(function (Listing $l) use (&$urls): void {
             $urls[] = PublicListing::url($l);

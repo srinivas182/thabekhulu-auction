@@ -8,6 +8,7 @@ use App\Domains\Cms\Settings\HomeSettings;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Platform\Support\Seo;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -46,7 +47,12 @@ class HomeController extends Controller
             'steps' => $home->steps,
             'calendar' => $home->show_calendar ? $this->calendar() : [],
             'ffcNumber' => $home->ffc_number,
-        ]);
+            'seo' => Seo::make('Property and mining auctions in South Africa | Thabekhulu', (string) $home->hero_text, null, url('/')),
+        ])->withViewData(['structuredData' => [
+            ['@context' => 'https://schema.org', '@type' => 'Organization', 'name' => 'Thabekhulu Development Group', 'url' => url('/'), 'logo' => url('/favicon.svg'), 'areaServed' => 'ZA'],
+            // No SearchAction: the site has no free-text search to advertise.
+            ['@context' => 'https://schema.org', '@type' => 'WebSite', 'name' => 'Thabekhulu auctions', 'url' => url('/')],
+        ]]);
     }
 
     /**

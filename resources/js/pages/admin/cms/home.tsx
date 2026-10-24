@@ -1,5 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
+import { exportMethod as newsletterExport } from '@/routes/admin/newsletter';
 import CmsNav from '@/components/cms-nav';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,9 @@ export default function HomeSettings({
             <Head title="Home page" />
             <div className="flex flex-1 flex-col gap-6 p-4 sm:p-6">
                 <h1 className="font-display text-3xl">Website content</h1>
+                <a href={newsletterExport().url} className="text-sm underline">
+                    Download newsletter subscribers (CSV, confirmed only)
+                </a>
                 <CmsNav current="Home page" />
                 <section
                     className="grid gap-4 rounded-xl border border-border bg-card p-5"

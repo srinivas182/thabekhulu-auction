@@ -9,6 +9,7 @@ use App\Domains\Events\Notifications\TicketsIssued;
 use App\Domains\Events\Support\TicketToken;
 use App\Domains\Payments\Providers\PaystackProvider;
 use App\Domains\Payments\Support\PaymentRegistry;
+use App\Domains\Platform\Support\Seo;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
@@ -42,10 +43,26 @@ class EventController extends Controller
     {
         $event = Event::where('slug', $slug)->whereIn('status', ['published', 'cancelled'])->firstOrFail();
 
+        $url = route('events.show', $event->slug);
+        $left = max(0, $event->capacity - $event->seatsTaken());
+        $structured = [[
+            '@context' => 'https://schema.org', '@type' => 'Event', 'name' => $event->title,
+            'description' => mb_substr(trim(strip_tags((string) $event->description)), 0, 500),
+            'startDate' => $event->starts_at->toIso8601String(), 'endDate' => $event->ends_at->toIso8601String(),
+            'eventStatus' => $event->status === 'cancelled' ? 'https://schema.org/EventCancelled' : 'https://schema.org/EventScheduled',
+            'eventAttendanceMode' => $event->kind === 'online' ? 'https://schema.org/OnlineEventAttendanceMode' : 'https://schema.org/OfflineEventAttendanceMode',
+            // The online link is for ticket holders only, so the virtual location points at the event page.
+            'location' => $event->kind === 'online' ? ['@type' => 'VirtualLocation', 'url' => $url] : ['@type' => 'Place', 'name' => (string) $event->venue, 'address' => (string) $event->venue],
+            'organizer' => ['@type' => 'Organization', 'name' => 'Thabekhulu Development Group', 'url' => url('/')],
+            'offers' => ['@type' => 'Offer', 'url' => $url, 'price' => number_format($event->price / 100, 2, '.', ''), 'priceCurrency' => 'ZAR',
+                'availability' => $left > 0 && $event->status === 'published' ? 'https://schema.org/InStock' : 'https://schema.org/SoldOut'],
+        ]];
+
         return Inertia::render('public/events/show', [
             'event' => self::card($event) + ['description' => $event->description, 'status' => $event->status, 'started' => $event->starts_at->isPast(), 'maxPerOrder' => EventService::MAX_PER_ORDER],
             'canPay' => $event->price === 0 || $payments->usable('paystack', 'small'),
-        ]);
+            'seo' => Seo::make($event->title.' | Thabekhulu events', strip_tags((string) $event->description) ?: $event->title, null, $url),
+        ])->withViewData(['structuredData' => $structured]);
     }
 
     public function order(Request $request, string $slug, EventService $service, PaymentRegistry $payments): SymfonyResponse

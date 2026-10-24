@@ -1,5 +1,6 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Form, Link, usePage } from '@inertiajs/react';
 import type { PropsWithChildren } from 'react';
+import { subscribe } from '@/routes/newsletter';
 import BrandLogo from '@/components/brand-logo';
 import { dashboard, home, login, register } from '@/routes';
 
@@ -96,6 +97,75 @@ export default function PublicLayout({ children }: PropsWithChildren) {
             <main className="flex-1">{children}</main>
 
             <footer className="bg-[#0e1d19] text-[#cfe3da]">
+                <div className="border-b border-white/10">
+                    <Form
+                        action={subscribe().url}
+                        method="post"
+                        options={{ preserveScroll: true }}
+                        resetOnSuccess
+                        className="mx-auto flex max-w-[1280px] flex-wrap items-end gap-3 px-5 py-8 sm:px-8 [&_*]:min-w-0"
+                    >
+                        {({ processing, errors }) => (
+                            <>
+                                <div className="grow basis-64">
+                                    <p className="font-display text-xl text-white">
+                                        Auction news by email
+                                    </p>
+                                    <p className="text-sm">
+                                        New auctions, events and results.
+                                        Unsubscribe any time.
+                                    </p>
+                                </div>
+                                <input
+                                    type="text"
+                                    name="website"
+                                    tabIndex={-1}
+                                    autoComplete="off"
+                                    className="hidden"
+                                    aria-hidden="true"
+                                />
+                                <label className="flex grow basis-56 flex-col gap-1 text-sm">
+                                    Email
+                                    <input
+                                        name="email"
+                                        type="email"
+                                        className="h-11 rounded-[10px] border border-white/20 bg-white/5 px-3 text-white"
+                                    />
+                                </label>
+                                <label className="flex basis-full items-start gap-2 text-xs sm:basis-auto">
+                                    <input
+                                        type="checkbox"
+                                        name="consent"
+                                        value="1"
+                                        className="mt-0.5 size-4"
+                                    />
+                                    <span>
+                                        I agree to receive email from Thabekhulu
+                                        (
+                                        <a
+                                            href="/privacy"
+                                            className="underline"
+                                        >
+                                            privacy notice
+                                        </a>
+                                        )
+                                    </span>
+                                </label>
+                                <button
+                                    disabled={processing}
+                                    className="h-11 rounded-[10px] bg-white px-5 font-semibold text-[#0e1d19]"
+                                >
+                                    Subscribe
+                                </button>
+                                {(errors.email || errors.consent) && (
+                                    <p className="basis-full text-sm text-red-300">
+                                        {errors.email ?? errors.consent}
+                                    </p>
+                                )}
+                            </>
+                        )}
+                    </Form>
+                </div>
                 <div className="mx-auto flex max-w-[1280px] flex-wrap justify-between gap-8 px-5 py-12 sm:px-8">
                     <div>
                         <p className="font-display text-2xl text-white">

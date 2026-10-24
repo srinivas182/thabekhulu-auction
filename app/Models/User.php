@@ -72,6 +72,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'type' => UserType::class,
             'email_verified_at' => 'datetime',
             'whatsapp_opt_in_at' => 'datetime',
+            'attribution' => 'array',
             'password' => 'hashed',
             'terms_accepted_at' => 'datetime',
             'popia_consent_at' => 'datetime',

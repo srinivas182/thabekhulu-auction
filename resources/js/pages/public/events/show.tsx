@@ -1,4 +1,6 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
+import SeoHead from '@/components/seo-head';
+import type { Seo } from '@/components/seo-head';
 import { randCents } from '@/lib/cents';
 import { order } from '@/routes/events';
 
@@ -17,16 +19,17 @@ type Props = {
         maxPerOrder: number;
     };
     canPay: boolean;
+    seo: Seo;
 };
 const field =
     'h-12 w-full min-w-0 rounded-[10px] border border-input bg-card px-3 text-base';
 
-export default function EventShow({ event: e, canPay }: Props) {
+export default function EventShow({ event: e, canPay, seo }: Props) {
     const open = e.status === 'published' && !e.started && e.left > 0 && canPay;
 
     return (
         <>
-            <Head title={e.title} />
+            <SeoHead seo={seo} />
             <section className="mx-auto grid max-w-[1100px] gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[1fr_380px]">
                 <div className="min-w-0">
                     <Link href="/events" className="text-sm underline">
