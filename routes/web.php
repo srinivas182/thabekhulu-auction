@@ -11,6 +11,8 @@ use App\Domains\Cms\Http\Controllers\Admin\MediaContentController;
 use App\Domains\Cms\Http\Controllers\Public\HomeController;
 use App\Domains\Cms\Http\Controllers\Public\InsightsController;
 use App\Domains\Cms\Http\Controllers\Public\PageController;
+use App\Domains\Compliance\Http\Controllers\ComplianceController;
+use App\Domains\Compliance\Http\Controllers\ReportsController;
 use App\Domains\DataRoom\Http\Controllers\BuyerDashboardController;
 use App\Domains\DataRoom\Http\Controllers\DataRoomController;
 use App\Domains\DataRoom\Http\Controllers\NdaSettingsController;
@@ -291,6 +293,18 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::delete('{slot}', [PremiumController::class, 'destroy'])->name('destroy');
         });
         Route::get('newsletter/export', [GrowthController::class, 'export'])->middleware('can:cms.manage')->name('newsletter.export');
+        Route::middleware('can:compliance.review')->prefix('compliance')->name('compliance.')->group(function () {
+            Route::get('/', [ComplianceController::class, 'index'])->name('index');
+            Route::get('{ulid}', [ComplianceController::class, 'show'])->name('show');
+            Route::put('{ulid}', [ComplianceController::class, 'update'])->name('update');
+            Route::get('{ulid}/evidence', [ComplianceController::class, 'evidence'])->name('evidence');
+        });
+        Route::prefix('reports')->name('reports.')->group(function () {
+            Route::get('register', [ReportsController::class, 'register'])->middleware('can:buyers.view')->name('register');
+            Route::get('register.csv', [ReportsController::class, 'registerCsv'])->middleware(['can:buyers.view', 'can:reports.export'])->name('register.csv');
+            Route::get('finance', [ReportsController::class, 'finance'])->middleware('can:reports.view')->name('finance');
+            Route::get('finance/{report}.csv', [ReportsController::class, 'financeCsv'])->middleware('can:reports.export')->name('finance.csv');
+        });
         Route::prefix('events')->name('events.')->group(function () {
             Route::middleware('can:events.manage')->group(function () {
                 Route::get('/', [EventAdminController::class, 'index'])->name('index');

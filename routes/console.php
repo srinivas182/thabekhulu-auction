@@ -28,3 +28,6 @@ Schedule::command('settlement:daily')->dailyAt('07:30')->timezone('Africa/Johann
 
 // Sprint 8b: saved-search digests and 24-hour watchlist reminders.
 Schedule::command('growth:alerts')->hourly()->withoutOverlapping()->onOneServer();
+
+// Sprint 8c: gather suspicious-activity signals for review.
+Schedule::command('compliance:scan')->hourly()->withoutOverlapping()->onOneServer();

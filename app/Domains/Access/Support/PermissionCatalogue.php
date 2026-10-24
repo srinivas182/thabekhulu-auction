@@ -25,7 +25,7 @@ final class PermissionCatalogue
         'audit' => ['Audit log', ['view' => 'View the audit log', 'export' => 'Export the audit log']],
         'features' => ['Feature flags', ['manage' => 'Switch features on and off']],
         'categories' => ['Categories', ['manage' => 'Manage categories and document types']],
-        'compliance' => ['Compliance', ['signoff' => 'Sign off listing compliance checklist items']],
+        'compliance' => ['Compliance', ['signoff' => 'Sign off listing compliance checklist items', 'review' => 'Review suspicious activity and export evidence']],
         'listings' => ['Listings', ['view' => 'View listings', 'create' => 'Create listings', 'edit' => 'Edit listings', 'submit' => 'Submit listings for review', 'publish' => 'Approve and publish listings', 'delete' => 'Delete draft listings']],
         'auctions' => ['Auctions', ['monitor' => 'Monitor live auctions', 'pause' => 'Pause an auction', 'settle' => 'Confirm winners and handle defaults', 'void_bid' => 'Void a bid placed in error', 'open_tender' => 'Open sealed tenders (two people)']],
         'payments' => ['Payment providers', ['providers' => 'Enable payment providers, enter their keys and choose the deposit provider']],
@@ -105,6 +105,7 @@ final class PermissionCatalogue
                 'listings.delete', 'leads.view', 'leads.manage', 'enquiries.view', 'quotes.create', 'quotes.send',
             ],
             SystemRole::KycOfficer => [
+                'compliance.review',
                 'dashboard.view', 'kyc.view', 'kyc.approve', 'kyc.reject', 'kyc.suspend', 'kyc.approve_company', 'buyers.view',
             ],
             SystemRole::Finance => [
