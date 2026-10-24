@@ -2,6 +2,8 @@
 
 namespace App\Domains\Payments\Http\Controllers;
 
+use App\Domains\Events\Actions\EventService;
+use App\Domains\Events\Models\TicketOrder;
 use App\Domains\Payments\Actions\DepositService;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Support\PaymentRegistry;
@@ -43,6 +45,22 @@ class PaymentWebhookController extends Controller
         $payment = $adapter->confirm($request, $registry->credentials($provider), $setting->mode);
         if ($payment === null) {
             return response()->json(['ok' => true]); // nothing confirmed; no detail for callers
+        }
+
+        // Event ticket orders (Sprint 7c) share the provider callbacks.
+        if (str_starts_with($payment->reference, 'TDG-E-')) {
+            $order = TicketOrder::where('reference', $payment->reference)->first();
+            if ($order === null) {
+                return response()->json(['ok' => true]);
+            }
+            try {
+                DB::table('payment_events')->insert(['provider_key' => $provider, 'event_id' => $payment->eventId, 'deposit_id' => null, 'type' => 'ticket', 'created_at' => now()]);
+            } catch (UniqueConstraintViolationException) {
+                return response()->json(['ok' => true, 'duplicate' => true]);
+            }
+            app(EventService::class)->paid($order, $payment->amountCents, $payment->providerRef);
+
+            return response()->json(['ok' => true]);
         }
 
         $deposit = Deposit::where('reference', $payment->reference)->first();

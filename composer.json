@@ -12,6 +12,7 @@
     "require": {
         "php": "^8.3",
         "barryvdh/laravel-dompdf": "^3.1",
+        "chillerlan/php-qrcode": "^6.0",
         "enshrined/svg-sanitize": "^1.1",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/chisel": "^0.1.0",

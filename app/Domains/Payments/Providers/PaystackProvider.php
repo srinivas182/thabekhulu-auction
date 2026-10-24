@@ -2,6 +2,7 @@
 
 namespace App\Domains\Payments\Providers;
 
+use App\Domains\Events\Models\TicketOrder;
 use App\Domains\Payments\Contracts\PaymentProvider;
 use App\Domains\Payments\Data\ConfirmedPayment;
 use App\Domains\Payments\Models\Deposit;
@@ -84,6 +85,27 @@ final class PaystackProvider implements PaymentProvider
         return $url;
     }
 
+    /**
+     * Hosted checkout for an event ticket order (small payments).
+     *
+     * @param  array<string, string>  $credentials
+     */
+    public function checkoutForOrder(TicketOrder $order, array $credentials, string $returnUrl): string
+    {
+        $attempt = $order->reference.'-'.now()->format('His');
+        $r = Http::timeout(20)->withToken((string) ($credentials['secret_key'] ?? ''))->post(self::BASE.'/transaction/initialize', [
+            'email' => $order->email, 'amount' => $order->amount, 'currency' => 'ZAR', 'reference' => $attempt,
+            'callback_url' => $returnUrl, 'metadata' => ['order_reference' => $order->reference],
+        ]);
+        $url = $r->json('data.authorization_url');
+        if (! $r->successful() || ! is_string($url)) {
+            throw new RuntimeException('Paystack did not start the payment.');
+        }
+        $order->forceFill(['provider_ref' => $attempt])->save();
+
+        return $url;
+    }
+
     public function refund(Deposit $deposit, array $credentials, string $mode, string $comment): string
     {
         $r = Http::timeout(20)->withToken((string) ($credentials['secret_key'] ?? ''))->post(self::BASE.'/refund', [
@@ -113,6 +135,9 @@ final class PaystackProvider implements PaymentProvider
             return null;
         }
 
-        return new ConfirmedPayment((string) $v->json('data.metadata.deposit_reference'), (int) $v->json('data.amount'), $reference, 'charge:'.$reference);
+        // Deposits carry deposit_reference; event ticket orders carry order_reference.
+        $ours = (string) ($v->json('data.metadata.deposit_reference') ?? $v->json('data.metadata.order_reference'));
+
+        return new ConfirmedPayment($ours, (int) $v->json('data.amount'), $reference, 'charge:'.$reference);
     }
 }
