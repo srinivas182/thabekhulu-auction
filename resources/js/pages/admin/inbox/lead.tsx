@@ -1,4 +1,5 @@
-import { Head, router } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
+import { convert } from '@/routes/admin/leads';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -22,13 +23,26 @@ type Lead = {
     notes: { note: string; by: string; at: string }[];
 };
 type Props = {
+    documents: { kind: string; url: string }[];
+    fromSeller: boolean;
+    listing: { url: string } | null;
+    categories: { id: number; name: string }[];
     lead: Lead;
     statuses: Record<string, string>;
     staff: { id: number; name: string }[];
     canManage: boolean;
 };
 
-export default function LeadShow({ lead, statuses, staff, canManage }: Props) {
+export default function LeadShow({
+    lead,
+    statuses,
+    staff,
+    canManage,
+    documents,
+    fromSeller,
+    listing,
+    categories,
+}: Props) {
     const [f, setF] = useState({
         status: lead.status,
         assigned_to: lead.assignedTo,
@@ -40,6 +54,94 @@ export default function LeadShow({ lead, statuses, staff, canManage }: Props) {
             <Head title={`Lead: ${lead.name}`} />
             <div className="grid flex-1 gap-6 p-4 sm:p-6 xl:grid-cols-[1fr_360px]">
                 <div className="grid h-fit gap-5">
+                    {(documents.length > 0 ||
+                        listing ||
+                        categories.length > 0) && (
+                        <section
+                            aria-labelledby="seller-h"
+                            className="grid gap-3 rounded-xl border border-border bg-card p-5 text-sm [&_*]:min-w-0"
+                        >
+                            <h2 id="seller-h" className="font-semibold">
+                                {fromSeller ? 'Seller submission' : 'Listing'}
+                            </h2>
+                            {documents.length > 0 && (
+                                <ul className="grid gap-1">
+                                    {documents.map((d) => (
+                                        <li key={d.url}>
+                                            <a
+                                                href={d.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="underline"
+                                            >
+                                                {d.kind}
+                                            </a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {listing ? (
+                                <p>
+                                    A draft listing was created:{' '}
+                                    <Link
+                                        href={listing.url}
+                                        className="font-semibold underline"
+                                    >
+                                        open it
+                                    </Link>
+                                    .
+                                </p>
+                            ) : (
+                                categories.length > 0 && (
+                                    <Form
+                                        action={convert(lead.ulid).url}
+                                        method="post"
+                                        className="grid gap-2 sm:grid-cols-[1fr_1.4fr_auto] sm:items-end"
+                                    >
+                                        {({ processing, errors }) => (
+                                            <>
+                                                <label className="grid gap-1 font-medium">
+                                                    Category
+                                                    <select
+                                                        name="category_id"
+                                                        className="h-9 rounded-md border border-input bg-background px-2"
+                                                    >
+                                                        {categories.map((c) => (
+                                                            <option
+                                                                key={c.id}
+                                                                value={c.id}
+                                                            >
+                                                                {c.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </label>
+                                                <label className="grid gap-1 font-medium">
+                                                    Listing title
+                                                    <input
+                                                        name="title"
+                                                        defaultValue={`${lead.type}, ${lead.location}`}
+                                                        className="h-9 rounded-md border border-input bg-background px-2"
+                                                    />
+                                                    {errors.title && (
+                                                        <span className="text-destructive">
+                                                            {errors.title}
+                                                        </span>
+                                                    )}
+                                                </label>
+                                                <button
+                                                    disabled={processing}
+                                                    className="h-9 rounded-md bg-primary px-3 font-medium text-primary-foreground"
+                                                >
+                                                    Create draft listing
+                                                </button>
+                                            </>
+                                        )}
+                                    </Form>
+                                )
+                            )}
+                        </section>
+                    )}
                     <div>
                         <h1 className="font-display text-3xl">{lead.name}</h1>
                         <p className="text-muted-foreground">

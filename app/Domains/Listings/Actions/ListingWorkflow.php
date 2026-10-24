@@ -6,6 +6,7 @@ use App\Domains\Audit\Support\Audit;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Support\Pricing;
+use App\Domains\Sellers\Support\SellerPackages;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -78,6 +79,12 @@ class ListingWorkflow
      */
     public function readinessProblems(Listing $listing): array
     {
+        // PRD: a seller's auction may not end after their package expires (Sprint 8a).
+        $packageProblem = $listing->seller_user_id ? SellerPackages::endProblem((int) $listing->seller_user_id, $listing->ends_at) : null;
+        if ($packageProblem !== null) {
+            return [$packageProblem];
+        }
+
         $problems = [];
         $listing->loadMissing(['category.attributeDefinitions', 'category.documentTypes', 'attributeValues', 'documents']);
 

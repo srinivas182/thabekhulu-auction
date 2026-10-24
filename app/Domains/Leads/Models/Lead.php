@@ -16,6 +16,8 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * only staff with leads.view can open them.
  *
  * @property int $id
+ * @property int|null $user_id
+ * @property int|null $listing_id
  * @property string $ulid
  * @property string $name
  * @property string $email
@@ -35,7 +37,7 @@ class Lead extends Model implements HasMedia
 {
     use InteractsWithMedia;
 
-    public const STATUSES = ['new' => 'New', 'contacted' => 'Contacted', 'valuation_booked' => 'Valuation booked', 'listed' => 'Listed', 'not_suitable' => 'Not suitable'];
+    public const STATUSES = ['new' => 'New', 'contacted' => 'Contacted', 'valuation_booked' => 'Valuation booked', 'listed' => 'Listed', 'not_suitable' => 'Not suitable', 'converted' => 'Draft listing created'];
 
     protected $guarded = ['id', 'ulid'];
 

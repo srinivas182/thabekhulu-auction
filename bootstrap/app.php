@@ -3,6 +3,7 @@
 use App\Domains\Identity\Http\Middleware\EnsureAccountActive;
 use App\Domains\Identity\Http\Middleware\EnsureStaff;
 use App\Domains\Identity\Http\Middleware\RequireStaffTwoFactor;
+use App\Domains\Platform\Http\Middleware\EnsureFeature;
 use App\Domains\Platform\Http\Middleware\SecurityHeaders;
 use App\Domains\Settings\Http\Middleware\ApplyRuntimeSettings;
 use App\Domains\Settings\Http\Middleware\RestrictAdminIp;
@@ -32,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['webhooks/*']);
 
         $middleware->alias([
+            'feature' => EnsureFeature::class,
             'staff' => EnsureStaff::class,
             'staff.2fa' => RequireStaffTwoFactor::class,
             'admin.ip' => RestrictAdminIp::class,

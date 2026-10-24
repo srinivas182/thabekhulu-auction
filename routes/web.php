@@ -40,6 +40,8 @@ use App\Domains\Quotes\Http\Controllers\QuoteController;
 use App\Domains\Quotes\Http\Controllers\QuoteReportController;
 use App\Domains\Quotes\Http\Controllers\QuoteSetupController;
 use App\Domains\Quotes\Http\Controllers\QuoteWorkflowController;
+use App\Domains\Sellers\Http\Controllers\SellerAdminController;
+use App\Domains\Sellers\Http\Controllers\SellerController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
 use App\Domains\Settlement\Http\Controllers\PayoutController;
 use App\Domains\Settlement\Http\Controllers\SettlementController;
@@ -58,6 +60,17 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/', HomeController::class)->name('home');
 Route::get('sitemap.xml', [AuctionController::class, 'sitemap'])->name('sitemap');
+// Seller module (Sprint 8a): every route 404s while the "sellers" flag is off.
+Route::middleware('feature:sellers')->group(function () {
+    Route::middleware('guest')->group(function () {
+        Route::get('sell/register', [SellerController::class, 'showRegister'])->name('seller.register');
+        Route::post('sell/register', [SellerController::class, 'register'])->middleware('throttle:5,1')->name('seller.register.store');
+    });
+    Route::middleware('auth')->group(function () {
+        Route::get('seller', [SellerController::class, 'dashboard'])->name('seller.dashboard');
+        Route::post('seller/submissions', [SellerController::class, 'submit'])->middleware('throttle:10,1')->name('seller.submit');
+    });
+});
 Route::get('events', [EventController::class, 'index'])->name('events.index');
 Route::get('events/{slug}', [EventController::class, 'show'])->name('events.show');
 Route::post('events/{slug}/order', [EventController::class, 'order'])->middleware('throttle:5,1')->name('events.order');
@@ -350,6 +363,13 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
         Route::get('leads/{lead}', [InboxController::class, 'showLead'])->middleware('can:leads.view')->name('leads.show');
         Route::put('leads/{lead}', [InboxController::class, 'updateLead'])->middleware('can:leads.manage')->name('leads.update');
         Route::get('leads/{lead}/photos/{media}', [InboxController::class, 'leadPhoto'])->middleware('can:leads.view')->name('leads.photo');
+        Route::get('leads/{lead}/documents/{document}', [SellerAdminController::class, 'document'])->middleware('can:leads.view')->name('leads.document');
+        Route::post('leads/{lead}/convert', [SellerAdminController::class, 'convert'])->middleware('can:listings.create')->name('leads.convert');
+        Route::middleware(['feature:sellers', 'can:sellers.manage'])->prefix('sellers')->name('sellers.')->group(function () {
+            Route::get('packages', [SellerAdminController::class, 'packages'])->name('packages');
+            Route::post('packages', [SellerAdminController::class, 'storePackage'])->name('packages.store');
+            Route::post('packages/assign', [SellerAdminController::class, 'assign'])->name('packages.assign');
+        });
         Route::get('enquiries', [InboxController::class, 'enquiries'])->middleware('can:enquiries.view')->name('enquiries.index');
         Route::get('enquiries/{enquiry}', [InboxController::class, 'showEnquiry'])->middleware('can:enquiries.view')->name('enquiries.show');
         Route::post('enquiries/{enquiry}/reply', [InboxController::class, 'reply'])->middleware('can:enquiries.respond')->name('enquiries.reply');

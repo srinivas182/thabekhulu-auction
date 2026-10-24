@@ -116,6 +116,11 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->type === UserType::Staff;
     }
 
+    public function isSeller(): bool
+    {
+        return $this->type === UserType::Seller;
+    }
+
     public function isBuyer(): bool
     {
         return $this->type === UserType::Buyer;

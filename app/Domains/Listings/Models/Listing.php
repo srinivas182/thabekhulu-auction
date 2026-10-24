@@ -43,6 +43,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property int $deposit_amount
  * @property DepositTerms $deposit_terms
  * @property AuctionType $auction_type
+ * @property int|null $seller_user_id
  * @property string|null $bidding_terms
  * @property Carbon|null $starts_at
  * @property Carbon|null $ends_at
