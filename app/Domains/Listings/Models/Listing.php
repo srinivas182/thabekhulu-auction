@@ -170,4 +170,14 @@ class Listing extends Model implements HasMedia
     {
         $query->whereIn('status', [ListingStatus::Scheduled, ListingStatus::Live]);
     }
+
+    /**
+     * Listings shown on their own page: active plus finished auctions.
+     *
+     * @param  Builder<Listing>  $query
+     */
+    public function scopeShown(Builder $query): void
+    {
+        $query->whereIn('status', [ListingStatus::Scheduled, ListingStatus::Live, ListingStatus::Closed, ListingStatus::Sold, ListingStatus::NoBids]);
+    }
 }

@@ -67,7 +67,7 @@ class AuctionController extends Controller
 
     public function show(Category $category, string $city, string $slug, GeneralSettings $general): Response
     {
-        $listing = Listing::public()->where('slug', $slug)->where('category_id', $category->id)
+        $listing = Listing::shown()->where('slug', $slug)->where('category_id', $category->id)
             ->with(['category', 'city.province'])->firstOrFail();
 
         // Old or wrong path segments redirect to the canonical address.

@@ -5,6 +5,9 @@ import { rand } from '@/lib/money';
 import { bid } from '@/routes/auctions';
 
 export type AuctionLive = {
+    kind?: 'open' | 'sealed';
+    outcome?: 'sold' | 'no_bids' | 'closed' | null;
+    minimum?: number;
     current: number | null;
     leaderNumber?: string | null;
     next: number;
@@ -21,6 +24,7 @@ export type AuctionLive = {
         canBid: boolean;
         leading: boolean;
         hasBid: boolean;
+        offer?: number | null;
     } | null;
 };
 

@@ -45,7 +45,8 @@ class RefundService
         return $d;
     }
 
-    public function schedule(Deposit $deposit, string $reason, User $by, ?CarbonInterface $dueOn = null): Refund
+    /** $by is null when the auction close schedules the refund automatically (audit: System). */
+    public function schedule(Deposit $deposit, string $reason, ?User $by, ?CarbonInterface $dueOn = null): Refund
     {
         if ($deposit->status !== 'received' || $deposit->balance() <= 0) {
             throw ValidationException::withMessages(['refund' => __('Only a received deposit with money held can be refunded.')]);
@@ -55,7 +56,7 @@ class RefundService
         }
 
         $dueOn ??= self::businessDaysFrom(now((string) config('platform.display_timezone')), app(PaymentSettings::class)->refund_business_days);
-        $refund = Refund::create(['deposit_id' => $deposit->id, 'amount' => 0, 'reason' => $reason, 'status' => 'scheduled', 'due_on' => $dueOn->toDateString(), 'scheduled_by' => $by->id]);
+        $refund = Refund::create(['deposit_id' => $deposit->id, 'amount' => 0, 'reason' => $reason, 'status' => 'scheduled', 'due_on' => $dueOn->toDateString(), 'scheduled_by' => $by?->id]);
         $deposit->forceFill(['status' => 'refund_scheduled'])->save();
 
         Audit::record('payments', 'refund_scheduled', "Refund of {$deposit->reference} scheduled for {$dueOn->toDateString()} (".Refund::REASONS[$reason].')', $deposit, $by);

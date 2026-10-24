@@ -4,9 +4,11 @@ namespace App\Domains\Bidding\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
 use App\Domains\Bidding\Actions\BidEngine;
+use App\Domains\Bidding\Actions\TenderService;
 use App\Domains\Bidding\Models\AuctionState;
 use App\Domains\Bidding\Models\Bid;
 use App\Domains\Bidding\Models\MaxBid;
+use App\Domains\Bidding\Support\ShillReport;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Verification;
@@ -16,6 +18,8 @@ use Carbon\CarbonImmutable;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -39,8 +43,73 @@ class AuctionMonitorController extends Controller
                 'id' => $b->id, 'number' => $b->bidder_number, 'name' => $names[$b->bidder_approval_id] ?? '?', 'amount' => $b->amount, 'kind' => $b->kind,
                 'time' => $b->placed_at->setTimezone($tz)->format('j M H:i:s'), 'ip' => $b->ip_address, 'voided' => $b->voided_at !== null, 'voidReason' => $b->void_reason,
             ]),
-            'can' => ['pause' => Gate::allows('auctions.pause'), 'void' => Gate::allows('auctions.void_bid')],
+            'can' => ['pause' => Gate::allows('auctions.pause'), 'void' => Gate::allows('auctions.void_bid'), 'tender' => Gate::allows('auctions.open_tender')],
+            'kind' => $listing->auction_type->value,
+            'status' => $listing->status->label(),
+            'result' => $this->result($listing, $names),
+            'tender' => $listing->auction_type->value === 'sealed' ? $this->tender($listing, $names) : null,
+            'flags' => ShillReport::for($listing),
         ]);
+    }
+
+    /**
+     * @param  Collection<array-key, mixed>  $names
+     * @return array<string, mixed>|null
+     */
+    private function result(Listing $listing, Collection $names): ?array
+    {
+        $r = DB::table('auction_results')->where('listing_id', $listing->id)->first();
+        if ($r === null) {
+            return null;
+        }
+        $num = fn (?int $id) => $id ? BidderApproval::whereKey($id)->value('bidder_number') : null;
+
+        return [
+            'outcome' => $r->outcome, 'winner' => $r->winner_approval_id ? '#'.$num((int) $r->winner_approval_id).' '.($names[$r->winner_approval_id] ?? '') : null, 'amount' => $r->winning_amount,
+            'runnerUp' => $r->runner_up_approval_id ? '#'.$num((int) $r->runner_up_approval_id).' '.($names[$r->runner_up_approval_id] ?? '') : null, 'runnerUpAmount' => $r->runner_up_amount,
+            'bidders' => $r->bidders, 'closedAt' => CarbonImmutable::parse((string) $r->closed_at)->setTimezone((string) config('platform.display_timezone'))->format('j M Y, H:i'),
+        ];
+    }
+
+    /**
+     * Before opening: only the number of offers. After: every offer, ranked.
+     *
+     * @param  Collection<array-key, mixed>  $names
+     * @return array<string, mixed>
+     */
+    private function tender(Listing $listing, Collection $names): array
+    {
+        $opening = DB::table('tender_openings')->where('listing_id', $listing->id)->first();
+        $opened = $opening?->opened_at !== null;
+        $offers = DB::table('tender_offers')->where('listing_id', $listing->id)->get();
+
+        return [
+            'count' => $offers->count(),
+            'deadlinePassed' => $listing->ends_at?->isPast() ?? false,
+            'requestedBy' => $opening ? User::whereKey($opening->requested_by)->first()?->name : null,
+            'requestedByMe' => $opening && (int) $opening->requested_by === request()->user()?->id,
+            'opened' => $opened,
+            'offers' => $opened ? $offers->map(fn ($o) => [
+                'bidder' => '#'.BidderApproval::whereKey($o->bidder_approval_id)->value('bidder_number').' '.($names[$o->bidder_approval_id] ?? ''),
+                'amount' => (int) Crypt::decryptString((string) $o->amount), 'at' => (string) $o->submitted_at, 'revisions' => (int) $o->revisions,
+            ])->sortByDesc('amount')->values()->all() : [],
+        ];
+    }
+
+    public function requestOpening(Listing $listing, #[CurrentUser] User $actor, TenderService $tenders): RedirectResponse
+    {
+        $tenders->requestOpening($listing, $actor);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Opening requested. A second person must confirm it.')]);
+
+        return back();
+    }
+
+    public function confirmOpening(Listing $listing, #[CurrentUser] User $actor, TenderService $tenders): RedirectResponse
+    {
+        $tenders->confirmOpening($listing, $actor);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Tender opened. Results recorded and bidders notified.')]);
+
+        return back();
     }
 
     public function pause(Listing $listing, #[CurrentUser] User $actor): RedirectResponse

@@ -94,6 +94,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('account/entities', [BiddingController::class, 'storeEntity'])->middleware('throttle:10,1')->name('account.entities.store');
     Route::get('account/approvals', [BiddingController::class, 'approvals'])->name('account.approvals');
     Route::post('auctions/bid/{listing}', [BidController::class, 'store'])->middleware('throttle:30,1')->name('auctions.bid');
+    Route::post('auctions/tender/{listing}', [BidController::class, 'tender'])->middleware('throttle:10,1')->name('auctions.tender');
     Route::post('auctions/apply/{listing}', [BiddingController::class, 'apply'])->middleware('throttle:10,1')->name('auctions.apply');
     Route::get('account/notifications', [NotificationPreferenceController::class, 'show'])->name('account.notifications');
     Route::put('account/notifications', [NotificationPreferenceController::class, 'update'])->name('account.notifications.update');
@@ -162,6 +163,8 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::get('listings/{listing}/bidders-record', [AuctionMonitorController::class, 'biddersRecord'])->name('listings.bidders-record');
             Route::post('listings/{listing}/auction/pause', [AuctionMonitorController::class, 'pause'])->middleware('can:auctions.pause')->name('listings.auction.pause');
             Route::post('bids/{bid}/void', [AuctionMonitorController::class, 'void'])->middleware('can:auctions.void_bid')->name('bids.void');
+            Route::post('listings/{listing}/tender/request', [AuctionMonitorController::class, 'requestOpening'])->middleware('can:auctions.open_tender')->name('listings.tender.request');
+            Route::post('listings/{listing}/tender/confirm', [AuctionMonitorController::class, 'confirmOpening'])->middleware('can:auctions.open_tender')->name('listings.tender.confirm');
         });
         Route::get('listings/{listing}/bidders', [BidderApprovalController::class, 'bidders'])->middleware('can:bidders.approve')->name('listings.bidders');
         Route::post('bidders/{approval}', [BidderApprovalController::class, 'decide'])->middleware('can:bidders.approve')->name('bidders.decide');

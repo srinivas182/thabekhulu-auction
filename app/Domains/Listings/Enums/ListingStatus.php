@@ -3,8 +3,8 @@
 namespace App\Domains\Listings\Enums;
 
 /**
- * Listing workflow (sprint 3 spec 5.5). Closed, processing, sold and
- * no-bids states arrive with the bidding and settlement sprints.
+ * Listing workflow (sprint 3 spec 5.5). Closed, sold and no-bids arrive
+ * with the auction close (sprint 6c); settlement states with sprint 7.
  */
 enum ListingStatus: string
 {
@@ -14,6 +14,9 @@ enum ListingStatus: string
     case Scheduled = 'scheduled';
     case Live = 'live';
     case Withdrawn = 'withdrawn';
+    case Closed = 'closed';      // bidding ended; results being determined (tenders await opening)
+    case Sold = 'sold';          // winner recorded; pending settlement
+    case NoBids = 'no_bids';     // closed without a valid bid
 
     public function label(): string
     {
@@ -24,6 +27,9 @@ enum ListingStatus: string
             self::Scheduled => 'Coming soon',
             self::Live => 'Live',
             self::Withdrawn => 'Withdrawn',
+            self::Closed => 'Closed',
+            self::Sold => 'Sold, pending settlement',
+            self::NoBids => 'Closed, no bids',
         };
     }
 
@@ -31,6 +37,12 @@ enum ListingStatus: string
     public function isPublic(): bool
     {
         return in_array($this, [self::Scheduled, self::Live], true);
+    }
+
+    /** Shown on the website, including finished auctions with their result. Bidding, applying and data rooms use isPublic(). */
+    public function isShown(): bool
+    {
+        return $this->isPublic() || in_array($this, [self::Closed, self::Sold, self::NoBids], true);
     }
 
     /** Listings managers can still edit content. */
