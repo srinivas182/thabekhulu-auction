@@ -1,5 +1,6 @@
 <?php
 
+use App\Domains\Growth\Http\Middleware\CaptureAttribution;
 use App\Domains\Identity\Http\Middleware\EnsureAccountActive;
 use App\Domains\Identity\Http\Middleware\EnsureStaff;
 use App\Domains\Identity\Http\Middleware\RequireStaffTwoFactor;
@@ -26,7 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
-    ->withCommands([__DIR__.'/../app/Domains/Listings/Console', __DIR__.'/../app/Domains/Quotes/Console', __DIR__.'/../app/Domains/Bidding/Console', __DIR__.'/../app/Domains/Settlement/Console'])
+    ->withCommands([__DIR__.'/../app/Domains/Listings/Console', __DIR__.'/../app/Domains/Quotes/Console', __DIR__.'/../app/Domains/Bidding/Console', __DIR__.'/../app/Domains/Settlement/Console', __DIR__.'/../app/Domains/Growth/Console'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         // Provider callbacks are authenticated by their signatures, not CSRF tokens.
@@ -45,6 +46,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(prepend: [ApplyRuntimeSettings::class]);
 
         $middleware->web(append: [
+            CaptureAttribution::class,
             SecurityHeaders::class,
             EnsureAccountActive::class,
             HandleAppearance::class,

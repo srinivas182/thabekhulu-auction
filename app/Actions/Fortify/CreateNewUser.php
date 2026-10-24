@@ -49,6 +49,7 @@ class CreateNewUser implements CreatesNewUsers
                 'terms_version' => (string) config('platform.terms_version'),
                 'terms_accepted_at' => now(),
                 'popia_consent_at' => now(),
+                'attribution' => session('attribution'), // first-touch campaign source (Sprint 8b)
             ])->save();
 
             $user->assignRole(SystemRole::Buyer->value);

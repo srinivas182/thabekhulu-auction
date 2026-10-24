@@ -1,8 +1,11 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { FileText, Lock } from 'lucide-react';
 import { lazy, Suspense, useState } from 'react';
 import type { BidderState } from '@/components/auctions/bidder-panel';
 import BidderPanel from '@/components/auctions/bidder-panel';
+import SeoHead from '@/components/seo-head';
+import ShareWatch from '@/components/auctions/share-watch';
+import type { Seo } from '@/components/seo-head';
 import type { AuctionLive } from '@/components/auctions/bid-form';
 import BidForm from '@/components/auctions/bid-form';
 import TenderForm from '@/components/auctions/tender-form';
@@ -33,16 +36,13 @@ type Props = {
     bidder: BidderState;
     auction: AuctionLive | null;
     office: { phone: string; email: string };
-    seo: {
-        title: string;
-        description: string;
-        image: string | null;
-        canonical: string;
-    };
+    seo: Seo;
+    watching: boolean;
 };
 
 export default function AuctionShow({
     auction: initialAuction,
+    watching,
     bidder,
     listing: l,
     office,
@@ -64,13 +64,7 @@ export default function AuctionShow({
 
     return (
         <>
-            <Head title={seo.title}>
-                <meta name="description" content={seo.description} />
-                <link rel="canonical" href={seo.canonical} />
-                <meta property="og:title" content={seo.title} />
-                <meta property="og:description" content={seo.description} />
-                {seo.image && <meta property="og:image" content={seo.image} />}
-            </Head>
+            <SeoHead seo={seo} />
 
             <nav
                 aria-label="Breadcrumb"
@@ -108,6 +102,14 @@ export default function AuctionShow({
                 >
                     {l.title}
                 </h1>
+                <div className="mt-4">
+                    <ShareWatch
+                        ulid={l.ulid}
+                        title={l.title}
+                        url={seo.canonical}
+                        watching={watching}
+                    />
+                </div>
                 <p className="mt-2 text-lg text-muted-foreground">
                     {place || 'South Africa'} · Listed by Thabekhulu Development
                     Group · Verified seller

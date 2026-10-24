@@ -1,11 +1,14 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { Form, Link } from '@inertiajs/react';
 import Countdown from '@/components/auctions/countdown';
+import SeoHead from '@/components/seo-head';
+import type { Seo } from '@/components/seo-head';
 import ListingCard from '@/components/auctions/listing-card';
 import StatusBadge from '@/components/auctions/status-badge';
 import type { ListingCardData } from '@/components/auctions/types';
 import { rand } from '@/lib/money';
 
 type Props = {
+    seo: Seo;
     hero: { title: string; text: string };
     featured: (ListingCardData & { closesLabel: string | null }) | null;
     closingSoon: ListingCardData[];
@@ -40,15 +43,11 @@ export default function Home({
     steps,
     calendar,
     ffcNumber,
+    seo,
 }: Props) {
     return (
         <>
-            <Head title="Property auctions in South Africa">
-                <meta
-                    name="description"
-                    content="Bid online for homes, land, mining and commercial property across South Africa with Thabekhulu Development Group."
-                />
-            </Head>
+            <SeoHead seo={seo} />
 
             <section
                 aria-label={featured ? 'Featured auction' : 'Introduction'}

@@ -25,3 +25,6 @@ Schedule::command('auctions:close')->everyMinute()->withoutOverlapping()->onOneS
 
 // Sprint 7a: expire runner-up offers and remind buyers of settlement deadlines.
 Schedule::command('settlement:daily')->dailyAt('07:30')->timezone('Africa/Johannesburg')->onOneServer();
+
+// Sprint 8b: saved-search digests and 24-hour watchlist reminders.
+Schedule::command('growth:alerts')->hourly()->withoutOverlapping()->onOneServer();

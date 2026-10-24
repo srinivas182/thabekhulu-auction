@@ -16,6 +16,7 @@ use App\Domains\DataRoom\Http\Controllers\DataRoomController;
 use App\Domains\DataRoom\Http\Controllers\NdaSettingsController;
 use App\Domains\Events\Http\Controllers\EventAdminController;
 use App\Domains\Events\Http\Controllers\EventController;
+use App\Domains\Growth\Http\Controllers\GrowthController;
 use App\Domains\Identity\Http\Controllers\DashboardRedirectController;
 use App\Domains\Identity\Http\Controllers\InvitationController;
 use App\Domains\Identity\Http\Controllers\StaffController;
@@ -71,6 +72,9 @@ Route::middleware('feature:sellers')->group(function () {
         Route::post('seller/submissions', [SellerController::class, 'submit'])->middleware('throttle:10,1')->name('seller.submit');
     });
 });
+Route::post('newsletter', [GrowthController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
+Route::get('newsletter/confirm/{subscriber}', [GrowthController::class, 'confirm'])->middleware('signed')->name('newsletter.confirm');
+Route::get('newsletter/unsubscribe/{subscriber}', [GrowthController::class, 'unsubscribe'])->middleware('signed')->name('newsletter.unsubscribe');
 Route::get('events', [EventController::class, 'index'])->name('events.index');
 Route::get('events/{slug}', [EventController::class, 'show'])->name('events.show');
 Route::post('events/{slug}/order', [EventController::class, 'order'])->middleware('throttle:5,1')->name('events.order');
@@ -119,6 +123,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('auctions/bid/{listing}', [BidController::class, 'store'])->middleware('throttle:30,1')->name('auctions.bid');
     Route::post('auctions/tender/{listing}', [BidController::class, 'tender'])->middleware('throttle:10,1')->name('auctions.tender');
     Route::post('auctions/apply/{listing}', [BiddingController::class, 'apply'])->middleware('throttle:10,1')->name('auctions.apply');
+    Route::get('account/saved', [GrowthController::class, 'mine'])->name('account.saved');
+    Route::post('account/saved-searches', [GrowthController::class, 'saveSearch'])->middleware('throttle:10,1')->name('account.saved-searches.store');
+    Route::delete('account/saved-searches/{ulid}', [GrowthController::class, 'deleteSearch'])->name('account.saved-searches.destroy');
+    Route::post('auctions/watch/{listing}', [GrowthController::class, 'toggleWatch'])->middleware('throttle:30,1')->name('auctions.watch');
     Route::get('account/purchases', [SettlementController::class, 'mine'])->name('account.purchases');
     Route::post('account/purchases/{case}/accept', [SettlementController::class, 'accept'])->middleware('throttle:10,1')->name('account.purchases.accept');
     Route::post('account/purchases/{case}/decline', [SettlementController::class, 'decline'])->middleware('throttle:10,1')->name('account.purchases.decline');
@@ -282,6 +290,7 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('/', [PremiumController::class, 'store'])->name('store');
             Route::delete('{slot}', [PremiumController::class, 'destroy'])->name('destroy');
         });
+        Route::get('newsletter/export', [GrowthController::class, 'export'])->middleware('can:cms.manage')->name('newsletter.export');
         Route::prefix('events')->name('events.')->group(function () {
             Route::middleware('can:events.manage')->group(function () {
                 Route::get('/', [EventAdminController::class, 'index'])->name('index');

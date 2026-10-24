@@ -1,5 +1,6 @@
-import { Form, Head, Link } from '@inertiajs/react';
+import { usePage, router, Form, Head, Link } from '@inertiajs/react';
 import { lazy, Suspense, useState } from 'react';
+import { store as saveSearch } from '@/routes/account/saved-searches';
 import ListingCard from '@/components/auctions/listing-card';
 import type { ListingCardData } from '@/components/auctions/types';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,9 @@ export default function AuctionsIndex({
     sorts,
     basePath,
 }: Props) {
+    const isBuyer =
+        (usePage().props.auth?.user as { type?: string } | null | undefined)
+            ?.type === 'buyer';
     const [view, setView] = useState<'list' | 'map'>('list');
     const mounted = useMounted();
 
@@ -62,6 +66,32 @@ export default function AuctionsIndex({
             </Head>
             <section className="mx-auto max-w-[1280px] px-5 pt-10 sm:px-8">
                 <h1 className="font-display text-4xl sm:text-5xl">{heading}</h1>
+                {isBuyer && (
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            const name = new FormData(e.currentTarget).get(
+                                'name',
+                            );
+                            router.post(
+                                saveSearch().url,
+                                { name, filters },
+                                { preserveScroll: true },
+                            );
+                        }}
+                        className="mt-3 flex flex-wrap items-center gap-2"
+                    >
+                        <input
+                            name="name"
+                            defaultValue={heading}
+                            aria-label="Name for this search"
+                            className="h-10 min-w-0 rounded-[10px] border border-input bg-card px-3 text-sm"
+                        />
+                        <button className="h-10 rounded-[10px] border border-input px-3 text-sm font-semibold">
+                            Save this search and email me new matches
+                        </button>
+                    </form>
+                )}
                 <p className="mt-2 text-lg text-muted-foreground">
                     {intro ??
                         `${results.total} live and upcoming ${results.total === 1 ? 'auction' : 'auctions'} across South Africa`}
