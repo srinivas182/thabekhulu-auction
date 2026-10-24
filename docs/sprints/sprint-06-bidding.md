@@ -15,25 +15,25 @@ Run fair, lawful online auctions: approved bidders with a confirmed deposit plac
 
 ## 3. Delivery: three sub-sprints, one PR each
 
-| Sub-sprint | Contents |
-| --- | --- |
-| **6a Bidding core** | Bid eligibility, increment bands, increase-only bids at or above the minimum, **proxy (maximum) bids**, concurrency-safe bid processing, **soft close**, step-up OTP above a threshold, bid confirmation screen, staff voiding of an erroneous bid (with reason), bidders' record export |
-| **6b Live feed and alerts** | Laravel Reverb WebSockets: public live feed per listing (bidder number + amount), private outbid and closing alerts; polling fallback; email and **WhatsApp** alerts (opt-in, POPIA) for outbid, closing soon and won/lost |
+| Sub-sprint                      | Contents                                                                                                                                                                                                                                                                                         |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **6a Bidding core**             | Bid eligibility, increment bands, increase-only bids at or above the minimum, **proxy (maximum) bids**, concurrency-safe bid processing, **soft close**, step-up OTP above a threshold, bid confirmation screen, staff voiding of an erroneous bid (with reason), bidders' record export         |
+| **6b Live feed and alerts**     | Laravel Reverb WebSockets: public live feed per listing (bidder number + amount), private outbid and closing alerts; polling fallback; email and **WhatsApp** alerts (opt-in, POPIA) for outbid, closing soon and won/lost                                                                       |
 | **6c Sealed tenders and close** | Sealed tender listings (one best offer per bidder, unreadable until the deadline, opened by two staff); auction close job: winner, runner-up, result notices; deposits of everyone else scheduled for refund (5c); runner-up hold; hand-off to settlement (Sprint 7); shill-bid detection report |
 
 ## 4. Decisions needing approval
 
-| # | Decision | Recommendation | Alternative |
-| --- | --- | --- | --- |
-| B1 | Who may bid | Approved for this listing (Sprint 4 checklist complete, including deposit received); **staff, the seller and anyone linked to them can never bid** (linked = same ID or company controller, same refund bank account) | Approval only |
-| B2 | Bid rules | Increase-only; first bid ≥ minimum; each later bid ≥ current bid + increment from the listing's **increment bands** (e.g. up to R1m: R10 000; R1m–R5m: R25 000; above: R50 000); **bids are binding and cannot be withdrawn** by bidders | Free amounts |
-| B3 | Proxy bidding | A bidder may set a maximum; the system bids for them by the minimum needed, up to that maximum; on equal maximums the **earlier** maximum wins; maximums are private (never shown to staff during the auction, kept encrypted) | No proxy |
-| B4 | Concurrency | All bids for a listing are processed one at a time under a database row lock on the listing's auction state; the bid record is append-only with server timestamps (SAST shown) | Optimistic retries |
-| B5 | Soft close | Default on: any accepted bid in the last **5 minutes** moves the close to 5 minutes after that bid; no cap by default (setting per listing) | Fixed end |
-| B6 | Step-up OTP | Bids above a threshold (setting, default R1 000 000 or 2× the minimum, whichever is lower) require a one-time code by SMS or authenticator app at the confirm step | No OTP |
-| B7 | Live feed | Reverb WebSockets; public channel shows bidder number, amount and time only; names never leave the server; polling fallback every 5 seconds | Polling only |
-| B8 | Sealed tenders | Per listing; one offer per bidder (may be raised, not lowered, before the deadline); offers encrypted and unreadable by anyone until the deadline; opening requires two staff; highest offer wins, ties to the earlier offer | Open bidding only |
-| B9 | Errors | A staff member with `auctions.void_bid` may void a bid placed in error (reason required, bidder notified, audit-logged); the auction then continues from the previous valid bid | No voiding |
+| #   | Decision       | Recommendation                                                                                                                                                                                                                           | Alternative        |
+| --- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| B1  | Who may bid    | Approved for this listing (Sprint 4 checklist complete, including deposit received); **staff, the seller and anyone linked to them can never bid** (linked = same ID or company controller, same refund bank account)                    | Approval only      |
+| B2  | Bid rules      | Increase-only; first bid ≥ minimum; each later bid ≥ current bid + increment from the listing's **increment bands** (e.g. up to R1m: R10 000; R1m–R5m: R25 000; above: R50 000); **bids are binding and cannot be withdrawn** by bidders | Free amounts       |
+| B3  | Proxy bidding  | A bidder may set a maximum; the system bids for them by the minimum needed, up to that maximum; on equal maximums the **earlier** maximum wins; maximums are private (never shown to staff during the auction, kept encrypted)           | No proxy           |
+| B4  | Concurrency    | All bids for a listing are processed one at a time under a database row lock on the listing's auction state; the bid record is append-only with server timestamps (SAST shown)                                                           | Optimistic retries |
+| B5  | Soft close     | Default on: any accepted bid in the last **5 minutes** moves the close to 5 minutes after that bid; no cap by default (setting per listing)                                                                                              | Fixed end          |
+| B6  | Step-up OTP    | Bids above a threshold (setting, default R1 000 000 or 2× the minimum, whichever is lower) require a one-time code by SMS or authenticator app at the confirm step                                                                       | No OTP             |
+| B7  | Live feed      | Reverb WebSockets; public channel shows bidder number, amount and time only; names never leave the server; polling fallback every 5 seconds                                                                                              | Polling only       |
+| B8  | Sealed tenders | Per listing; one offer per bidder (may be raised, not lowered, before the deadline); offers encrypted and unreadable by anyone until the deadline; opening requires two staff; highest offer wins, ties to the earlier offer             | Open bidding only  |
+| B9  | Errors         | A staff member with `auctions.void_bid` may void a bid placed in error (reason required, bidder notified, audit-logged); the auction then continues from the previous valid bid                                                          | No voiding         |
 
 ## 5. 6a — Bidding core
 

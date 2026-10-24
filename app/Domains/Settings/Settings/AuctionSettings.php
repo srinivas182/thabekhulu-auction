@@ -36,6 +36,10 @@ class AuctionSettings extends Settings
     /** Rand: proof of funds needed at or above this minimum price (and for all Mining listings). */
     public int $proof_of_funds_threshold;
 
+    // Increment bands, lowest first: each item is [up to (rand, or null for no limit), increment (rand)].
+    // Plain `array` only: spatie/laravel-settings can't parse typed array docblocks (ADR 0008).
+    public array $increment_bands; // @phpstan-ignore missingType.iterableValue
+
     public static function group(): string
     {
         return 'auction';

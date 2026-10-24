@@ -9,7 +9,10 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Events\MigrationsEnded;
+use Illuminate\Database\Events\NoPendingMigrations;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -34,6 +37,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Settings are cached; a deployment that adds a setting (settings migration) must not keep
+        // serving the old cached copy, which breaks pages until someone clears it (found in Sprint 6a).
+        // NoPendingMigrations fires instead of MigrationsEnded when nothing is pending, so listen to both.
+        Event::listen([MigrationsEnded::class, NoPendingMigrations::class], function (): void {
+            Artisan::call('settings:clear-cache');
+        });
+
         $this->guardProductionConfiguration();
         $this->configureDefaults();
         $this->configureAccess();

@@ -27,7 +27,7 @@ final class PermissionCatalogue
         'categories' => ['Categories', ['manage' => 'Manage categories and document types']],
         'compliance' => ['Compliance', ['signoff' => 'Sign off listing compliance checklist items']],
         'listings' => ['Listings', ['view' => 'View listings', 'create' => 'Create listings', 'edit' => 'Edit listings', 'submit' => 'Submit listings for review', 'publish' => 'Approve and publish listings', 'delete' => 'Delete draft listings']],
-        'auctions' => ['Auctions', ['monitor' => 'Monitor live auctions', 'pause' => 'Pause an auction', 'settle' => 'Confirm winners and handle defaults']],
+        'auctions' => ['Auctions', ['monitor' => 'Monitor live auctions', 'pause' => 'Pause an auction', 'settle' => 'Confirm winners and handle defaults', 'void_bid' => 'Void a bid placed in error', 'open_tender' => 'Open sealed tenders (two people)']],
         'payments' => ['Payment providers', ['providers' => 'Enable payment providers, enter their keys and choose the deposit provider']],
         'verification' => ['Verification providers', ['providers' => 'Enable verification providers, enter their keys and route checks']],
         'kyc' => ['KYC', ['view' => 'View verification submissions', 'approve' => 'Approve verification', 'reject' => 'Reject verification', 'suspend' => 'Suspend bidding', 'approve_company' => 'Verify company and trust bidders']],
@@ -95,7 +95,7 @@ final class PermissionCatalogue
         return match ($role) {
             SystemRole::SuperAdmin => self::all(),
             SystemRole::Auctioneer => [
-                'dashboard.view', 'listings.view', 'listings.publish', 'compliance.signoff', 'auctions.monitor', 'auctions.pause',
+                'dashboard.view', 'listings.view', 'listings.publish', 'compliance.signoff', 'auctions.monitor', 'auctions.pause', 'auctions.void_bid', 'auctions.open_tender',
                 'auctions.settle', 'buyers.view', 'deposits.view', 'reports.view', 'premium.manage', 'leads.view',
                 'quotes.create', 'quotes.send', 'bidders.approve', 'kyc.view',
             ],
