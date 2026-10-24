@@ -8,6 +8,11 @@ export type AuctionLive = {
     kind?: 'open' | 'sealed';
     outcome?: 'sold' | 'no_bids' | 'closed' | null;
     mining?: boolean;
+    result?: {
+        price: number;
+        date: string;
+        bidderNumber: string | null;
+    } | null;
     minimum?: number;
     current: number | null;
     leaderNumber?: string | null;

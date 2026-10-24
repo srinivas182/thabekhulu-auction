@@ -10,6 +10,7 @@ import {
     Banknote,
     FileLock,
     CalendarDays,
+    Crown,
     Gavel,
     FileText,
     FolderTree,
@@ -29,6 +30,7 @@ import { index as features } from '@/routes/admin/features';
 import { index as leads } from '@/routes/admin/leads';
 import { index as finance } from '@/routes/admin/finance';
 import { index as eventsAdmin } from '@/routes/admin/events';
+import { index as premiumAdmin } from '@/routes/admin/premium';
 import { index as kyc } from '@/routes/admin/kyc';
 import { index as settlement } from '@/routes/admin/settlement';
 import { index as listings } from '@/routes/admin/listings';
@@ -81,6 +83,12 @@ export const adminNavigation: NavItem[] = [
         href: eventsAdmin(),
         icon: CalendarDays,
         permission: 'events.manage',
+    },
+    {
+        title: 'Premium slots',
+        href: premiumAdmin(),
+        icon: Crown,
+        permission: 'premium.manage',
     },
     {
         title: 'Quotations',

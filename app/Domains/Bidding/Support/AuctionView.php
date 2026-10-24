@@ -9,6 +9,7 @@ use App\Domains\Bidding\Models\Bid;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Models\Deposit;
+use App\Domains\Premium\Support\SoldResult;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Models\User;
 
@@ -70,7 +71,7 @@ final class AuctionView
         return [
             'kind' => 'sealed', 'endsAt' => $listing->ends_at?->toIso8601String(), 'endsAtText' => $listing->ends_at?->setTimezone($tz)->format('j F Y, H:i').' SAST',
             'closed' => $listing->status !== ListingStatus::Live || ($listing->ends_at?->isPast() ?? true),
-            'outcome' => self::outcome($listing), 'mining' => $listing->category->slug === 'mining', 'otpFrom' => StepUp::threshold($listing), 'minimum' => (int) $listing->minimum_price, 'mine' => $mine,
+            'outcome' => self::outcome($listing), 'result' => SoldResult::for($listing), 'mining' => $listing->category->slug === 'mining', 'otpFrom' => StepUp::threshold($listing), 'minimum' => (int) $listing->minimum_price, 'mine' => $mine,
         ];
     }
 
@@ -97,6 +98,7 @@ final class AuctionView
         return [
             'kind' => 'open',
             'outcome' => self::outcome($listing),
+            'result' => SoldResult::for($listing), // price, date, bidder number; never a name
             'mining' => $listing->category->slug === 'mining', // S1: "Preferred bidder: subject to approvals"
             'current' => $state->current_amount,
             'leaderNumber' => $state->leader_approval_id ? BidderApproval::whereKey($state->leader_approval_id)->value('bidder_number') : null,

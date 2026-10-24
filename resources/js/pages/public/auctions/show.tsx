@@ -442,8 +442,10 @@ export default function AuctionShow({
                         >
                             {auction.outcome === 'sold'
                                 ? auction.mining
-                                    ? 'Preferred bidder: subject to approvals. A winning bid does not by itself transfer a mining right.'
-                                    : 'This auction has closed. The property is sold, subject to the conditions of sale.'
+                                    ? `Preferred bidder: subject to approvals.${auction.result ? ` Bid ${rand(auction.result.price)} by bidder #${auction.result.bidderNumber} on ${auction.result.date}.` : ''} A winning bid does not by itself transfer a mining right.`
+                                    : auction.result
+                                      ? `Sold for ${rand(auction.result.price)} on ${auction.result.date} to bidder #${auction.result.bidderNumber}, subject to the conditions of sale.`
+                                      : 'This auction has closed. The property is sold, subject to the conditions of sale.'
                                 : auction.outcome === 'no_bids'
                                   ? 'This auction closed without a valid bid.'
                                   : 'This auction has closed. Results are being finalised.'}
