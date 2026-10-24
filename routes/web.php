@@ -38,6 +38,7 @@ use App\Domains\Quotes\Http\Controllers\QuoteReportController;
 use App\Domains\Quotes\Http\Controllers\QuoteSetupController;
 use App\Domains\Quotes\Http\Controllers\QuoteWorkflowController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
+use App\Domains\Settlement\Http\Controllers\SettlementController;
 use App\Domains\Theme\Http\Controllers\ThemeController;
 use App\Domains\Verification\Http\Controllers\BankAccountController;
 use App\Domains\Verification\Http\Controllers\BidderApprovalController;
@@ -96,6 +97,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('auctions/bid/{listing}', [BidController::class, 'store'])->middleware('throttle:30,1')->name('auctions.bid');
     Route::post('auctions/tender/{listing}', [BidController::class, 'tender'])->middleware('throttle:10,1')->name('auctions.tender');
     Route::post('auctions/apply/{listing}', [BiddingController::class, 'apply'])->middleware('throttle:10,1')->name('auctions.apply');
+    Route::get('account/purchases', [SettlementController::class, 'mine'])->name('account.purchases');
+    Route::post('account/purchases/{case}/accept', [SettlementController::class, 'accept'])->middleware('throttle:10,1')->name('account.purchases.accept');
+    Route::post('account/purchases/{case}/decline', [SettlementController::class, 'decline'])->middleware('throttle:10,1')->name('account.purchases.decline');
     Route::get('account/notifications', [NotificationPreferenceController::class, 'show'])->name('account.notifications');
     Route::put('account/notifications', [NotificationPreferenceController::class, 'update'])->name('account.notifications.update');
     Route::get('account/bank', [BankAccountController::class, 'show'])->name('account.bank');
@@ -249,6 +253,15 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::put('deposit-provider', [PaymentProviderController::class, 'depositProvider'])->name('deposit');
             Route::put('{provider}', [PaymentProviderController::class, 'update'])->name('update');
             Route::post('{provider}/test', [PaymentProviderController::class, 'test'])->name('test');
+        });
+        Route::prefix('settlement')->name('settlement.')->group(function () {
+            Route::get('/', [SettlementController::class, 'index'])->name('index');
+            Route::get('{case}', [SettlementController::class, 'show'])->name('show');
+            Route::get('{case}/steps/{step}', [SettlementController::class, 'document'])->name('document');
+            Route::post('{case}/steps', [SettlementController::class, 'recordStep'])->middleware('can:settlement.manage')->name('step');
+            Route::post('{case}/complete', [SettlementController::class, 'complete'])->middleware('can:settlement.manage')->name('complete');
+            Route::post('{case}/default', [SettlementController::class, 'declareDefault'])->middleware('can:auctions.settle')->name('default');
+            Route::post('{case}/default/confirm', [SettlementController::class, 'confirmDefault'])->middleware('can:settlement.confirm_default')->name('default.confirm');
         });
         Route::middleware('can:refunds.view')->prefix('finance/refunds')->name('finance.refunds.')->group(function () {
             Route::get('/', [RefundController::class, 'index'])->name('index');

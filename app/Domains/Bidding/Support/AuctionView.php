@@ -70,7 +70,7 @@ final class AuctionView
         return [
             'kind' => 'sealed', 'endsAt' => $listing->ends_at?->toIso8601String(), 'endsAtText' => $listing->ends_at?->setTimezone($tz)->format('j F Y, H:i').' SAST',
             'closed' => $listing->status !== ListingStatus::Live || ($listing->ends_at?->isPast() ?? true),
-            'outcome' => self::outcome($listing), 'otpFrom' => StepUp::threshold($listing), 'minimum' => (int) $listing->minimum_price, 'mine' => $mine,
+            'outcome' => self::outcome($listing), 'mining' => $listing->category->slug === 'mining', 'otpFrom' => StepUp::threshold($listing), 'minimum' => (int) $listing->minimum_price, 'mine' => $mine,
         ];
     }
 
@@ -97,6 +97,7 @@ final class AuctionView
         return [
             'kind' => 'open',
             'outcome' => self::outcome($listing),
+            'mining' => $listing->category->slug === 'mining', // S1: "Preferred bidder: subject to approvals"
             'current' => $state->current_amount,
             'leaderNumber' => $state->leader_approval_id ? BidderApproval::whereKey($state->leader_approval_id)->value('bidder_number') : null,
             'next' => Increments::next($state->current_amount, (int) $listing->minimum_price),

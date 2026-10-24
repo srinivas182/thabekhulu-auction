@@ -9,6 +9,7 @@ import {
     Palette,
     Banknote,
     FileLock,
+    Gavel,
     FileText,
     FolderTree,
     LayoutGrid,
@@ -27,6 +28,7 @@ import { index as features } from '@/routes/admin/features';
 import { index as leads } from '@/routes/admin/leads';
 import { index as finance } from '@/routes/admin/finance';
 import { index as kyc } from '@/routes/admin/kyc';
+import { index as settlement } from '@/routes/admin/settlement';
 import { index as listings } from '@/routes/admin/listings';
 import { index as quotes } from '@/routes/admin/quotes';
 import { providers as verificationProviders } from '@/routes/admin/verification';
@@ -65,6 +67,12 @@ export const adminNavigation: NavItem[] = [
         href: finance(),
         icon: Banknote,
         permission: 'deposits.view',
+    },
+    {
+        title: 'Settlement',
+        href: settlement(),
+        icon: Gavel,
+        permission: 'settlement.manage',
     },
     {
         title: 'Quotations',

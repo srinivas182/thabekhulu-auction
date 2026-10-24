@@ -104,7 +104,8 @@ final class PublicListing
     {
         $finished = match ($listing->status) {
             ListingStatus::Closed => ['key' => 'closed', 'label' => 'Closed'],
-            ListingStatus::Sold => ['key' => 'sold', 'label' => 'Sold'],
+            // S1: a winning bid does not by itself transfer a mining right.
+            ListingStatus::Sold => ['key' => 'sold', 'label' => $listing->category->slug === 'mining' ? 'Preferred bidder: subject to approvals' : 'Sold'],
             ListingStatus::NoBids => ['key' => 'closed', 'label' => 'Closed, no bids'],
             default => null,
         };

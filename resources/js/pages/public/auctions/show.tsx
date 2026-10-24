@@ -441,7 +441,9 @@ export default function AuctionShow({
                             className="rounded-[10px] bg-muted p-4 font-semibold"
                         >
                             {auction.outcome === 'sold'
-                                ? 'This auction has closed. The property is sold, subject to the conditions of sale.'
+                                ? auction.mining
+                                    ? 'Preferred bidder: subject to approvals. A winning bid does not by itself transfer a mining right.'
+                                    : 'This auction has closed. The property is sold, subject to the conditions of sale.'
                                 : auction.outcome === 'no_bids'
                                   ? 'This auction closed without a valid bid.'
                                   : 'This auction has closed. Results are being finalised.'}

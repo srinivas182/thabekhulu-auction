@@ -5,6 +5,7 @@ namespace App\Domains\Verification\Http\Controllers;
 use App\Domains\Audit\Support\Audit;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Settlement\Models\Suspension;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\BiddingEntity;
 use App\Domains\Verification\Models\ProofOfFunds;
@@ -91,6 +92,9 @@ class BiddingController extends Controller
     public function apply(Request $request, Listing $listing, #[CurrentUser] User $user, BidderEligibility $eligibility): RedirectResponse
     {
         abort_unless($user->isBuyer() && $listing->status->isPublic(), 403);
+        if (($suspension = Suspension::activeFor($user->id)) !== null) {
+            throw ValidationException::withMessages(['apply' => __('Your bidding is suspended until :date after a default.', ['date' => $suspension->until->format('j F Y')])]);
+        }
         $needsFunds = $eligibility->needsProofOfFunds($listing);
 
         $existing = BidderApproval::where('listing_id', $listing->id)->where('user_id', $user->id)->first();

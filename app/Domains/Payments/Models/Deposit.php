@@ -32,7 +32,7 @@ class Deposit extends Model
 {
     public const STATUSES = [
         'awaiting' => 'Awaiting payment', 'part_paid' => 'Part paid', 'received' => 'Received', 'refund_scheduled' => 'Refund scheduled',
-        'refunded' => 'Refunded', 'applied' => 'Applied to the price',
+        'refunded' => 'Refunded', 'applied' => 'Applied to the price', 'forfeited' => 'Forfeited after default',
     ];
 
     protected $guarded = ['id', 'ulid'];

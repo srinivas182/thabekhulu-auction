@@ -24,7 +24,8 @@ class CloseAuctions extends Command
                 $done++;
             }
         }
-        $this->info("{$done} auctions closed.");
+        $resumed = $closer->resumeHandOffs();
+        $this->info("{$done} auctions closed, {$resumed} interrupted hand-offs completed.");
 
         return self::SUCCESS;
     }

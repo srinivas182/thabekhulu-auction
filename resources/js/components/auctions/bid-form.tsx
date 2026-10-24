@@ -7,6 +7,7 @@ import { bid } from '@/routes/auctions';
 export type AuctionLive = {
     kind?: 'open' | 'sealed';
     outcome?: 'sold' | 'no_bids' | 'closed' | null;
+    mining?: boolean;
     minimum?: number;
     current: number | null;
     leaderNumber?: string | null;

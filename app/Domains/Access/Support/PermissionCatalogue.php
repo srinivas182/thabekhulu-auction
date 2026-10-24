@@ -36,6 +36,7 @@ final class PermissionCatalogue
         'sellers' => ['Sellers', ['view' => 'View sellers', 'manage' => 'Edit seller accounts']],
         'deposits' => ['Deposits', ['view' => 'View deposits', 'reconcile' => 'Reconcile manual payments']],
         'refunds' => ['Refunds', ['view' => 'View refunds', 'issue' => 'Schedule refunds and prepare refund batches', 'approve' => 'Approve refund batches (never your own)']],
+        'settlement' => ['Settlement', ['manage' => 'Record settlement steps and completion', 'confirm_default' => 'Confirm a default and its forfeiture (second person)']],
         'payouts' => ['Seller payouts', ['view' => 'View payouts', 'record' => 'Record payouts']],
         'invoices' => ['Invoices', ['view' => 'View invoices']],
         'reports' => ['Reports', ['view' => 'View reports', 'export' => 'Export reports']],
@@ -95,7 +96,7 @@ final class PermissionCatalogue
         return match ($role) {
             SystemRole::SuperAdmin => self::all(),
             SystemRole::Auctioneer => [
-                'dashboard.view', 'listings.view', 'listings.publish', 'compliance.signoff', 'auctions.monitor', 'auctions.pause', 'auctions.void_bid', 'auctions.open_tender',
+                'dashboard.view', 'listings.view', 'listings.publish', 'compliance.signoff', 'auctions.monitor', 'auctions.pause', 'auctions.void_bid', 'auctions.open_tender', 'settlement.manage',
                 'auctions.settle', 'buyers.view', 'deposits.view', 'reports.view', 'premium.manage', 'leads.view',
                 'quotes.create', 'quotes.send', 'bidders.approve', 'kyc.view',
             ],
@@ -107,7 +108,7 @@ final class PermissionCatalogue
                 'dashboard.view', 'kyc.view', 'kyc.approve', 'kyc.reject', 'kyc.suspend', 'kyc.approve_company', 'buyers.view',
             ],
             SystemRole::Finance => [
-                'dashboard.view', 'deposits.view', 'deposits.reconcile', 'refunds.view', 'refunds.issue', 'refunds.approve',
+                'dashboard.view', 'deposits.view', 'deposits.reconcile', 'refunds.view', 'refunds.issue', 'refunds.approve', 'settlement.confirm_default',
                 'payouts.view', 'payouts.record', 'invoices.view', 'reports.view', 'reports.export',
                 'buyers.view', 'sellers.view', 'quotes.create', 'quotes.approve', 'quotes.send', 'quotes.view_all',
             ],
