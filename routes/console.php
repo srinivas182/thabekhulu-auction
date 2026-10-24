@@ -16,3 +16,6 @@ Schedule::command('listings:go-live')->everyMinute()->withoutOverlapping();
 
 // Quotations: expiry and reminders every morning (sprint 3Q spec 5).
 Schedule::command('quotes:daily')->dailyAt('07:00')->timezone('Africa/Johannesburg');
+
+// Sprint 6b: closing-soon alerts (each once per bidder).
+Schedule::command('auctions:closing-alerts')->everyMinute()->withoutOverlapping()->onOneServer();

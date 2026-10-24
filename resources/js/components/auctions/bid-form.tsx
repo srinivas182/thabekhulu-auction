@@ -1,11 +1,12 @@
 import { router, usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { rand } from '@/lib/money';
 import { bid } from '@/routes/auctions';
 
 export type AuctionLive = {
     current: number | null;
+    leaderNumber?: string | null;
     next: number;
     endsAt: string;
     endsAtText: string;
@@ -40,6 +41,11 @@ export default function BidForm({
 }) {
     const errors = (usePage().props.errors ?? {}) as Record<string, string>;
     const [amount, setAmount] = useState(String(auction.next));
+    const [typed, setTyped] = useState(false);
+    // Keep the suggested amount at the live minimum until the bidder types their own.
+    useEffect(() => {
+        if (!typed) setAmount(String(auction.next));
+    }, [auction.next, typed]);
     const [useMax, setUseMax] = useState(false);
     const [maximum, setMaximum] = useState('');
     const [step, setStep] = useState<'enter' | 'review'>('enter');
@@ -73,6 +79,7 @@ export default function BidForm({
                 preserveScroll: true,
                 onSuccess: () => {
                     setStep('enter');
+                    setTyped(false);
                     setOtp('');
                     setUseMax(false);
                     setMaximum('');
@@ -110,7 +117,10 @@ export default function BidForm({
                         <input
                             inputMode="numeric"
                             value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
+                            onChange={(e) => {
+                                setTyped(true);
+                                setAmount(e.target.value);
+                            }}
                             className={field}
                             aria-describedby="next-hint"
                         />

@@ -71,6 +71,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return [
             'type' => UserType::class,
             'email_verified_at' => 'datetime',
+            'whatsapp_opt_in_at' => 'datetime',
             'password' => 'hashed',
             'terms_accepted_at' => 'datetime',
             'popia_consent_at' => 'datetime',
@@ -141,5 +142,11 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function scopeStaff(Builder $query): void
     {
         $query->where('type', UserType::Staff);
+    }
+
+    /** Private alerts (outbid) for this buyer only; see routes/channels.php. */
+    public function receivesBroadcastNotificationsOn(): string
+    {
+        return 'bidder.'.$this->ulid; // the browser only knows the ulid; internal ids never leave the server
     }
 }

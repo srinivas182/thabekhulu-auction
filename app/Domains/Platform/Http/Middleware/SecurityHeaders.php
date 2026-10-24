@@ -64,7 +64,8 @@ class SecurityHeaders
             // Privacy-enhanced video tours only (spec D3).
             'frame-src' => ['https://www.youtube-nocookie.com', 'https://player.vimeo.com'],
             'font-src' => ["'self'", 'data:'],
-            'connect-src' => array_filter(["'self'", $devServer, $devServer ? str_replace('http', 'ws', $devServer) : null]),
+            // Reverb WebSockets for the live auction feed: listed explicitly because not every browser treats 'self' as covering wss://.
+            'connect-src' => array_filter(["'self'", $this->websocketOrigin(), $devServer, $devServer ? str_replace('http', 'ws', $devServer) : null]),
             'media-src' => ["'self'", 'blob:'],
             'object-src' => ["'none'"],
             'base-uri' => ["'self'"],
@@ -95,5 +96,18 @@ class SecurityHeaders
         }
 
         return $parts['scheme'].'://'.$parts['host'].(isset($parts['port']) ? ':'.$parts['port'] : '');
+    }
+
+    /** The browser-facing WebSocket origin for Reverb, e.g. wss://thabekhuludevelopment.org.za */
+    private function websocketOrigin(): ?string
+    {
+        $host = (string) config('broadcasting.connections.reverb.options.host', '');
+        if ($host === '' || config('broadcasting.default') !== 'reverb') {
+            return null;
+        }
+        $scheme = config('broadcasting.connections.reverb.options.scheme') === 'https' ? 'wss' : 'ws';
+        $port = (int) config('broadcasting.connections.reverb.options.port', 0);
+
+        return $scheme.'://'.$host.(in_array($port, [0, 80, 443], true) ? '' : ':'.$port);
     }
 }

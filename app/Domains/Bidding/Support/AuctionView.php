@@ -4,6 +4,7 @@ namespace App\Domains\Bidding\Support;
 
 use App\Domains\Bidding\Actions\BidEngine;
 use App\Domains\Bidding\Http\Controllers\BidController;
+use App\Domains\Bidding\Models\AuctionState;
 use App\Domains\Bidding\Models\Bid;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Models\Deposit;
@@ -25,8 +26,6 @@ final class AuctionView
         }
 
         $state = BidEngine::state($listing);
-        $tz = (string) config('platform.display_timezone');
-        $recent = Bid::where('listing_id', $listing->id)->whereNull('voided_at')->orderByDesc('id')->limit(10)->get();
 
         $mine = null;
         if ($user !== null && $user->isBuyer()) {
@@ -41,8 +40,22 @@ final class AuctionView
             }
         }
 
+        return self::publicPart($listing, $state) + ['mine' => $mine];
+    }
+
+    /**
+     * What everyone may see, also sent in the live feed event (B7).
+     *
+     * @return array<string, mixed>
+     */
+    public static function publicPart(Listing $listing, AuctionState $state): array
+    {
+        $tz = (string) config('platform.display_timezone');
+        $recent = Bid::where('listing_id', $listing->id)->whereNull('voided_at')->orderByDesc('id')->limit(10)->get();
+
         return [
             'current' => $state->current_amount,
+            'leaderNumber' => $state->leader_approval_id ? BidderApproval::whereKey($state->leader_approval_id)->value('bidder_number') : null,
             'next' => Increments::next($state->current_amount, (int) $listing->minimum_price),
             'endsAt' => $state->ends_at->toIso8601String(),
             'endsAtText' => $state->ends_at->setTimezone($tz)->format('j F Y, H:i').' SAST',
@@ -51,8 +64,7 @@ final class AuctionView
             'paused' => $state->paused_at !== null,
             'closed' => $state->ends_at->isPast(),
             'otpFrom' => BidController::otpThreshold($listing),
-            'recent' => $recent->map(fn (Bid $b) => ['number' => $b->bidder_number, 'amount' => $b->amount, 'kind' => $b->kind, 'time' => $b->placed_at->setTimezone($tz)->format('H:i:s')])->values(),
-            'mine' => $mine,
+            'recent' => $recent->map(fn (Bid $b) => ['number' => $b->bidder_number, 'amount' => $b->amount, 'kind' => $b->kind, 'time' => $b->placed_at->setTimezone($tz)->format('H:i:s')])->values()->all(),
         ];
     }
 }

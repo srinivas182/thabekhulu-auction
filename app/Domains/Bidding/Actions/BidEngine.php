@@ -3,9 +3,12 @@
 namespace App\Domains\Bidding\Actions;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\Bidding\Events\AuctionUpdated;
 use App\Domains\Bidding\Models\AuctionState;
 use App\Domains\Bidding\Models\Bid;
 use App\Domains\Bidding\Models\MaxBid;
+use App\Domains\Bidding\Notifications\Outbid;
+use App\Domains\Bidding\Support\AuctionView;
 use App\Domains\Bidding\Support\BidEligibility;
 use App\Domains\Bidding\Support\Increments;
 use App\Domains\Listings\Models\Listing;
@@ -49,6 +52,7 @@ class BidEngine
             $now = CarbonImmutable::now();
 
             $approval = $this->eligibility->assert($listing, $user, $state, $now);
+            $previousLeader = $state->leader_approval_id;
             $minimum = (int) $listing->minimum_price;
             $next = Increments::next($state->current_amount, $minimum);
 
@@ -91,12 +95,29 @@ class BidEngine
             $this->softClose($state, $now);
             $state->save();
 
+            self::announce($listing, $state, $previousLeader);
+
             Audit::record('bidding', 'bid', "Bidder #{$approval->bidder_number} bid R ".number_format($amount, 0, '.', ' ')." on {$listing->title}", $listing, $user, [
                 'amount' => $amount, 'maximum_set' => $maximum !== null, 'leader' => $state->leader_approval_id === $approval->id,
             ]);
 
             return ['state' => $state, 'leading' => $state->leader_approval_id === $approval->id, 'bids' => $recorded];
         });
+    }
+
+    /**
+     * After the transaction commits: live feed update for everyone, and an
+     * outbid notice to whoever just lost the lead.
+     */
+    public static function announce(Listing $listing, AuctionState $state, ?int $previousLeader = null): void
+    {
+        $public = AuctionView::publicPart($listing, $state);
+        AuctionUpdated::dispatch($listing->ulid, $public);
+
+        if ($previousLeader !== null && $previousLeader !== $state->leader_approval_id) {
+            $loser = BidderApproval::with('user')->find($previousLeader)?->user;
+            DB::afterCommit(fn () => $loser?->notify(new Outbid($listing, (int) $state->current_amount)));
+        }
     }
 
     /** @return array{state: AuctionState, leading: bool, bids: list<Bid>} */
