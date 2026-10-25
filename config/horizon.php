@@ -221,14 +221,6 @@ return [
             ],
         ],
 
-        // Test servers (APP_ENV=staging): without this entry Horizon runs with no workers at all,
-        // so no email, alerts or closing hand-offs are processed, silently (found while writing the cPanel guide).
-        'staging' => [
-            'supervisor-1' => [
-                'maxProcesses' => 3,
-            ],
-        ],
-
         'local' => [
             'supervisor-1' => [
                 'maxProcesses' => 3,
