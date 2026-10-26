@@ -40,7 +40,9 @@ class StarterContent extends Command
         }
 
         if (! MenuItem::where('menu', 'header')->where('url', '/')->exists()) {
-            MenuItem::create(['menu' => 'header', 'label' => 'Home', 'url' => '/', 'sort_order' => ((int) MenuItem::where('menu', 'header')->min('sort_order')) - 1]);
+            // Make room at the front (sort_order is unsigned in MySQL, so no negative numbers).
+            MenuItem::where('menu', 'header')->increment('sort_order');
+            MenuItem::create(['menu' => 'header', 'label' => 'Home', 'url' => '/', 'sort_order' => 0]);
             $this->info('Added Home to the header menu.');
         }
         SiteNavigation::forget(); // menus are cached; refresh them as the back office does
