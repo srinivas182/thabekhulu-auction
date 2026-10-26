@@ -50,41 +50,55 @@ export default function Home({
             <SeoHead seo={seo} />
 
             <section
-                aria-label={featured ? 'Featured auction' : 'Introduction'}
+                aria-label="Introduction"
                 className="relative bg-brand text-brand-foreground"
             >
                 {featured?.image && (
+                    // Decorative: the card on the right names the featured listing.
                     <img
                         src={featured.image}
-                        alt={featured.imageAlt}
+                        alt=""
                         className="absolute inset-0 size-full object-cover opacity-45"
                     />
                 )}
                 <div className="relative mx-auto flex max-w-[1280px] flex-wrap items-end justify-between gap-8 px-5 py-16 sm:px-8 sm:py-24">
                     <div className="max-w-3xl flex-[1_1_520px]">
-                        {featured && (
-                            <StatusBadge
-                                status={featured.status.key}
-                                label={
-                                    featured.status.key === 'soon'
-                                        ? featured.status.label
-                                        : 'Live auction'
-                                }
-                            />
-                        )}
-                        <h1 className="mt-4 font-display text-5xl leading-[1.02] sm:text-7xl">
-                            {featured ? featured.title : hero.title}
+                        <h1 className="font-display text-5xl leading-[1.02] sm:text-7xl">
+                            {hero.title}
                         </h1>
                         <p className="mt-4 max-w-2xl text-lg opacity-90 sm:text-xl">
-                            {featured
-                                ? [featured.city, featured.province]
-                                      .filter(Boolean)
-                                      .join(', ')
-                                : hero.text}
+                            {hero.text}
                         </p>
                     </div>
                     {featured && (
-                        <div className="flex flex-[0_1_380px] flex-col gap-4 rounded-[18px] bg-card p-7 text-foreground shadow-[0_24px_48px_rgba(14,29,25,0.25)]">
+                        <div
+                            aria-label="Featured auction"
+                            role="region"
+                            className="flex flex-[0_1_380px] flex-col gap-4 rounded-[18px] bg-card p-7 text-foreground shadow-[0_24px_48px_rgba(14,29,25,0.25)]"
+                        >
+                            <div className="grid gap-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <StatusBadge
+                                        status={featured.status.key}
+                                        label={
+                                            featured.status.key === 'soon'
+                                                ? featured.status.label
+                                                : 'Live auction'
+                                        }
+                                    />
+                                    <span className="text-[13px] text-muted-foreground">
+                                        Featured auction
+                                    </span>
+                                </div>
+                                <p className="line-clamp-2 text-lg leading-snug font-semibold">
+                                    {featured.title}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                    {[featured.city, featured.province]
+                                        .filter(Boolean)
+                                        .join(', ')}
+                                </p>
+                            </div>
                             <div>
                                 <p className="text-[13px] text-muted-foreground">
                                     Minimum bid

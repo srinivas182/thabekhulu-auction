@@ -126,6 +126,7 @@ it('builds the home page from real listings, hiding empty sections', function ()
 
     $this->get('/')->assertInertia(fn (Assert $p) => $p
         ->where('featured.title', $coal->title)
+        ->where('hero.title', 'Bid on South African property, from anywhere.') // the banner always states the platform's purpose
         ->has('closingSoon', 2)
         ->where('collections', fn ($c) => collect($c)->firstWhere('name', 'Coal mining')['count'] === 1)
         ->where('categories', fn ($c) => collect($c)->firstWhere('slug', 'mining')['count'] === 2)
