@@ -45,7 +45,7 @@ final class PublicListing
             // Pre-formatted in SAST so server and browser render identical text.
             'opensLabel' => $listing->starts_at?->copy()->setTimezone((string) config('platform.display_timezone'))->format('j F Y, H:i'),
             'closesLabel' => $listing->ends_at?->copy()->setTimezone((string) config('platform.display_timezone'))->format('j F Y, H:i'),
-            'renovated' => $listing->renovation_cost > 0,
+            'renovated' => $listing->deal_type->value === 'renovated', // same rule as the badge and the filter
             'featured' => $listing->is_featured,
             'badges' => Badges::for($listing),
             'auctionType' => $listing->auction_type->value,

@@ -39,7 +39,7 @@ class AuctionController extends Controller
             'max' => $request->integer('max') ?: null,
             'within' => $request->string('within')->toString() ?: null,
             'status' => $request->string('status')->toString() ?: null,
-            'renovated' => $request->boolean('renovated'),
+            'renovated' => ListingSearch::renovated(['renovated' => $request->query('renovated')]),
             'sort' => $request->string('sort')->toString() ?: 'closing',
         ];
 
