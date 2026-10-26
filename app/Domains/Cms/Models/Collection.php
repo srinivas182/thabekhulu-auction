@@ -56,7 +56,7 @@ class Collection extends Model
     {
         return Listing::query()->public()
             ->when($this->category_id, fn (Builder $q, int $id) => $q->where('category_id', $id))
-            ->when($this->renovated_only, fn (Builder $q) => $q->where('renovation_cost', '>', 0))
+            ->when($this->renovated_only, fn (Builder $q) => $q->where('deal_type', 'renovated')) // same rule as the badge and the filter
             ->when($this->category_attribute_id && filled($this->attribute_value), fn (Builder $q) => $q->whereHas('attributeValues', fn (Builder $v) => $v
                 ->where('category_attribute_id', $this->category_attribute_id)
                 ->where('value', $this->attribute_value)));

@@ -2,8 +2,11 @@
 
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
+use App\Domains\Cms\Models\Collection;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
+use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Premium\Support\Badges;
 use Database\Seeders\AccessSeeder;
 use Database\Seeders\CatalogueSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -132,7 +135,10 @@ it('filters by category, province, price, status and renovation', function () {
         ->and($titles(['province' => 'limpopo']))->toBe(['Farm C'])
         ->and($titles(['min' => 1000000, 'max' => 5000000]))->toBe(['Mine A'])
         ->and($titles(['status' => 'soon']))->toBe(['Mine B'])
-        ->and($titles(['renovated' => 1]))->toBe(['Farm C']);
+        ->and($titles(['renovated' => 1]))->toBe(['Farm C'])          // older links and saved searches
+        ->and($titles(['renovated' => 'yes']))->toBe(['Farm C'])
+        ->and($titles(['renovated' => 'no']))->toBe(['Mine A', 'Mine B'])
+        ->and($titles(['renovated' => 'anything']))->toBe(['Farm C', 'Mine A', 'Mine B']);
 
     $this->get('/auctions/mining')->assertInertia(fn (Assert $p) => $p->where('heading', 'Mining auctions')->has('results.data', 2));
     $this->get('/auctions/mining/emalahleni')->assertInertia(fn (Assert $p) => $p->where('heading', 'Mining auctions in Emalahleni'));
@@ -156,4 +162,18 @@ it('lists public listings in the sitemap', function () {
         ->assertHeader('Content-Type', 'application/xml; charset=UTF-8')
         ->assertSee("/auctions/mining/emalahleni/{$live->slug}", escape: false)
         ->assertDontSee($draft->slug, escape: false);
+});
+
+it('treats "Renovated by Thabekhulu" the same way on badges, cards, filters and collections', function () {
+    // The Thabekhulu-renovated deal type decides, even with no renovation cost entered (this once disagreed).
+    $reno = publicListing(['title' => 'Homestead', 'deal_type' => 'renovated', 'seller_price' => 300000, 'renovation_cost' => 0]);
+    publicListing(['title' => 'Plain house', 'renovation_cost' => 50000]); // a cost alone doesn't make it a Thabekhulu renovation
+
+    $titles = fn ($query) => collect($this->get('/auctions?'.http_build_query($query))->original->getData()['page']['props']['results']['data'])->pluck('title')->all();
+    expect($titles(['renovated' => 'yes']))->toBe(['Homestead'])
+        ->and(PublicListing::card($reno->fresh())['renovated'])->toBeTrue()
+        ->and(Badges::for($reno->fresh()))->toContain('renovated');
+
+    $collection = Collection::create(['name' => 'Renovated homes', 'slug' => 'renovated-homes', 'renovated_only' => true, 'is_visible' => true]);
+    expect($collection->listings()->pluck('title')->all())->toBe(['Homestead']);
 });

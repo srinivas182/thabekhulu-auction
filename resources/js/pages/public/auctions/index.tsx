@@ -25,7 +25,7 @@ type Props = {
         max: number | null;
         within: string | null;
         status: string | null;
-        renovated: boolean;
+        renovated: 'yes' | 'no' | null;
         sort: string;
     };
     categories: { name: string; slug: string }[];
@@ -180,15 +180,17 @@ export default function AuctionsIndex({
                             <option value="soon">Coming soon</option>
                         </select>
                     </label>
-                    <label className="flex min-h-12 items-center gap-2.5 text-base">
-                        <input
-                            type="checkbox"
-                            name="renovated"
-                            value="1"
-                            defaultChecked={filters.renovated}
-                            className="size-5 accent-primary"
-                        />
+                    <label className={label}>
                         Renovated by Thabekhulu
+                        <select
+                            name="renovated"
+                            defaultValue={filters.renovated ?? ''}
+                            className={field}
+                        >
+                            <option value="">Any</option>
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                        </select>
                     </label>
                     <label className={label}>
                         Sort by

@@ -17,7 +17,7 @@ final class ListingSearch
     public const SORTS = ['closing' => 'Closing soonest', 'newest' => 'Newest', 'price_asc' => 'Price: low to high', 'price_desc' => 'Price: high to low'];
 
     /**
-     * @param  array{category?: string|null, province?: string|null, city?: string|null, min?: int|null, max?: int|null, within?: string|null, status?: string|null, renovated?: bool, sort?: string|null}  $f
+     * @param  array{category?: string|null, province?: string|null, city?: string|null, min?: int|null, max?: int|null, within?: string|null, status?: string|null, renovated?: string|bool|null, sort?: string|null}  $f
      * @return LengthAwarePaginator<int, Listing>
      */
     public static function run(array $f, int $perPage = 12): LengthAwarePaginator
@@ -33,7 +33,9 @@ final class ListingSearch
             ->when($f['max'] ?? null, fn (Builder $q, int $max) => $q->where('minimum_price', '<=', $max))
             ->when(($f['status'] ?? null) === 'live', fn (Builder $q) => $q->where('status', ListingStatus::Live))
             ->when(($f['status'] ?? null) === 'soon', fn (Builder $q) => $q->where('status', ListingStatus::Scheduled))
-            ->when($f['renovated'] ?? false, fn (Builder $q) => $q->where('renovation_cost', '>', 0))
+            // "Renovated by Thabekhulu" means the Thabekhulu-renovated deal type (same rule as the badge).
+            ->when(self::renovated($f) === 'yes', fn (Builder $q) => $q->where('deal_type', 'renovated'))
+            ->when(self::renovated($f) === 'no', fn (Builder $q) => $q->where('deal_type', '!=', 'renovated'))
             ->when($f['within'] ?? null, function (Builder $q, string $within) {
                 $hours = ['24h' => 24, '7d' => 168, '30d' => 720][$within] ?? null;
                 if ($hours !== null) {
@@ -60,5 +62,21 @@ final class ListingSearch
         };
 
         return $query->paginate($perPage)->withQueryString();
+    }
+
+    /**
+     * 'yes', 'no' or null; older links and saved searches used renovated=1.
+     *
+     * @param  array<string, mixed>  $f
+     */
+    public static function renovated(array $f): ?string
+    {
+        $v = $f['renovated'] ?? null;
+
+        return match (true) {
+            $v === 'yes', $v === true, $v === 1, $v === '1' => 'yes',
+            $v === 'no' => 'no',
+            default => null,
+        };
     }
 }
