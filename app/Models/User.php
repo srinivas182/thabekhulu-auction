@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Domains\Access\Enums\SystemRole;
 use App\Domains\Identity\Enums\UserType;
 use App\Domains\Identity\Notifications\QueuedVerifyEmail;
+use App\Domains\Platform\Email\EmailConfig;
 use App\Domains\Settings\Settings\SecuritySettings;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -155,7 +156,8 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 
     private static function emailVerificationRequired(): bool
     {
-        return app(SecuritySettings::class)->email_verification_required;
+        // Never require verification while no email can be sent (Back office » Email provider).
+        return app(SecuritySettings::class)->email_verification_required && EmailConfig::sending();
     }
 
     public function hasConfirmedTwoFactor(): bool
