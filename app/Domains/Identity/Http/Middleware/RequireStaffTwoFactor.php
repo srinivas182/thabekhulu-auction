@@ -2,6 +2,7 @@
 
 namespace App\Domains\Identity\Http\Middleware;
 
+use App\Domains\Settings\Settings\SecuritySettings;
 use App\Models\User;
 use Closure;
 use Illuminate\Http\Request;
@@ -18,7 +19,10 @@ class RequireStaffTwoFactor
     {
         $user = $request->user();
 
-        if ($user instanceof User && $user->isStaff() && ! $user->hasConfirmedTwoFactor()) {
+        // Settings » Security » "Staff two-factor required" (on by default; may be off only for testing).
+        $required = app(SecuritySettings::class)->staff_two_factor_required;
+
+        if ($required && $user instanceof User && $user->isStaff() && ! $user->hasConfirmedTwoFactor()) {
             Inertia::flash('toast', [
                 'type' => 'warning',
                 'message' => __('Set up two-factor authentication to continue to the back office.'),
