@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateTime } from '@/lib/format';
 import { rand } from '@/lib/money';
-import { edit, index, store } from '@/routes/admin/listings';
+import { bidders, edit, index, store } from '@/routes/admin/listings';
 
 type Row = {
     ulid: string;
@@ -16,6 +16,12 @@ type Row = {
     statusLabel: string;
     minimum: number | null;
     startsAt: string | null;
+    applied: number;
+    pending: number;
+    approved: number;
+    bidders: number;
+    highestBid: number | null;
+    sealed: boolean;
     endsAt: string | null;
 };
 type Props = {
@@ -161,6 +167,12 @@ export default function ListingsIndex({
                                     Status
                                 </th>
                                 <th className="px-5 py-3 font-medium">
+                                    Applications
+                                </th>
+                                <th className="px-5 py-3 font-medium">
+                                    Bidding
+                                </th>
+                                <th className="px-5 py-3 font-medium">
                                     Minimum
                                 </th>
                                 <th className="px-5 py-3 font-medium">Opens</th>
@@ -191,7 +203,46 @@ export default function ListingsIndex({
                                             {l.statusLabel}
                                         </span>
                                     </td>
-                                    <td className="tabular px-5 py-3">
+                                    <td className="px-5 py-3 whitespace-nowrap">
+                                        {l.applied === 0 ? (
+                                            <span className="text-muted-foreground">
+                                                None yet
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <span className="font-medium">
+                                                    {l.applied} applied
+                                                </span>
+                                                {l.pending > 0 && (
+                                                    <Link
+                                                        href={bidders(l.ulid)}
+                                                        className="block text-sm font-semibold text-amber-700 underline-offset-2 hover:underline dark:text-amber-400"
+                                                    >
+                                                        {l.pending} waiting
+                                                    </Link>
+                                                )}
+                                            </>
+                                        )}
+                                    </td>
+                                    <td className="px-5 py-3 whitespace-nowrap">
+                                        {l.approved === 0 ? (
+                                            <span className="text-muted-foreground">
+                                                —
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <span className="font-medium">
+                                                    {l.approved} approved
+                                                </span>
+                                                <span className="block text-sm text-muted-foreground">
+                                                    {l.sealed
+                                                        ? 'Sealed tender'
+                                                        : `${l.bidders} bid${l.highestBid !== null ? ` · ${rand(l.highestBid)}` : ''}`}
+                                                </span>
+                                            </>
+                                        )}
+                                    </td>
+                                    <td className="tabular px-5 py-3 whitespace-nowrap">
                                         {rand(l.minimum)}
                                     </td>
                                     <td className="px-5 py-3 text-muted-foreground">
@@ -205,7 +256,7 @@ export default function ListingsIndex({
                             {listings.data.length === 0 && (
                                 <tr>
                                     <td
-                                        colSpan={5}
+                                        colSpan={7}
                                         className="px-5 py-8 text-center text-muted-foreground"
                                     >
                                         No listings match.
