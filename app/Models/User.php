@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Domains\Access\Enums\SystemRole;
 use App\Domains\Identity\Enums\UserType;
+use App\Domains\Identity\Notifications\QueuedVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -135,6 +136,12 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function isSuperAdmin(): bool
     {
         return $this->hasRole(SystemRole::SuperAdmin->value);
+    }
+
+    /** Sent in the background, so a mail-server problem can't break registration. */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new QueuedVerifyEmail);
     }
 
     public function hasConfirmedTwoFactor(): bool
