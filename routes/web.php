@@ -117,6 +117,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('deposits/{listing}', [BuyerDepositController::class, 'show'])->name('deposits.show');
     Route::post('deposits/{listing}/pay', [BuyerDepositController::class, 'pay'])->middleware('throttle:10,1')->name('deposits.pay');
     Route::post('deposits/{listing}', [BuyerDepositController::class, 'open'])->middleware('throttle:10,1')->name('deposits.open');
+    Route::post('deposits/{listing}/proof', [BuyerDepositController::class, 'proof'])->middleware('throttle:10,1')->name('deposits.proof');
     Route::get('receipts/{number}', [BuyerDepositController::class, 'receipt'])->name('receipts.download');
     Route::get('data-room/{listing}', [DataRoomController::class, 'show'])->name('dataroom.show');
     Route::post('data-room/{listing}/nda', [DataRoomController::class, 'acceptNda'])->middleware('throttle:10,1')->name('dataroom.nda');
@@ -126,6 +127,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('account/entities', [BiddingController::class, 'storeEntity'])->middleware('throttle:10,1')->name('account.entities.store');
     Route::get('account/approvals', [BiddingController::class, 'approvals'])->name('account.approvals');
     Route::post('auctions/bid/{listing}', [BidController::class, 'store'])->middleware('throttle:30,1')->name('auctions.bid');
+    Route::post('auctions/advance/{listing}', [BidController::class, 'advance'])->middleware('throttle:10,1')->name('auctions.advance');
+    Route::delete('auctions/advance/{listing}', [BidController::class, 'removeAdvance'])->middleware('throttle:10,1')->name('auctions.advance.destroy');
     Route::post('auctions/tender/{listing}', [BidController::class, 'tender'])->middleware('throttle:10,1')->name('auctions.tender');
     Route::post('auctions/apply/{listing}', [BiddingController::class, 'apply'])->middleware('throttle:10,1')->name('auctions.apply');
     Route::get('account/saved', [GrowthController::class, 'mine'])->name('account.saved');
@@ -207,6 +210,7 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('listings/{listing}/tender/confirm', [AuctionMonitorController::class, 'confirmOpening'])->middleware('can:auctions.open_tender')->name('listings.tender.confirm');
         });
         Route::get('listings/{listing}/bidders', [BidderApprovalController::class, 'bidders'])->middleware('can:bidders.approve')->name('listings.bidders');
+        Route::get('deposits/{deposit}/proof', [BuyerDepositController::class, 'showProof'])->middleware('can:deposits.view')->name('deposits.proof');
         Route::get('bidders', [BidderApprovalController::class, 'queue'])->middleware('can:bidders.approve')->name('bidders.queue');
         Route::post('bidders/{approval}', [BidderApprovalController::class, 'decide'])->middleware('can:bidders.approve')->name('bidders.decide');
         Route::get('listings/{listing}/documents/{document}', [ListingAssetController::class, 'downloadDocument'])->middleware('can:listings.view')->name('listings.documents.download');

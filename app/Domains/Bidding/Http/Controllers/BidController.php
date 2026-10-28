@@ -2,6 +2,7 @@
 
 namespace App\Domains\Bidding\Http\Controllers;
 
+use App\Domains\Bidding\Actions\AdvanceBids;
 use App\Domains\Bidding\Actions\BidEngine;
 use App\Domains\Bidding\Actions\TenderService;
 use App\Domains\Bidding\Support\StepUp;
@@ -47,6 +48,25 @@ class BidController extends Controller
         Inertia::flash('toast', ['type' => $result['leading'] ? 'success' : 'warning', 'message' => $result['leading']
             ? __('Bid accepted. You’re the highest bidder.')
             : __('Bid accepted, but another bidder’s maximum is higher. You’ve been outbid.')]);
+
+        return back();
+    }
+
+    /** Set or change an advance maximum before bidding opens (same code check as live bids). */
+    public function advance(Request $request, Listing $listing, #[CurrentUser] User $user, AdvanceBids $advance): RedirectResponse
+    {
+        $data = $request->validate(['maximum' => ['required', 'integer', 'min:1', 'max:100000000000'], 'otp' => ['nullable', 'digits:6']]);
+        StepUp::verify($listing, $user, (int) $data['maximum'], $data['otp'] ?? null);
+        $advance->set($listing, $user, (int) $data['maximum']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Advance maximum saved. When bidding opens, we’ll bid for you, only as much as needed to keep you in the lead.')]);
+
+        return back();
+    }
+
+    public function removeAdvance(Listing $listing, #[CurrentUser] User $user, AdvanceBids $advance): RedirectResponse
+    {
+        $advance->remove($listing, $user);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Advance maximum removed.')]);
 
         return back();
     }

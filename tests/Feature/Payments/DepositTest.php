@@ -14,7 +14,6 @@ use App\Domains\Payments\Notifications\DepositReceived;
 use App\Domains\Quotes\Settings\QuotationSettings;
 use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
-use App\Domains\Verification\Support\BidderEligibility;
 use App\Models\User;
 use Database\Seeders\AccessSeeder;
 use Database\Seeders\CatalogueSeeder;
@@ -79,8 +78,7 @@ it('confirms an exact payment from a statement, issues a receipt and locks the r
     $deposit->refresh();
     expect($deposit->status)->toBe('received')->and($deposit->balance())->toBe(5000000)
         ->and(Receipt::first()->number)->toBe('TDG-R-'.now('Africa/Johannesburg')->format('Y').'-0001')
-        ->and(BankAccount::first()->locked)->toBeTrue()
-        ->and(collect(app(BidderEligibility::class)->checklist($this->approval->fresh()))->firstWhere('key', 'deposit')['state'])->toBe('ok');
+        ->and(BankAccount::first()->locked)->toBeTrue(); // the received deposit is what unlocks bidding (tested in AdvanceAndProofTest)
     Notification::assertSentTo($this->buyer, DepositReceived::class);
 });
 

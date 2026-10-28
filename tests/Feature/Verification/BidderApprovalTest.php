@@ -94,13 +94,12 @@ it('blocks approval until every required item is complete, then assigns a bidder
     expect(ProofOfFunds::first()->valid_until->toDateString())->toBe(now()->addDays(90)->toDateString());
 
     $checklist = app(BidderEligibility::class)->checklist($approval->fresh());
-    expect(collect($checklist)->pluck('state', 'key')->all())->toMatchArray(['identity' => 'ok', 'screening' => 'ok', 'bank' => 'ok', 'funds' => 'ok', 'deposit' => 'missing', 'nda' => 'missing']);
+    expect(collect($checklist)->pluck('state', 'key')->all())->toMatchArray(['identity' => 'ok', 'screening' => 'ok', 'bank' => 'ok', 'funds' => 'ok', 'nda' => 'missing']);
     $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve'])->assertSessionHasErrors('decision'); // NDA not signed
 
     $this->actingAs($this->buyer)->post(route('dataroom.nda', $listing->ulid), ['typed_name' => 'Naledi Dube', 'agree' => '1'])->assertSessionHasNoErrors();
-    $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve'])->assertSessionHasErrors('decision'); // no deposit yet
-    paidDeposit($approval);
-
+    // Approve, then pay: approval no longer waits for the deposit (bidding does).
+    expect(collect(app(BidderEligibility::class)->checklist($approval->fresh()))->pluck('key'))->not->toContain('deposit');
     $this->actingAs($this->auctioneer)->post(route('admin.bidders.decide', $approval), ['decision' => 'approve'])->assertSessionHasNoErrors();
     $approval->refresh();
     expect($approval->status)->toBe('approved')->and($approval->bidder_number)->toMatch('/^\d{4}$/')->and($approval->checklist)->not->toBeEmpty();

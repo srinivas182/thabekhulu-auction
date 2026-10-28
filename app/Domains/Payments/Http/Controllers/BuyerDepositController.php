@@ -2,6 +2,7 @@
 
 namespace App\Domains\Payments\Http\Controllers;
 
+use App\Domains\Audit\Support\Audit;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
 use App\Domains\Payments\Actions\DepositService;
@@ -11,10 +12,12 @@ use App\Domains\Payments\Settings\PaymentSettings;
 use App\Domains\Payments\Support\PaymentRegistry;
 use App\Domains\Payments\Support\ReceiptPdf;
 use App\Domains\Verification\Models\BidderApproval;
+use App\Domains\Verification\Support\SecureFiles;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,7 +37,7 @@ class BuyerDepositController extends Controller
             'approval' => $approval?->status,
             'gateOpen' => DepositService::complianceComplete($listing),
             'deposit' => $deposit === null ? null : [
-                'reference' => $deposit->reference, 'status' => $deposit->status, 'statusLabel' => Deposit::STATUSES[$deposit->status],
+                'reference' => $deposit->reference, 'status' => $deposit->status, 'statusLabel' => Deposit::STATUSES[$deposit->status], 'proofUploadedAt' => $deposit->proof_uploaded_at?->setTimezone((string) config('platform.display_timezone'))->format('j F Y, H:i'),
                 'amount' => $deposit->amount, 'paid' => $deposit->balance(),
                 'receipts' => $deposit->receipts->map(fn (Receipt $r) => ['number' => $r->number, 'amount' => $r->amount, 'url' => route('receipts.download', $r->number)]),
             ],
@@ -83,6 +86,37 @@ class BuyerDepositController extends Controller
 
         return response(ReceiptPdf::render($receipt), 200, [
             'Content-Type' => 'application/pdf', 'Content-Disposition' => 'attachment; filename="'.$receipt->number.'.pdf"', 'Cache-Control' => 'no-store, private',
+        ]);
+    }
+
+    /**
+     * The buyer's proof of an EFT payment. It helps finance find the payment;
+     * the deposit is confirmed only when the money reflects in the bank.
+     */
+    public function proof(Request $request, Listing $listing, #[CurrentUser] User $user): RedirectResponse
+    {
+        abort_unless($user->isBuyer(), 403);
+        $request->validate(['proof' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240']]);
+        $approval = BidderApproval::where('listing_id', $listing->id)->where('user_id', $user->id)->where('status', 'approved')->firstOrFail();
+        $deposit = Deposit::where('bidder_approval_id', $approval->id)->whereIn('status', ['awaiting', 'part_paid'])->firstOrFail();
+
+        $file = $request->file('proof');
+        SecureFiles::delete($deposit->proof_path);
+        $deposit->forceFill(['proof_path' => SecureFiles::put($file, 'deposit-proofs'), 'proof_mime' => (string) $file->getMimeType(), 'proof_uploaded_at' => now()])->save();
+        Audit::record('payments', 'deposit_proof_uploaded', "Proof of payment uploaded for {$deposit->reference}", $deposit, $user);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Thank you. Your deposit is confirmed once the payment reflects in our account, usually within one working day.')]);
+
+        return back();
+    }
+
+    /** Finance opens a buyer's proof of payment (deposits.view); every opening is logged. */
+    public function showProof(Deposit $deposit, #[CurrentUser] User $actor): \Symfony\Component\HttpFoundation\Response
+    {
+        abort_if($deposit->proof_path === null, 404);
+        Audit::record('payments', 'deposit_proof_viewed', "Opened proof of payment for {$deposit->reference}", $deposit, $actor);
+
+        return response(SecureFiles::read((string) $deposit->proof_path), 200, [
+            'Content-Type' => (string) $deposit->proof_mime, 'Content-Disposition' => 'inline', 'Cache-Control' => 'no-store, private', 'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 }

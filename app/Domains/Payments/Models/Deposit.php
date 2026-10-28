@@ -20,6 +20,9 @@ use Illuminate\Support\Str;
  * @property int $amount
  * @property string $reference
  * @property string $method
+ * @property string|null $proof_path
+ * @property string|null $proof_mime
+ * @property Carbon|null $proof_uploaded_at
  * @property string|null $provider_ref
  * @property string $status
  * @property Carbon|null $received_at

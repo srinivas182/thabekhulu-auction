@@ -38,11 +38,13 @@ type Props = {
     office: { phone: string; email: string };
     seo: Seo;
     watching: boolean;
+    registeredBidders: number;
 };
 
 export default function AuctionShow({
     auction: initialAuction,
     watching,
+    registeredBidders,
     bidder,
     listing: l,
     office,
@@ -469,6 +471,12 @@ export default function AuctionShow({
                             ulid={l.ulid}
                             minimum={l.minimum}
                         />
+                    )}
+                    {registeredBidders > 0 && (
+                        <p className="text-sm text-muted-foreground">
+                            {registeredBidders} registered{' '}
+                            {registeredBidders === 1 ? 'bidder' : 'bidders'}
+                        </p>
                     )}
                     {outbid && (
                         <p
