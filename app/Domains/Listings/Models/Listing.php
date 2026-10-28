@@ -8,6 +8,7 @@ use App\Domains\Catalogue\Models\City;
 use App\Domains\Listings\Enums\AuctionType;
 use App\Domains\Listings\Enums\DealType;
 use App\Domains\Listings\Enums\ListingStatus;
+use App\Domains\Verification\Models\BidderApproval;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -150,6 +151,12 @@ class Listing extends Model implements HasMedia
     public function documents(): HasMany
     {
         return $this->hasMany(ListingDocument::class);
+    }
+
+    /** @return HasMany<BidderApproval, $this> */
+    public function bidderApprovals(): HasMany
+    {
+        return $this->hasMany(BidderApproval::class);
     }
 
     /** @return HasMany<ListingStatusChange, $this> */

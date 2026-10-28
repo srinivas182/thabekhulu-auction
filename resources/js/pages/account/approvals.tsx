@@ -223,14 +223,14 @@ export default function MyAuctions({ approvals }: { approvals: Approval[] }) {
                                                 <span
                                                     className={cn(
                                                         'size-2 rounded-full',
-                                                        c.state === 'done'
+                                                        c.state === 'ok'
                                                             ? 'bg-status-live'
                                                             : 'bg-muted-foreground/40',
                                                     )}
                                                     aria-hidden="true"
                                                 />
                                                 {c.label}
-                                                {c.state !== 'done' && (
+                                                {c.state !== 'ok' && (
                                                     <span className="text-muted-foreground">
                                                         (still needed)
                                                     </span>

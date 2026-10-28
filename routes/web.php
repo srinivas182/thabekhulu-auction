@@ -207,6 +207,7 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('listings/{listing}/tender/confirm', [AuctionMonitorController::class, 'confirmOpening'])->middleware('can:auctions.open_tender')->name('listings.tender.confirm');
         });
         Route::get('listings/{listing}/bidders', [BidderApprovalController::class, 'bidders'])->middleware('can:bidders.approve')->name('listings.bidders');
+        Route::get('bidders', [BidderApprovalController::class, 'queue'])->middleware('can:bidders.approve')->name('bidders.queue');
         Route::post('bidders/{approval}', [BidderApprovalController::class, 'decide'])->middleware('can:bidders.approve')->name('bidders.decide');
         Route::get('listings/{listing}/documents/{document}', [ListingAssetController::class, 'downloadDocument'])->middleware('can:listings.view')->name('listings.documents.download');
 

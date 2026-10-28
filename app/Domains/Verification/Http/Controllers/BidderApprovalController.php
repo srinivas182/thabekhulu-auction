@@ -209,4 +209,27 @@ class BidderApprovalController extends Controller
 
         return back();
     }
+
+    /** Every application waiting for a decision, across all auctions, oldest first. */
+    public function queue(): Response
+    {
+        $tz = (string) config('platform.display_timezone');
+        $pending = BidderApproval::with(['listing', 'user', 'entity'])->where('status', 'pending')->oldest()->get();
+
+        return Inertia::render('admin/bidders/queue', [
+            'applications' => $pending->map(function (BidderApproval $a) use ($tz): array {
+                $checklist = $this->eligibility->checklist($a);
+
+                return [
+                    'id' => $a->id, 'applied' => $a->created_at?->setTimezone($tz)->format('j M Y, H:i'),
+                    'waitingDays' => (int) $a->created_at?->diffInDays(now()),
+                    'buyer' => $a->user->name, 'email' => $a->user->email, 'biddingAs' => $a->entity?->name,
+                    'listing' => $a->listing->title, 'listingUlid' => $a->listing->ulid,
+                    'closes' => $a->listing->ends_at?->setTimezone($tz)->format('j M Y, H:i'),
+                    'ready' => BidderEligibility::passes($checklist),
+                    'missing' => array_values(array_map(fn ($i) => $i['label'], array_filter($checklist, fn ($i) => $i['state'] === 'missing'))),
+                ];
+            }),
+        ]);
+    }
 }

@@ -3,6 +3,8 @@
 namespace App\Domains\Listings\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\Bidding\Models\AuctionState;
+use App\Domains\Bidding\Models\Bid;
 use App\Domains\Catalogue\Enums\DepositTerms;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\CategoryAttribute;
@@ -43,6 +45,16 @@ class ListingController extends Controller
         $filters = $request->only(['q', 'status', 'category']);
 
         $listings = Listing::with(['category:id,name', 'city:id,name'])
+            // Interest at a glance, in this one query (no extra query per row).
+            ->withCount([
+                'bidderApprovals as applied_count',
+                'bidderApprovals as pending_count' => fn ($q) => $q->where('status', 'pending'),
+                'bidderApprovals as approved_count' => fn ($q) => $q->where('status', 'approved'),
+            ])
+            ->addSelect([
+                'bidders_count' => Bid::selectRaw('count(distinct bidder_approval_id)')->whereColumn('listing_id', 'listings.id')->whereNull('voided_at'),
+                'highest_bid' => AuctionState::select('current_amount')->whereColumn('listing_id', 'listings.id')->limit(1),
+            ])
             ->when($filters['q'] ?? null, fn ($q, $term) => $q->where('title', 'like', "%{$term}%"))
             ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
             ->when($filters['category'] ?? null, fn ($q, $slug) => $q->whereHas('category', fn ($c) => $c->where('slug', $slug)))
@@ -59,6 +71,10 @@ class ListingController extends Controller
                 'minimum' => $l->minimum_price,
                 'startsAt' => $l->starts_at?->toIso8601String(),
                 'endsAt' => $l->ends_at?->toIso8601String(),
+                'applied' => (int) $l->getAttribute('applied_count'), 'pending' => (int) $l->getAttribute('pending_count'),
+                'approved' => (int) $l->getAttribute('approved_count'), 'bidders' => (int) $l->getAttribute('bidders_count'),
+                'highestBid' => $l->getAttribute('highest_bid') !== null ? (int) $l->getAttribute('highest_bid') : null,
+                'sealed' => $l->auction_type->value === 'sealed',
             ]);
 
         return Inertia::render('admin/listings/index', [

@@ -12,6 +12,7 @@ import {
     CalendarDays,
     Crown,
     Gavel,
+    UserCheck,
     Mail,
     MailPlus,
     BarChart3,
@@ -36,6 +37,7 @@ import { index as leads } from '@/routes/admin/leads';
 import { index as finance } from '@/routes/admin/finance';
 import { index as eventsAdmin } from '@/routes/admin/events';
 import { index as premiumAdmin } from '@/routes/admin/premium';
+import { queue as bidderQueue } from '@/routes/admin/bidders';
 import { index as compliance } from '@/routes/admin/compliance';
 import { email as emailProvider } from '@/routes/admin/settings';
 import { index as emailTemplates } from '@/routes/admin/email-templates';
@@ -77,6 +79,12 @@ export const adminNavigation: NavItem[] = [
         href: kyc(),
         icon: IdCard,
         permission: 'kyc.view',
+    },
+    {
+        title: 'Bidder approvals',
+        href: bidderQueue(),
+        icon: UserCheck,
+        permission: 'bidders.approve',
     },
     {
         title: 'Finance',
