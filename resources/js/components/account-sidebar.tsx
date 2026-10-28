@@ -57,16 +57,16 @@ const groups: { label: string | null; items: Item[] }[] = [
                 href: '/account/entities',
                 icon: Building2,
             },
-            {
-                title: 'Bidding approvals',
-                href: '/account/approvals',
-                icon: BadgeCheck,
-            },
         ],
     },
     {
-        label: 'My auctions',
+        label: 'Auctions',
         items: [
+            {
+                title: 'My auctions',
+                href: '/account/approvals',
+                icon: BadgeCheck,
+            },
             { title: 'Purchases', href: '/account/purchases', icon: Gavel },
             {
                 title: 'Saved and watching',
