@@ -22,6 +22,7 @@ use Illuminate\Support\Str;
  * @property string|null $id_number_hash
  * @property string|null $passport_country
  * @property Carbon|null $date_of_birth
+ * @property Carbon|null $passport_expires_on
  * @property string|null $marital_status
  * @property array<string, mixed>|null $spouse
  * @property array<string, array<string, mixed>>|null $checks
@@ -50,7 +51,7 @@ class Verification extends Model
     protected function casts(): array
     {
         return [
-            'id_number' => 'encrypted', 'spouse' => 'encrypted:array', 'checks' => 'array', 'date_of_birth' => 'date',
+            'id_number' => 'encrypted', 'spouse' => 'encrypted:array', 'checks' => 'array', 'date_of_birth' => 'date', 'passport_expires_on' => 'date',
             'submitted_at' => 'datetime', 'verified_at' => 'datetime', 'expires_at' => 'datetime', 'reviewed_at' => 'datetime',
         ];
     }

@@ -3,13 +3,16 @@
 namespace App\Domains\Verification\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Models\BankAccount;
+use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\BiddingEntity;
 use App\Domains\Verification\Models\ProofOfFunds;
 use App\Domains\Verification\Models\Screening;
 use App\Domains\Verification\Models\Verification;
 use App\Domains\Verification\Models\VerificationDocument;
 use App\Domains\Verification\Notifications\KycUpdate;
+use App\Domains\Verification\Support\Countries;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -86,7 +89,12 @@ class KycReviewController extends Controller
                 'ulid' => $verification->ulid, 'status' => $verification->status, 'statusLabel' => Verification::STATUSES[$verification->status] ?? $verification->status,
                 'name' => $user->name, 'email' => $user->email, 'mobile' => $user->mobile,
                 'documentType' => $verification->document_type, 'idNumber' => $verification->id_number, 'passportCountry' => $verification->passport_country,
-                'dateOfBirth' => $verification->date_of_birth?->format('j F Y'), 'maritalStatus' => $verification->marital_status !== null ? (BuyerVerificationController::MARITAL[$verification->marital_status] ?? $verification->marital_status) : null,
+                'dateOfBirth' => $verification->date_of_birth?->format('j F Y'),
+                'age' => $verification->date_of_birth?->age,
+                'passportCountryName' => $verification->passport_country ? (Countries::forPassports()[$verification->passport_country] ?? $verification->passport_country) : null,
+                'passportExpiresOn' => $verification->passport_expires_on?->format('j F Y'),
+                'passportDaysLeft' => $verification->passport_expires_on ? (int) now()->startOfDay()->diffInDays($verification->passport_expires_on, false) : null,
+                'settlementConflicts' => self::settlementConflicts($verification), 'maritalStatus' => $verification->marital_status !== null ? (BuyerVerificationController::MARITAL[$verification->marital_status] ?? $verification->marital_status) : null,
                 'spouse' => $verification->spouse === null ? null : ['name' => $verification->spouse['name'] ?? null, 'idNumber' => $verification->spouse['id_number'] ?? null],
                 'checks' => $verification->checks ?? [], 'rejectionReason' => $verification->rejection_reason, 'infoRequested' => $verification->info_requested,
                 'submittedAt' => $verification->submitted_at?->toIso8601String(),
@@ -232,5 +240,27 @@ class KycReviewController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __($message)]);
 
         return back();
+    }
+
+    /**
+     * Auctions this buyer applied for whose settlement balance falls due after the passport expires.
+     *
+     * @return list<array{listing: string, settles: string}>
+     */
+    private static function settlementConflicts(Verification $verification): array
+    {
+        if ($verification->passport_expires_on === null) {
+            return [];
+        }
+        $days = app(AuctionSettings::class)->settlement_balance_days;
+        $out = [];
+        foreach (BidderApproval::with('listing')->where('user_id', $verification->user_id)->whereIn('status', ['pending', 'approved'])->get() as $a) {
+            $settles = $a->listing->ends_at?->copy()->addDays($days);
+            if ($settles !== null && $settles->greaterThan($verification->passport_expires_on)) {
+                $out[] = ['listing' => (string) $a->listing->title, 'settles' => $settles->format('j F Y')];
+            }
+        }
+
+        return $out;
     }
 }
