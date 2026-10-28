@@ -27,6 +27,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
+                                    className="h-11"
                                     id="email"
                                     type="email"
                                     name="email"
@@ -40,7 +41,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
                             <div className="my-6 flex items-center justify-start">
                                 <Button
-                                    className="w-full"
+                                    className="h-12 w-full text-base"
                                     disabled={processing}
                                     data-test="email-password-reset-link-button"
                                 >
@@ -64,6 +65,9 @@ export default function ForgotPassword({ status }: { status?: string }) {
 }
 
 ForgotPassword.layout = {
-    title: 'Forgot password',
-    description: 'Enter your email to receive a password reset link',
+    variant: 'brand',
+    panel: 'account',
+    title: 'Reset your password',
+    description:
+        'Enter your email address and we’ll send you a link to choose a new password.',
 };

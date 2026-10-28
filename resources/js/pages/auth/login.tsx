@@ -35,6 +35,7 @@ export default function Login({ status, canResetPassword }: Props) {
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
+                                    className="h-11"
                                     id="email"
                                     type="email"
                                     name="email"
@@ -61,6 +62,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     )}
                                 </div>
                                 <PasswordInput
+                                    className="h-11"
                                     id="password"
                                     name="password"
                                     required
@@ -82,7 +84,7 @@ export default function Login({ status, canResetPassword }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
+                                className="mt-4 h-12 w-full text-base"
                                 tabIndex={4}
                                 disabled={processing}
                                 data-test="login-button"
@@ -95,7 +97,7 @@ export default function Login({ status, canResetPassword }: Props) {
                         <div className="text-center text-sm text-muted-foreground">
                             Don't have an account?{' '}
                             <TextLink href={register()} tabIndex={5}>
-                                Sign up
+                                Register
                             </TextLink>
                         </div>
                     </>
@@ -112,6 +114,8 @@ export default function Login({ status, canResetPassword }: Props) {
 }
 
 Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
+    variant: 'brand',
+    panel: 'login',
+    title: 'Log in',
+    description: 'Use the email address and password you registered with.',
 };

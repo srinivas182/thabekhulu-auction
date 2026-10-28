@@ -186,6 +186,7 @@ export default function Register({ passwordRules }: Props) {
 
 Register.layout = {
     variant: 'brand',
+    panel: 'register',
     title: 'Create your account',
     description:
         'It takes a minute. You’ll verify your identity before your first bid.',

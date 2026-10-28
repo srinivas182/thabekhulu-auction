@@ -22,3 +22,10 @@ test('the registration page shows a real listing photo when there is one, and wo
 
     $this->get(route('register'))->assertInertia(fn ($p) => $p->where('cover', fn ($url) => is_string($url) && str_contains($url, '/storage/')));
 });
+
+test('every sign-in page gets the property photo for its panel', function () {
+    $this->seed([AccessSeeder::class, CatalogueSeeder::class]);
+    foreach (['login', 'register', 'password.request'] as $route) {
+        $this->get(route($route))->assertOk()->assertInertia(fn ($p) => $p->has('cover'));
+    }
+});
