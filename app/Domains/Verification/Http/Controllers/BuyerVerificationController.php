@@ -36,6 +36,9 @@ class BuyerVerificationController extends Controller
 
     private const DOC_RULE = ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'];
 
+    /** How each document is named in the review conversation. */
+    public const DOC_LABELS = ['id_front' => 'ID (front)', 'id_back' => 'ID (back)', 'passport' => 'passport photo page', 'selfie' => 'selfie', 'proof_of_address' => 'proof of address'];
+
     public function show(#[CurrentUser] User $user): Response
     {
         $v = $this->current($user);
@@ -48,7 +51,8 @@ class BuyerVerificationController extends Controller
                 'documentType' => $v->document_type, 'idNumberLast4' => $v->id_number ? substr($v->id_number, -4) : null,
                 'passportCountry' => $v->passport_country, 'passportExpiresOn' => $v->passport_expires_on?->toDateString(), 'dateOfBirthInput' => $v->date_of_birth?->toDateString(), 'maritalStatus' => $v->marital_status,
                 'spouseName' => $v->spouse['name'] ?? null, 'documents' => $kinds, 'rejectionReason' => $v->rejection_reason, 'infoRequested' => $v->info_requested,
-                'verifiedAt' => $v->verified_at?->format('j F Y'), 'expiresAt' => $v->expires_at?->format('j F Y'),
+                'verifiedAt' => $v->verified_at?->format('j F Y'), 'expiresAt' => $v->expires_at?->format('j F Y'), 'expired' => $v->isExpired(),
+                'messages' => $v->messages()->with('user')->get()->map(fn ($m) => $m->present())->values(),
             ],
             'maritalOptions' => self::MARITAL,
             'user' => ['firstName' => $user->first_name, 'lastName' => $user->last_name],
@@ -150,6 +154,7 @@ class BuyerVerificationController extends Controller
         }
 
         $v->forceFill(['status' => 'submitted', 'submitted_at' => now(), 'rejection_reason' => null])->save();
+        $v->note('buyer', 'submitted', $v->info_requested !== null ? 'Resubmitted after the request' : null, $v->user_id);
         Audit::record('kyc', 'submitted', "{$user->name} submitted identity verification", $v, $user);
 
         // Identity data check through the routed provider; selfie and documents are reviewed by a person (4b queue).
@@ -180,6 +185,9 @@ class BuyerVerificationController extends Controller
         abort_unless($user->isBuyer() || $user->isSeller(), 403); // sellers verify too (Sprint 8a)
         $v = $this->current($user);
 
+        if ($v !== null && $v->isExpired()) {
+            return Verification::create(['user_id' => $user->id, 'status' => 'in_progress']); // renewal; the old record is kept
+        }
         if ($v !== null && in_array($v->status, ['submitted', 'review', 'verified'], true)) {
             throw ValidationException::withMessages(['verification' => __('Your verification is :status and can’t be changed now.', ['status' => strtolower(Verification::STATUSES[$v->status])])]);
         }
@@ -194,15 +202,16 @@ class BuyerVerificationController extends Controller
             return;
         }
 
-        foreach ($v->documents()->where('kind', $kind)->get() as $old) {
-            Storage::disk('local')->delete($old->path);
-            $old->delete();
-        }
+        // Kept, not deleted: FICA record-keeping, and reviewers can compare old and new.
+        $replaced = $v->documents()->where('kind', $kind)->update(['superseded_at' => now()]) > 0;
 
         $path = "verifications/{$v->ulid}/".Str::uuid().'.enc';
         Storage::disk('local')->put($path, Crypt::encryptString(base64_encode((string) file_get_contents($file->getRealPath()))));
 
         $v->documents()->create(['kind' => $kind, 'path' => $path, 'mime' => (string) $file->getMimeType(), 'size' => (int) $file->getSize()]);
+        if ($v->info_requested !== null) {
+            $v->note('buyer', 'document', ($replaced ? 'New ' : 'Added ').(self::DOC_LABELS[$kind] ?? str_replace('_', ' ', $kind)), $v->user_id);
+        }
     }
 
     /** Reads a stored document back (staff review in 4b). */
@@ -214,6 +223,18 @@ class BuyerVerificationController extends Controller
     private function next(string $message): RedirectResponse
     {
         Inertia::flash('toast', ['type' => 'success', 'message' => __($message)]);
+
+        return back();
+    }
+
+    /** The buyer answers a reviewer's request in writing (alongside any re-uploads). */
+    public function reply(Request $request, #[CurrentUser] User $user): RedirectResponse
+    {
+        $v = $this->current($user);
+        abort_if($v === null || $v->status !== 'in_progress' || $v->info_requested === null, 422, 'There is no open request to reply to.');
+        $body = $request->validate(['reply' => ['required', 'string', 'max:2000']])['reply'];
+        $v->note('buyer', 'reply', $body, $user->id);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Reply added. Submit your verification again when you’re ready.')]);
 
         return back();
     }

@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
  * @property string $mime
  * @property int $size
  * @property Carbon|null $delete_after
+ * @property Carbon|null $superseded_at
  */
 class VerificationDocument extends Model
 {
@@ -20,6 +21,6 @@ class VerificationDocument extends Model
 
     protected function casts(): array
     {
-        return ['delete_after' => 'date'];
+        return ['delete_after' => 'date', 'superseded_at' => 'datetime'];
     }
 }

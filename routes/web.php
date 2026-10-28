@@ -145,6 +145,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('selfie', [BuyerVerificationController::class, 'selfie'])->name('.selfie');
         Route::post('address', [BuyerVerificationController::class, 'address'])->name('.address');
         Route::post('submit', [BuyerVerificationController::class, 'submit'])->middleware('throttle:5,1')->name('.submit');
+        Route::post('reply', [BuyerVerificationController::class, 'reply'])->middleware('throttle:10,1')->name('.reply');
     });
 });
 
