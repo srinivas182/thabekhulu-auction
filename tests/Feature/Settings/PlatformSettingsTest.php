@@ -2,6 +2,7 @@
 
 use App\Domains\Access\Enums\SystemRole;
 use App\Domains\Audit\Models\AuditEntry;
+use App\Domains\Platform\Console\SecurityCheck;
 use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Settings\Settings\GeneralSettings;
 use App\Domains\Settings\Settings\SecuritySettings;
@@ -69,16 +70,24 @@ it('never changes read-only settings', function () {
         'currency' => 'USD',
     ])->assertSessionHasNoErrors();
 
+    expect(app(GeneralSettings::class)->refresh()->currency)->toBe('ZAR')
+        ->and(app(GeneralSettings::class)->site_name)->toBe('Thabekhulu Auctions');
+});
+
+it('lets an admin switch staff two-factor and email verification off for testing, flagged before go-live', function () {
     $this->actingAs($this->admin)->put(route('admin.settings.update', 'security'), [
         'staff_two_factor_required' => '0',
+        'email_verification_required' => '0',
         'session_lifetime_minutes' => 60,
         'admin_ip_allowlist' => '',
     ])->assertSessionHasNoErrors();
 
-    expect(app(GeneralSettings::class)->refresh()->currency)->toBe('ZAR')
-        ->and(app(GeneralSettings::class)->site_name)->toBe('Thabekhulu Auctions')
-        ->and(app(SecuritySettings::class)->refresh()->staff_two_factor_required)->toBeTrue()
-        ->and(app(SecuritySettings::class)->session_lifetime_minutes)->toBe(60);
+    $s = app(SecuritySettings::class)->refresh();
+    expect($s->staff_two_factor_required)->toBeFalse()
+        ->and($s->email_verification_required)->toBeFalse()
+        ->and($s->session_lifetime_minutes)->toBe(60)
+        ->and(SecurityCheck::problems())
+        ->toHaveKey('Staff two-factor must be required')->toHaveKey('Email verification must be required');
 });
 
 it('needs settings.view to see and settings.manage to change', function () {

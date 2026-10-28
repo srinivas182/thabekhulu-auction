@@ -35,6 +35,7 @@ class SecurityCheck extends Command
             'Mail must actually be sent' => in_array(config('mail.default'), ['log', 'array'], true) ? 'MAIL_MAILER is '.config('mail.default') : null,
             'Queues must run in the background' => config('queue.default') === 'sync' ? 'QUEUE_CONNECTION is sync' : null,
             'Live feed must use Reverb' => config('broadcasting.default') !== 'reverb' ? 'BROADCAST_CONNECTION is '.config('broadcasting.default') : null,
+            'Email verification must be required' => ! app(SecuritySettings::class)->email_verification_required ? 'switched off in Settings » Security' : null,
             'Staff two-factor must be required' => ! app(SecuritySettings::class)->staff_two_factor_required ? 'switched off in Settings » Security' : null,
         ]);
     }
