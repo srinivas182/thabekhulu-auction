@@ -2,6 +2,7 @@
 
 namespace App\Domains\Identity\Notifications;
 
+use App\Domains\Platform\Email\TemplateMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -26,17 +27,7 @@ class StaffInvitationNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)
-            ->subject(__('You’re invited to the Thabekhulu back office'))
-            ->greeting(__('Hello,'))
-            ->line(__(':inviter has invited you to join the Thabekhulu Development Group back office as :role.', [
-                'inviter' => $this->inviterName,
-                'role' => $this->roleLabel,
-            ]))
-            ->action(__('Accept invitation'), route('invitations.show', $this->token))
-            ->line(__('This link expires in :hours hours and can be used once. You’ll set a password and two-factor authentication when you accept.', [
-                'hours' => $this->ttlHours,
-            ]))
-            ->line(__('If you weren’t expecting this, you can ignore this email.'));
+        return TemplateMail::make('staff.invitation', ['inviter' => $this->inviterName, 'role' => $this->roleLabel, 'expires_hours' => $this->ttlHours],
+            route('invitations.show', $this->token));
     }
 }

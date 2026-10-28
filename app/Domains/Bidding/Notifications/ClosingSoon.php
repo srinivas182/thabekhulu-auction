@@ -6,6 +6,8 @@ use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
 use App\Domains\Notifications\Channels\WhatsAppChannel;
 use App\Domains\Notifications\Settings\WhatsAppSettings;
+use App\Domains\Platform\Email\TemplateMail;
+use App\Domains\Settings\Settings\AuctionSettings;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -26,12 +28,14 @@ class ClosingSoon extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $when = $this->minutes >= 60 ? __('1 hour') : __(':m minutes', ['m' => $this->minutes]);
+        $auction = app(AuctionSettings::class);
 
-        return (new MailMessage)->subject(__(':title closes in :when', ['title' => $this->listing->title, 'when' => $when]))
-            ->line($this->leading ? __('You’re currently the highest bidder.') : __('You’re not the highest bidder at the moment.'))
-            ->line(__('A bid in the last 5 minutes extends the auction by 5 minutes.'))
-            ->action(__('View the auction'), url(PublicListing::url($this->listing)));
+        return TemplateMail::make('auction.closing_soon', [
+            'first_name' => $notifiable->first_name ?? '', 'listing' => $this->listing->title,
+            'time_left' => $this->minutes >= 60 ? __('1 hour') : __(':m minutes', ['m' => $this->minutes]),
+            'position' => $this->leading ? __('You’re currently the highest bidder.') : __('You’re not the highest bidder at the moment.'),
+            'window_minutes' => $auction->soft_close_window_minutes, 'extension_minutes' => $auction->soft_close_extension_minutes,
+        ], url(PublicListing::url($this->listing)));
     }
 
     /** @return array{template: string, params: list<string>} */

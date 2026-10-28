@@ -5,6 +5,7 @@ namespace App\Domains\Payments\Notifications;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Models\Receipt;
 use App\Domains\Payments\Support\ReceiptPdf;
+use App\Domains\Platform\Email\TemplateMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -27,13 +28,10 @@ class RefundPaid extends Notification implements ShouldQueue
     {
         $this->deposit->loadMissing('listing');
 
-        return (new MailMessage)
-            ->subject(__('Deposit refunded: :title', ['title' => $this->deposit->listing->title]))
-            ->greeting(__('Hello :name,', ['name' => $notifiable->first_name ?? '']))
-            ->line(__('We’ve refunded R :amount for deposit :ref. Your refund receipt :number is attached.', [
-                'amount' => number_format($this->receipt->amount / 100, 2, '.', ' '), 'ref' => $this->deposit->reference, 'number' => $this->receipt->number,
-            ]))
-            ->line(__('Bank transfers usually reflect within one to three working days.'))
+        return TemplateMail::make('deposit.refunded', [
+            'first_name' => $notifiable->first_name ?? '', 'listing' => $this->deposit->listing->title,
+            'amount' => number_format($this->receipt->amount / 100, 2, '.', ' '), 'reference' => $this->deposit->reference, 'receipt_number' => $this->receipt->number,
+        ], null)
             ->attachData(ReceiptPdf::render($this->receipt), $this->receipt->number.'.pdf', ['mime' => 'application/pdf']);
     }
 }

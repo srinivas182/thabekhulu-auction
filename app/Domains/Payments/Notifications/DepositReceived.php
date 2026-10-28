@@ -5,6 +5,7 @@ namespace App\Domains\Payments\Notifications;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Models\Receipt;
 use App\Domains\Payments\Support\ReceiptPdf;
+use App\Domains\Platform\Email\TemplateMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -27,14 +28,10 @@ class DepositReceived extends Notification implements ShouldQueue
     {
         $this->deposit->loadMissing('listing');
 
-        return (new MailMessage)
-            ->subject(__('Deposit received: :title', ['title' => $this->deposit->listing->title]))
-            ->greeting(__('Hello :name,', ['name' => $notifiable->first_name ?? '']))
-            ->line(__('We’ve received your deposit of R :amount (reference :ref). Your receipt :number is attached.', [
-                'amount' => number_format($this->receipt->amount / 100, 2, '.', ' '), 'ref' => $this->deposit->reference, 'number' => $this->receipt->number,
-            ]))
-            ->line(__('Your refund bank account is now locked until this deposit is refunded or applied.'))
-            ->action(__('View your auctions'), route('account'))
+        return TemplateMail::make('deposit.received', [
+            'first_name' => $notifiable->first_name ?? '', 'listing' => $this->deposit->listing->title,
+            'amount' => number_format($this->receipt->amount / 100, 2, '.', ' '), 'reference' => $this->deposit->reference, 'receipt_number' => $this->receipt->number,
+        ], route('account'))
             ->attachData(ReceiptPdf::render($this->receipt), $this->receipt->number.'.pdf', ['mime' => 'application/pdf']);
     }
 }

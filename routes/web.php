@@ -35,6 +35,7 @@ use App\Domains\Payments\Http\Controllers\PaymentProviderController;
 use App\Domains\Payments\Http\Controllers\PaymentWebhookController;
 use App\Domains\Payments\Http\Controllers\RefundController;
 use App\Domains\Platform\Email\EmailProviderController;
+use App\Domains\Platform\Email\EmailTemplateController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Premium\Http\PremiumController;
@@ -355,6 +356,14 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('lines/{line}', [FinanceController::class, 'resolve'])->middleware('can:deposits.reconcile')->name('resolve');
         });
         Route::middleware('can:settings.manage')->group(function () {
+            Route::prefix('email-templates')->name('email-templates.')->controller(EmailTemplateController::class)->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::get('{key}', 'edit')->name('edit');
+                Route::put('{key}', 'update')->name('update');
+                Route::delete('{key}', 'reset')->name('reset');
+                Route::post('{key}/preview', 'preview')->middleware('throttle:120,1')->name('preview');
+                Route::post('{key}/test', 'test')->middleware('throttle:6,1')->name('test');
+            });
             Route::get('settings/email', [EmailProviderController::class, 'show'])->name('settings.email');
             Route::put('settings/email', [EmailProviderController::class, 'update'])->name('settings.email.update');
             Route::post('settings/email/test', [EmailProviderController::class, 'test'])->middleware('throttle:6,1')->name('settings.email.test');
