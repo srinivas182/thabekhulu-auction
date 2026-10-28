@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Domains\Access\Enums\SystemRole;
 use App\Domains\Identity\Enums\UserType;
 use App\Domains\Identity\Notifications\QueuedVerifyEmail;
+use App\Domains\Settings\Settings\SecuritySettings;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -141,7 +142,20 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     /** Sent in the background, so a mail-server problem can't break registration. */
     public function sendEmailVerificationNotification(): void
     {
-        $this->notify(new QueuedVerifyEmail);
+        if (self::emailVerificationRequired()) {
+            $this->notify(new QueuedVerifyEmail);
+        }
+    }
+
+    /** Settings » Security » "Buyers must verify their email address" (on by default; off only for testing). */
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->email_verified_at !== null || ! self::emailVerificationRequired();
+    }
+
+    private static function emailVerificationRequired(): bool
+    {
+        return app(SecuritySettings::class)->email_verification_required;
     }
 
     public function hasConfirmedTwoFactor(): bool

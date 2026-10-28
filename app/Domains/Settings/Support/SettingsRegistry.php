@@ -57,7 +57,8 @@ final class SettingsRegistry
                 'label' => 'Security',
                 'description' => 'Sign-in and back-office access rules.',
                 'fields' => [
-                    'staff_two_factor_required' => ['type' => 'boolean', 'label' => 'Staff two-factor authentication', 'readOnly' => true, 'help' => 'Always on. Staff can’t use the back office without it.', 'rules' => ['accepted']],
+                    'staff_two_factor_required' => ['type' => 'boolean', 'label' => 'Staff two-factor authentication', 'help' => 'Must be on for go-live. Switch off only while testing.', 'rules' => ['boolean']],
+                    'email_verification_required' => ['type' => 'boolean', 'label' => 'Buyers must verify their email address', 'help' => 'Must be on for go-live, once email sending works. While off, no verification emails are sent.', 'rules' => ['boolean']],
                     'session_lifetime_minutes' => ['type' => 'number', 'label' => 'Sign out after inactivity', 'suffix' => 'minutes', 'rules' => ['required', 'integer', 'min:15', 'max:1440']],
                     'admin_ip_allowlist' => ['type' => 'list', 'label' => 'Back-office IP allow-list', 'help' => 'One IP address or range (CIDR) per line. Leave empty to allow any address. Your current address must be included.', 'rules' => ['array', 'max:50'], 'itemRules' => ['string', 'max:64']],
                 ],

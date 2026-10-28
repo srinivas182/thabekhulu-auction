@@ -9,6 +9,8 @@ class SecuritySettings extends Settings
     /** Always true: staff two-factor is mandatory and cannot be switched off. */
     public bool $staff_two_factor_required;
 
+    public bool $email_verification_required;
+
     public int $session_lifetime_minutes;
 
     /**
