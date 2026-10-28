@@ -64,10 +64,14 @@ export default function BidderPanel({
     if (state.approval === 'pending') {
         return (
             <p role="status" className="rounded-[10px] bg-muted p-4 text-sm">
-                Your application is being reviewed. We’ll email you when you’re
-                approved.{' '}
+                <strong className="block">
+                    You’ve applied to bid. This isn’t a bid yet.
+                </strong>
+                Next: we review your application, then you pay the deposit and
+                can bid here while the auction is live. The highest bid wins
+                when it closes.{' '}
                 <Link href="/account/approvals" className="underline">
-                    See what’s outstanding
+                    Follow it in My auctions
                 </Link>
             </p>
         );

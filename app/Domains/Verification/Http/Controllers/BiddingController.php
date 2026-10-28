@@ -3,8 +3,13 @@
 namespace App\Domains\Verification\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\Bidding\Models\AuctionState;
+use App\Domains\Bidding\Models\Bid;
+use App\Domains\Bidding\Models\MaxBid;
+use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Payments\Models\Deposit;
 use App\Domains\Settlement\Models\Suspension;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\BiddingEntity;
@@ -18,6 +23,7 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -135,18 +141,50 @@ class BiddingController extends Controller
         return back();
     }
 
+    /** My auctions: every auction the buyer applied to, its stage, the bidding figures and the next action. */
     public function approvals(#[CurrentUser] User $user, BidderEligibility $eligibility): Response
     {
         $approvals = BidderApproval::with(['listing.category', 'listing.city', 'entity'])->where('user_id', $user->id)->latest()->get();
+        $tz = (string) config('platform.display_timezone');
 
         return Inertia::render('account/approvals', [
-            'approvals' => $approvals->map(fn (BidderApproval $a): array => [
-                'listing' => $a->listing->title, 'url' => PublicListing::url($a->listing), 'status' => $a->status,
-                'statusLabel' => BidderApproval::STATUSES[$a->status], 'bidderNumber' => $a->bidder_number, 'reason' => $a->reason,
-                'biddingAs' => $a->entity?->name,
-                // Buyers see what is outstanding, not staff notes.
-                'checklist' => $a->status === 'pending' ? array_map(fn ($i) => ['label' => $i['label'], 'state' => $i['state']], $eligibility->checklist($a)) : [],
-            ]),
+            'approvals' => $approvals->map(function (BidderApproval $a) use ($eligibility, $tz): array {
+                $l = $a->listing;
+                $state = AuctionState::where('listing_id', $l->id)->first();
+                $deposit = Deposit::where('bidder_approval_id', $a->id)->latest('id')->first();
+                $sealed = $l->auction_type->value === 'sealed';
+                $live = $l->status === ListingStatus::Live;
+                $closed = in_array($l->status->value, ['closed', 'sold', 'no_bids'], true);
+                $paid = $deposit !== null && in_array($deposit->status, ['received', 'applied'], true);
+                $myBid = $sealed ? null : Bid::where('bidder_approval_id', $a->id)->whereNull('voided_at')->max('amount');
+                $myMax = $sealed ? null : MaxBid::where('bidder_approval_id', $a->id)->whereNull('voided_at')->latest('id')->first()?->amount;
+                $won = $closed && DB::table('auction_results')->where('listing_id', $l->id)->value('winner_approval_id') === $a->id;
+                $ends = $state !== null ? $state->ends_at : $l->ends_at;
+
+                $stage = match (true) {
+                    in_array($a->status, ['rejected', 'revoked'], true) => 'declined',
+                    $a->status === 'pending' => 'review',
+                    $closed => 'closed',
+                    ! $paid => 'deposit',
+                    ! $live => 'waiting',
+                    default => 'bidding',
+                };
+
+                return [
+                    'listing' => $l->title, 'url' => PublicListing::url($l), 'sealed' => $sealed,
+                    'closes' => $ends?->setTimezone($tz)->format('j M Y, H:i'), 'closesAt' => $ends?->toIso8601String(),
+                    'opens' => $l->starts_at?->setTimezone($tz)->format('j M Y, H:i'),
+                    'status' => $a->status, 'statusLabel' => BidderApproval::STATUSES[$a->status], 'bidderNumber' => $a->bidder_number, 'reason' => $a->reason,
+                    'biddingAs' => $a->entity?->name, 'stage' => $stage,
+                    'deposit' => $deposit === null ? null : ['status' => $deposit->status, 'amount' => (int) $deposit->amount],
+                    'depositAmount' => (int) $l->deposit_amount, 'depositUrl' => route('deposits.show', $l),
+                    'highest' => $sealed ? null : $state?->current_amount, 'bids' => $sealed ? null : (int) ($state->bid_count ?? 0),
+                    'myBid' => $myBid === null ? null : (int) $myBid, 'myMaximum' => $myMax === null ? null : (int) $myMax,
+                    'leading' => ! $sealed && $state !== null && $state->leader_approval_id === $a->id, 'won' => $won,
+                    // Buyers see what is outstanding, not staff notes.
+                    'checklist' => $a->status === 'pending' ? array_map(fn ($i) => ['label' => $i['label'], 'state' => $i['state']], $eligibility->checklist($a)) : [],
+                ];
+            }),
         ]);
     }
 }
