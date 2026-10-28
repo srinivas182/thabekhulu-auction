@@ -51,7 +51,9 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureAccountActive::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class,
+            // Capped: Apache rejects a single header over 8 KB with an empty 500 (seen on /login and /register).
+            // The full preload list is still in each page's HTML, so nothing is lost.
+            AddLinkHeadersForPreloadedAssets::using(12),
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
