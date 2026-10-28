@@ -75,6 +75,42 @@ class Verification extends Model
     /** @return HasMany<VerificationDocument, $this> */
     public function documents(): HasMany
     {
+        // Current documents; replaced ones are kept for the record (see allDocuments()).
+        return $this->hasMany(VerificationDocument::class)->whereNull('superseded_at');
+    }
+
+    /**
+     * Every document ever submitted, including replaced ones (FICA record-keeping).
+     *
+     * @return HasMany<VerificationDocument, $this>
+     */
+    public function allDocuments(): HasMany
+    {
         return $this->hasMany(VerificationDocument::class);
+    }
+
+    /** @return HasMany<VerificationMessage, $this> */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(VerificationMessage::class)->orderBy('id');
+    }
+
+    public function note(string $author, string $kind, ?string $body = null, ?int $userId = null): void
+    {
+        $this->messages()->create(['author' => $author, 'kind' => $kind, 'body' => $body, 'user_id' => $userId, 'created_at' => now()]);
+    }
+
+    /** Verified until 24 months from now, or the passport's expiry if that comes first. */
+    public function validUntil(): Carbon
+    {
+        $limit = Carbon::now()->addMonths(24);
+        $passport = $this->passport_expires_on?->copy()->endOfDay();
+
+        return $passport !== null && $passport->lt($limit) ? Carbon::parse($passport) : $limit;
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->status === 'verified' && $this->expires_at !== null && $this->expires_at->isPast();
     }
 }

@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -98,6 +97,11 @@ class KycReviewController extends Controller
                 'spouse' => $verification->spouse === null ? null : ['name' => $verification->spouse['name'] ?? null, 'idNumber' => $verification->spouse['id_number'] ?? null],
                 'checks' => $verification->checks ?? [], 'rejectionReason' => $verification->rejection_reason, 'infoRequested' => $verification->info_requested,
                 'submittedAt' => $verification->submitted_at?->toIso8601String(),
+                'messages' => $verification->messages()->with('user')->get()->map(fn ($m) => $m->present())->values(),
+                'previousDocuments' => $verification->allDocuments()->whereNotNull('superseded_at')->latest('superseded_at')->get()->map(fn (VerificationDocument $d): array => [
+                    'id' => $d->id, 'kind' => $d->kind, 'mime' => $d->mime, 'url' => route('admin.kyc.document', [$verification, $d]),
+                    'replacedAt' => $d->superseded_at?->setTimezone((string) config('platform.display_timezone'))->format('j M Y, H:i'),
+                ]),
                 'documents' => $verification->documents->map(fn (VerificationDocument $d): array => [
                     'id' => $d->id, 'kind' => $d->kind, 'mime' => $d->mime, 'url' => route('admin.kyc.document', [$verification, $d]),
                 ]),
@@ -141,8 +145,9 @@ class KycReviewController extends Controller
 
         $verification->forceFill([
             'status' => 'verified', 'reviewed_by' => $actor->id, 'reviewed_at' => now(), 'verified_at' => now(),
-            'expires_at' => Carbon::now()->addMonths(24), 'rejection_reason' => null, 'info_requested' => null,
+            'expires_at' => $verification->validUntil(), 'rejection_reason' => null, 'info_requested' => null,
         ])->save();
+        $verification->note('reviewer', 'verified', null, $actor->id);
 
         Audit::record('kyc', 'approved', "Approved verification of {$verification->user->name}", $verification, $actor);
         $verification->user->notify(new KycUpdate('verified'));
@@ -156,6 +161,7 @@ class KycReviewController extends Controller
         $reason = $request->validate(['reason' => ['required', 'string', 'max:500']])['reason'];
 
         $verification->forceFill(['status' => 'rejected', 'reviewed_by' => $actor->id, 'reviewed_at' => now(), 'rejection_reason' => $reason])->save();
+        $verification->note('reviewer', 'rejected', $reason, $actor->id);
 
         Audit::record('kyc', 'rejected', "Rejected verification of {$verification->user->name}", $verification, $actor, ['reason' => $reason]);
         $verification->user->notify(new KycUpdate('rejected', $reason));
@@ -170,6 +176,7 @@ class KycReviewController extends Controller
 
         // Reopen for the buyer to edit.
         $verification->forceFill(['status' => 'in_progress', 'info_requested' => $message])->save();
+        $verification->note('reviewer', 'info_request', $message, $actor->id);
 
         Audit::record('kyc', 'info_requested', "Asked {$verification->user->name} for more information", $verification, $actor, ['message' => $message]);
         $verification->user->notify(new KycUpdate('info', $message));

@@ -1,8 +1,16 @@
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import { ExternalLink } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateTime } from '@/lib/format';
@@ -41,6 +49,20 @@ type Props = {
         passportExpiresOn: string | null;
         passportDaysLeft: number | null;
         settlementConflicts: { listing: string; settles: string }[];
+        messages: {
+            author: string;
+            kind: string;
+            body: string | null;
+            by: string | null;
+            at: string;
+        }[];
+        previousDocuments: {
+            id: number;
+            kind: string;
+            mime: string;
+            url: string;
+            replacedAt: string | null;
+        }[];
         maritalStatus: string | null;
         spouse: { name: string | null; idNumber: string | null } | null;
         checks: Record<string, Check>;
@@ -88,6 +110,15 @@ const outcomeTone: Record<string, string> = {
 };
 const opts = { preserveScroll: true };
 
+const msgLabel: Record<string, string> = {
+    info_request: 'Asked for more information',
+    reply: 'Replied',
+    document: 'Uploaded',
+    submitted: 'Submitted',
+    rejected: 'Rejected',
+    verified: 'Verified',
+};
+
 export default function KycShow({
     verification: v,
     screenings,
@@ -102,10 +133,64 @@ export default function KycShow({
         note: '',
     });
     const open = ['submitted', 'review'].includes(v.status);
-    const ask = (message: string, action: (text: string) => void) => {
-        const t = window.prompt(message);
-        if (t && t.trim()) action(t.trim());
+    // Branded dialogs instead of the browser's prompt and confirm boxes.
+    type Dlg = {
+        title: string;
+        label?: string;
+        hint: string;
+        confirm: string;
+        danger?: boolean;
+        presets?: string[];
+        run: (text: string) => void;
     };
+    const [dlg, setDlg] = useState<Dlg | null>(null);
+    const [text, setText] = useState('');
+    const dialogs: Record<string, Omit<Dlg, 'run'>> = {
+        'Why is this account being rejected?': {
+            title: 'Reject this bank account',
+            label: 'Reason',
+            hint: 'The buyer sees this in their account and by email, and can add a corrected account.',
+            confirm: 'Reject account',
+            danger: true,
+        },
+        'What should the buyer add or correct? (emailed to them)': {
+            title: 'Ask for more information',
+            label: 'What should the buyer add or correct?',
+            hint: 'The buyer sees this in their account and by email. They can reply and upload new documents, then resubmit.',
+            confirm: 'Send request',
+            presets: [
+                'Please upload a clearer selfie: face the camera in good light, without glasses or a hat.',
+                'Please upload a proof of address dated within the last three months.',
+                'The photo of your ID is blurred. Please upload a clearer photo of the front.',
+                'The name on your document doesn’t match your account. Please check and correct it.',
+            ],
+        },
+        'Reason for rejecting (emailed to the buyer)': {
+            title: 'Reject this verification',
+            label: 'Reason',
+            hint: 'The buyer sees this in their account and by email.',
+            confirm: 'Reject verification',
+            danger: true,
+        },
+    };
+    const ask = (message: string, action: (text: string) => void) => {
+        setText('');
+        setDlg({
+            ...(dialogs[message] ?? {
+                title: message,
+                label: 'Details',
+                hint: '',
+                confirm: 'Continue',
+            }),
+            run: action,
+        });
+    };
+    const confirmDialog = (d: Omit<Dlg, 'label' | 'presets'>) => {
+        setText('');
+        setDlg(d);
+    };
+    // Keep the case current while it's open: new uploads and replies appear without reloading.
+    usePoll(20000, { only: ['verification'] });
 
     return (
         <>
@@ -317,6 +402,92 @@ export default function KycShow({
                                 </li>
                             ))}
                         </ul>
+                        {v.previousDocuments.length > 0 && (
+                            <details className="mt-4 rounded-lg border border-border p-3 text-sm">
+                                <summary className="cursor-pointer font-semibold">
+                                    Earlier versions (
+                                    {v.previousDocuments.length})
+                                </summary>
+                                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                                    {v.previousDocuments.map((d) => (
+                                        <li
+                                            key={d.id}
+                                            className="rounded-lg bg-muted/50 p-3"
+                                        >
+                                            <p className="mb-2 text-muted-foreground">
+                                                {kindLabel[d.kind] ?? d.kind},
+                                                replaced {d.replacedAt}
+                                            </p>
+                                            {d.mime.startsWith('image/') ? (
+                                                <a
+                                                    href={d.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
+                                                    <img
+                                                        src={d.url}
+                                                        alt={`Earlier ${kindLabel[d.kind] ?? d.kind}`}
+                                                        className="max-h-48 w-full rounded object-contain opacity-80"
+                                                    />
+                                                </a>
+                                            ) : (
+                                                <a
+                                                    href={d.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="underline"
+                                                >
+                                                    Open
+                                                </a>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </details>
+                        )}
+                    </section>
+
+                    <section
+                        aria-labelledby="conv-h"
+                        className="rounded-xl border border-border bg-card p-5"
+                    >
+                        <h2 id="conv-h" className="font-semibold">
+                            Conversation
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            Requests, the buyer’s replies and re-uploads, and
+                            decisions. Updates every 20 seconds.
+                        </p>
+                        <ol className="mt-3 grid gap-3">
+                            {v.messages.map((m, i) => (
+                                <li
+                                    key={i}
+                                    className={cn(
+                                        'rounded-lg p-3 text-sm',
+                                        m.author === 'buyer'
+                                            ? 'ml-6 bg-muted/60'
+                                            : 'mr-6 border border-border',
+                                    )}
+                                >
+                                    <p className="text-xs text-muted-foreground">
+                                        {m.author === 'buyer'
+                                            ? 'Buyer'
+                                            : (m.by ?? 'Reviewer')}{' '}
+                                        · {msgLabel[m.kind] ?? m.kind} · {m.at}
+                                    </p>
+                                    {m.body && (
+                                        <p className="mt-1 whitespace-pre-line">
+                                            {m.body}
+                                        </p>
+                                    )}
+                                </li>
+                            ))}
+                            {v.messages.length === 0 && (
+                                <li className="text-sm text-muted-foreground">
+                                    Nothing yet.
+                                </li>
+                            )}
+                        </ol>
                     </section>
 
                     {bank && (
@@ -532,12 +703,17 @@ export default function KycShow({
                             {can.approve && (
                                 <Button
                                     onClick={() =>
-                                        window.confirm(`Verify ${v.name}?`) &&
-                                        router.post(
-                                            approve(v.ulid).url,
-                                            {},
-                                            opts,
-                                        )
+                                        confirmDialog({
+                                            title: `Verify ${v.name}?`,
+                                            hint: 'They can request approval to bid straight away. Verification lasts 24 months, or until the passport expires if that’s sooner.',
+                                            confirm: 'Verify buyer',
+                                            run: () =>
+                                                router.post(
+                                                    approve(v.ulid).url,
+                                                    {},
+                                                    opts,
+                                                ),
+                                        })
                                     }
                                 >
                                     Verify buyer
@@ -594,6 +770,67 @@ export default function KycShow({
                     )}
                 </aside>
             </div>
+            <Dialog
+                open={dlg !== null}
+                onOpenChange={(open) => !open && setDlg(null)}
+            >
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="font-display text-2xl">
+                            {dlg?.title}
+                        </DialogTitle>
+                        {dlg?.hint && (
+                            <DialogDescription>{dlg.hint}</DialogDescription>
+                        )}
+                    </DialogHeader>
+                    {dlg?.label && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="dlg-text">{dlg.label}</Label>
+                            <textarea
+                                id="dlg-text"
+                                value={text}
+                                onChange={(e) => setText(e.target.value)}
+                                rows={4}
+                                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            />
+                            {dlg.presets && (
+                                <div className="grid gap-1.5">
+                                    <p className="text-xs text-muted-foreground">
+                                        Suggestions (click to use, then edit):
+                                    </p>
+                                    {dlg.presets.map((p) => (
+                                        <button
+                                            key={p}
+                                            type="button"
+                                            onClick={() => setText(p)}
+                                            className="rounded-md border border-border px-3 py-1.5 text-left text-xs hover:bg-muted"
+                                        >
+                                            {p}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDlg(null)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            variant={dlg?.danger ? 'destructive' : 'default'}
+                            disabled={
+                                dlg?.label !== undefined && text.trim() === ''
+                            }
+                            onClick={() => {
+                                dlg?.run(text.trim());
+                                setDlg(null);
+                            }}
+                        >
+                            {dlg?.confirm}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }

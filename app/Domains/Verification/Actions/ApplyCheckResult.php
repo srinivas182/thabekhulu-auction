@@ -38,7 +38,7 @@ class ApplyCheckResult
         };
         if ($verification->status === 'verified') {
             $verification->verified_at = Carbon::now();
-            $verification->expires_at = Carbon::now()->addMonths(24);
+            $verification->expires_at = $verification->validUntil(); // 24 months, or the passport's expiry if sooner
         }
         if ($verification->status === 'rejected') {
             $verification->rejection_reason = implode(' ', $result->reasons);

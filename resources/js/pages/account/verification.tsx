@@ -3,6 +3,7 @@ import { Check } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import verificationRoutes from '@/routes/account/verification';
 import {
     address,
     identity,
@@ -17,6 +18,14 @@ type V = {
     idNumberLast4: string | null;
     passportCountry: string | null;
     passportExpiresOn: string | null;
+    expired: boolean;
+    messages: {
+        author: string;
+        kind: string;
+        body: string | null;
+        by: string | null;
+        at: string;
+    }[];
     dateOfBirthInput: string | null;
     maritalStatus: string | null;
     spouseName: string | null;
@@ -245,16 +254,116 @@ export default function Verification({
                             <>
                                 {v?.infoRequested &&
                                     v.status === 'in_progress' && (
-                                        <p
-                                            role="alert"
-                                            className="rounded-[10px] bg-brand-accent-soft px-4 py-3 text-brand-accent"
+                                        <section
+                                            aria-labelledby="req-h"
+                                            className="grid gap-3 rounded-[14px] border border-brand-accent/30 bg-brand-accent-soft p-4"
                                         >
-                                            <strong>
-                                                We need a little more:
-                                            </strong>{' '}
-                                            {v.infoRequested}
-                                        </p>
+                                            <h2
+                                                id="req-h"
+                                                className="font-semibold text-brand-accent"
+                                            >
+                                                We need a little more from you
+                                            </h2>
+                                            <ol className="grid gap-2 text-sm">
+                                                {v.messages
+                                                    .filter((m) =>
+                                                        [
+                                                            'info_request',
+                                                            'reply',
+                                                            'document',
+                                                            'submitted',
+                                                        ].includes(m.kind),
+                                                    )
+                                                    .map((m, i) => (
+                                                        <li
+                                                            key={i}
+                                                            className={
+                                                                m.author ===
+                                                                'buyer'
+                                                                    ? 'ml-6 rounded-lg bg-background/70 px-3 py-2'
+                                                                    : 'mr-6 rounded-lg bg-background px-3 py-2'
+                                                            }
+                                                        >
+                                                            <span className="block text-xs text-muted-foreground">
+                                                                {m.author ===
+                                                                'buyer'
+                                                                    ? 'You'
+                                                                    : 'Thabekhulu'}{' '}
+                                                                · {m.at}
+                                                            </span>
+                                                            {m.body}
+                                                        </li>
+                                                    ))}
+                                            </ol>
+                                            <Form
+                                                action={
+                                                    verificationRoutes.reply()
+                                                        .url
+                                                }
+                                                method="post"
+                                                options={{
+                                                    preserveScroll: true,
+                                                }}
+                                                resetOnSuccess
+                                                className="grid gap-2"
+                                            >
+                                                {({
+                                                    processing,
+                                                    errors: e,
+                                                }) => (
+                                                    <>
+                                                        <label
+                                                            htmlFor="reply"
+                                                            className="text-sm font-semibold"
+                                                        >
+                                                            Reply (optional)
+                                                        </label>
+                                                        <textarea
+                                                            id="reply"
+                                                            name="reply"
+                                                            rows={3}
+                                                            placeholder="For example: I’ve uploaded a clearer selfie."
+                                                            className="w-full rounded-[10px] border border-input bg-background px-3 py-2 text-sm"
+                                                        />
+                                                        {e.reply && (
+                                                            <span className="text-sm text-destructive">
+                                                                {e.reply}
+                                                            </span>
+                                                        )}
+                                                        <button
+                                                            disabled={
+                                                                processing
+                                                            }
+                                                            className="w-fit rounded-[10px] border border-input bg-background px-4 py-2 text-sm font-semibold"
+                                                        >
+                                                            Send reply
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </Form>
+                                            <p className="text-sm">
+                                                Update what’s needed below, then
+                                                press{' '}
+                                                <strong>
+                                                    Submit for verification
+                                                </strong>{' '}
+                                                at the bottom of the page.
+                                            </p>
+                                        </section>
                                     )}
+                                {v?.expired && (
+                                    <p
+                                        role="alert"
+                                        className="rounded-[10px] bg-brand-accent-soft px-4 py-3 text-brand-accent"
+                                    >
+                                        <strong>
+                                            Your verification expired on{' '}
+                                            {v.expiresAt}.
+                                        </strong>{' '}
+                                        Upload a current identity document and
+                                        submit again to keep bidding.
+                                    </p>
+                                )}
                                 {v?.status === 'rejected' && (
                                     <p
                                         role="alert"
