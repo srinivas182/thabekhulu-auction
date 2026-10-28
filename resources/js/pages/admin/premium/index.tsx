@@ -25,7 +25,12 @@ type Props = {
 const select =
     'h-9 w-full min-w-0 rounded-md border border-input bg-background px-3 text-sm';
 
-export default function Premium({ slots, listings, cities }: Props) {
+export default function Premium({
+    slots,
+    listings,
+    cities,
+    categories,
+}: Props) {
     const errors = (usePage().props.errors ?? {}) as Record<string, string>;
     const [f, setF] = useState({
         listing: listings[0]?.ulid ?? '',
@@ -36,6 +41,9 @@ export default function Premium({ slots, listings, cities }: Props) {
     });
     const chosen = listings.find((l) => l.ulid === f.listing);
     const cityName = cities.find((c) => c.id === chosen?.city)?.name;
+    const categoryName = categories.find(
+        (c) => c.id === chosen?.category,
+    )?.name;
 
     return (
         <>
@@ -44,10 +52,10 @@ export default function Premium({ slots, listings, cities }: Props) {
                 <div>
                     <h1 className="font-display text-3xl">Premium slots</h1>
                     <p className="mt-1 max-w-3xl text-muted-foreground">
-                        Up to three positions per category (and optionally per
-                        city) for chosen dates. Premium listings appear first
-                        when people browse that category and show a Premium
-                        badge.
+                        Up to three premium positions per category, for chosen
+                        dates: either across the whole category, or only in the
+                        listing’s city. Premium listings appear first when
+                        buyers browse there, with a Premium badge.
                     </p>
                 </div>
                 <section
@@ -81,7 +89,7 @@ export default function Premium({ slots, listings, cities }: Props) {
                             <InputError message={errors.listing} />
                         </div>
                         <div className="grid gap-1.5">
-                            <Label htmlFor="c">Where</Label>
+                            <Label htmlFor="c">Where it appears</Label>
                             <select
                                 id="c"
                                 className={select}
@@ -90,13 +98,24 @@ export default function Premium({ slots, listings, cities }: Props) {
                                     setF({ ...f, city_id: e.target.value })
                                 }
                             >
-                                <option value="">Whole category</option>
+                                <option value="">
+                                    {categoryName
+                                        ? `All ${categoryName} auctions`
+                                        : 'Whole category'}
+                                </option>
                                 {chosen && (
                                     <option value={chosen.city}>
-                                        {cityName} only
+                                        {categoryName
+                                            ? `${categoryName} in ${cityName} only`
+                                            : `${cityName} only`}
                                     </option>
                                 )}
                             </select>
+                            <span className="text-sm text-muted-foreground">
+                                {chosen
+                                    ? `Category: ${categoryName ?? '—'} (from the listing). Choose whether it’s promoted on every ${categoryName ?? 'category'} page, or only when buyers look in ${cityName ?? 'its city'}.`
+                                    : 'Choose a listing first. Its category comes from the listing.'}
+                            </span>
                             <InputError message={errors.city_id} />
                         </div>
                         <div className="grid gap-1.5">
