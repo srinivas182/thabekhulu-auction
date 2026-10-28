@@ -76,7 +76,7 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
 
                         <Button
                             type="submit"
-                            className="mt-4 w-full"
+                            className="mt-4 h-12 w-full text-base"
                             disabled={processing}
                             data-test="reset-password-button"
                         >
@@ -91,6 +91,8 @@ export default function ResetPassword({ token, email, passwordRules }: Props) {
 }
 
 ResetPassword.layout = {
+    variant: 'brand',
+    panel: 'account',
     title: 'Reset password',
     description: 'Please enter your new password below',
 };

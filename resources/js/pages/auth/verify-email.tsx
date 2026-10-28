@@ -40,6 +40,8 @@ export default function VerifyEmail({ status }: { status?: string }) {
 }
 
 VerifyEmail.layout = {
+    variant: 'brand',
+    panel: 'account',
     title: 'Email verification',
     description:
         'Please verify your email address by clicking on the link we just emailed to you.',

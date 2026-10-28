@@ -131,6 +131,8 @@ export default function AcceptInvitation({
 }
 
 AcceptInvitation.layout = {
+    variant: 'brand',
+    panel: 'staff',
     title: 'Join the Thabekhulu back office',
     description: 'Set up your staff account.',
 };

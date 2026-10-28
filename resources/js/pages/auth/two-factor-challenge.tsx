@@ -39,6 +39,8 @@ export default function TwoFactorChallenge() {
     }, [showRecoveryInput]);
 
     setLayoutProps({
+        variant: 'brand',
+        panel: 'account',
         title: authConfigContent.title,
         description: authConfigContent.description,
     });

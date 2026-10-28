@@ -32,6 +32,7 @@ export default function ConfirmPassword() {
                         <div className="grid gap-2">
                             <Label htmlFor="password">Password</Label>
                             <PasswordInput
+                                className="h-11"
                                 id="password"
                                 name="password"
                                 placeholder="Password"
@@ -44,7 +45,7 @@ export default function ConfirmPassword() {
 
                         <div className="flex items-center">
                             <Button
-                                className="w-full"
+                                className="h-12 w-full text-base"
                                 disabled={processing}
                                 data-test="confirm-password-button"
                             >
@@ -60,6 +61,8 @@ export default function ConfirmPassword() {
 }
 
 ConfirmPassword.layout = {
+    variant: 'brand',
+    panel: 'account',
     title: 'Confirm password',
     description:
         'This is a secure area of the application. Please confirm your password before continuing.',

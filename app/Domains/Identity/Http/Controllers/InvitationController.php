@@ -5,6 +5,7 @@ namespace App\Domains\Identity\Http\Controllers;
 use App\Domains\Identity\Actions\AcceptInvitation;
 use App\Domains\Identity\Http\Requests\AcceptInvitationRequest;
 use App\Domains\Identity\Models\StaffInvitation;
+use App\Domains\Platform\Support\AuthCover;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +25,7 @@ class InvitationController extends Controller
             'email' => $invitation?->isPending() ? $invitation->email : null,
             'role' => $invitation?->isPending() ? ($invitation->role->getAttribute('label') ?? $invitation->role->name) : null,
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'cover' => AuthCover::url(),
         ]);
     }
 

@@ -4,9 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
-use App\Domains\Cms\Settings\HomeSettings;
-use App\Domains\Listings\Models\Listing;
-use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Platform\Support\AuthCover;
 use App\Models\User;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -72,32 +70,36 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureViews(): void
     {
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
+            'cover' => AuthCover::url(),
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'status' => $request->session()->get('status'),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
+            'cover' => AuthCover::url(),
             'email' => $request->email,
             'token' => $request->route('token'),
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
         ]));
 
         Fortify::requestPasswordResetLinkView(fn (Request $request) => Inertia::render('auth/forgot-password', [
+            'cover' => AuthCover::url(),
             'status' => $request->session()->get('status'),
         ]));
 
         Fortify::verifyEmailView(fn (Request $request) => Inertia::render('auth/verify-email', [
+            'cover' => AuthCover::url(),
             'status' => $request->session()->get('status'),
         ]));
 
         Fortify::registerView(fn () => Inertia::render('auth/register', [
             'passwordRules' => Password::defaults()->toPasswordRulesString(),
-            'cover' => self::registerCover(),
+            'cover' => AuthCover::url(),
         ]));
 
-        Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
+        Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge', ['cover' => AuthCover::url()]));
 
-        Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password'));
+        Fortify::confirmPasswordView(fn () => Inertia::render('auth/confirm-password', ['cover' => AuthCover::url()]));
     }
 
     /**
@@ -124,19 +126,5 @@ class FortifyServiceProvider extends ServiceProvider
                 ($request->input('credential.id') ?: $request->session()->getId()).'|'.$request->ip(),
             );
         });
-    }
-
-    /** A real property photo for the register page: the featured auction's, else any live listing's. Never breaks registration. */
-    private static function registerCover(): ?string
-    {
-        try {
-            $featured = app(HomeSettings::class)->featured_listing;
-            $query = Listing::public()->with(['category', 'city', 'media'])->whereHas('media');
-            $listing = ($featured ? (clone $query)->where('ulid', $featured)->first() : null) ?? $query->latest('id')->first();
-
-            return $listing ? PublicListing::card($listing)['image'] : null;
-        } catch (\Throwable) {
-            return null;
-        }
     }
 }
