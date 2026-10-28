@@ -2,6 +2,7 @@
 
 namespace App\Domains\Platform\Console;
 
+use App\Domains\Platform\Email\EmailConfig;
 use App\Domains\Settings\Settings\SecuritySettings;
 use Illuminate\Console\Command;
 
@@ -32,7 +33,7 @@ class SecurityCheck extends Command
             'Session cookies must be HTTPS-only' => ! config('session.secure') ? 'SESSION_SECURE_COOKIE is false' : null,
             'Session cookies must not be readable by scripts' => ! config('session.http_only') ? 'SESSION_HTTP_ONLY is false' : null,
             'Sessions must be encrypted' => ! config('session.encrypt') ? 'SESSION_ENCRYPT is false' : null,
-            'Mail must actually be sent' => in_array(config('mail.default'), ['log', 'array'], true) ? 'MAIL_MAILER is '.config('mail.default') : null,
+            'Email sending must be enabled' => ! EmailConfig::sending() ? 'enable a provider in Back office » Email provider' : null,
             'Queues must run in the background' => config('queue.default') === 'sync' ? 'QUEUE_CONNECTION is sync' : null,
             'Live feed must use Reverb' => config('broadcasting.default') !== 'reverb' ? 'BROADCAST_CONNECTION is '.config('broadcasting.default') : null,
             'Email verification must be required' => ! app(SecuritySettings::class)->email_verification_required ? 'switched off in Settings » Security' : null,

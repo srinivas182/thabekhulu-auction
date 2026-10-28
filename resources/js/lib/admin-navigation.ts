@@ -12,6 +12,7 @@ import {
     CalendarDays,
     Crown,
     Gavel,
+    Mail,
     BarChart3,
     BookUser,
     ShieldAlert,
@@ -35,6 +36,7 @@ import { index as finance } from '@/routes/admin/finance';
 import { index as eventsAdmin } from '@/routes/admin/events';
 import { index as premiumAdmin } from '@/routes/admin/premium';
 import { index as compliance } from '@/routes/admin/compliance';
+import { email as emailProvider } from '@/routes/admin/settings';
 import { index as kyc } from '@/routes/admin/kyc';
 import {
     finance as financeReports,
@@ -115,6 +117,12 @@ export const adminNavigation: NavItem[] = [
         href: compliance(),
         icon: ShieldAlert,
         permission: 'compliance.review',
+    },
+    {
+        title: 'Email provider',
+        href: emailProvider(),
+        icon: Mail,
+        permission: 'settings.manage',
     },
     {
         title: 'Quotations',

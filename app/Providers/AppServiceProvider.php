@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Domains\Access\Enums\SystemRole;
 use App\Domains\Audit\Listeners\AuditSubscriber;
+use App\Domains\Platform\Email\EmailConfig;
 use App\Domains\Platform\Features\Flags;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -37,6 +38,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Back office » Email provider decides how (and whether) email is sent.
+        EmailConfig::apply();
+
         // Settings are cached; a deployment that adds a setting (settings migration) must not keep
         // serving the old cached copy, which breaks pages until someone clears it (found in Sprint 6a).
         // NoPendingMigrations fires instead of MigrationsEnded when nothing is pending, so listen to both.

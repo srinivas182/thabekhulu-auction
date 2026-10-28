@@ -34,6 +34,7 @@ use App\Domains\Payments\Http\Controllers\FinanceController;
 use App\Domains\Payments\Http\Controllers\PaymentProviderController;
 use App\Domains\Payments\Http\Controllers\PaymentWebhookController;
 use App\Domains\Payments\Http\Controllers\RefundController;
+use App\Domains\Platform\Email\EmailProviderController;
 use App\Domains\Platform\Http\Controllers\AdminDashboardController;
 use App\Domains\Platform\Http\Controllers\FeatureController;
 use App\Domains\Premium\Http\PremiumController;
@@ -354,6 +355,9 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('lines/{line}', [FinanceController::class, 'resolve'])->middleware('can:deposits.reconcile')->name('resolve');
         });
         Route::middleware('can:settings.manage')->group(function () {
+            Route::get('settings/email', [EmailProviderController::class, 'show'])->name('settings.email');
+            Route::put('settings/email', [EmailProviderController::class, 'update'])->name('settings.email.update');
+            Route::post('settings/email/test', [EmailProviderController::class, 'test'])->middleware('throttle:6,1')->name('settings.email.test');
             Route::get('notifications/whatsapp', [NotificationPreferenceController::class, 'settings'])->name('notifications.whatsapp');
             Route::put('notifications/whatsapp', [NotificationPreferenceController::class, 'updateSettings'])->name('notifications.whatsapp.update');
             Route::get('finance/settings', [FinanceController::class, 'settings'])->name('finance.settings');
