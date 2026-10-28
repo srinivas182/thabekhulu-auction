@@ -6,6 +6,7 @@ use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
 use App\Domains\Notifications\Channels\WhatsAppChannel;
 use App\Domains\Notifications\Settings\WhatsAppSettings;
+use App\Domains\Platform\Email\TemplateMail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
@@ -41,9 +42,8 @@ class Outbid extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        return (new MailMessage)->subject(__('You’ve been outbid: :title', ['title' => $this->listing->title]))
-            ->line(__('Another bidder has bid R :amount on :title.', ['amount' => number_format($this->current, 0, '.', ' '), 'title' => $this->listing->title]))
-            ->action(__('Bid again'), url(PublicListing::url($this->listing)));
+        return TemplateMail::make('auction.outbid', ['first_name' => $notifiable->first_name ?? '', 'listing' => $this->listing->title,
+            'amount' => number_format($this->current, 0, '.', ' ')], url(PublicListing::url($this->listing)));
     }
 
     /** @return array{template: string, params: list<string>} */

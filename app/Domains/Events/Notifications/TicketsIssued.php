@@ -4,6 +4,7 @@ namespace App\Domains\Events\Notifications;
 
 use App\Domains\Events\Models\TicketOrder;
 use App\Domains\Events\Support\TicketToken;
+use App\Domains\Platform\Email\TemplateMail;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -42,13 +43,12 @@ class TicketsIssued extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $e = $this->order->event;
-        $when = $e->starts_at->setTimezone((string) config('platform.display_timezone'))->format('l j F Y, H:i');
 
-        return (new MailMessage)->subject(__('Your tickets: :title', ['title' => $e->title]))
-            ->greeting(__('Hello :name,', ['name' => $this->order->name]))
-            ->line(__(':title, :when SAST.', ['title' => $e->title, 'when' => $when]))
-            ->line($e->kind === 'online' ? __('Join online with the link on your ticket page.') : __('Venue: :venue. Show the QR code at the door.', ['venue' => (string) $e->venue]))
-            ->action(__('View your tickets'), self::link($this->order))
+        return TemplateMail::make('event.tickets', [
+            'name' => $this->order->name, 'event' => $e->title,
+            'when' => $e->starts_at->setTimezone((string) config('platform.display_timezone'))->format('l j F Y, H:i'),
+            'location' => $e->kind === 'online' ? __('Join online with the link on your ticket page.') : __('Venue: :venue. Show the QR code at the door.', ['venue' => (string) $e->venue]),
+        ], self::link($this->order))
             ->attachData(self::pdf($this->order), "{$this->order->reference}.pdf", ['mime' => 'application/pdf']);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Domains\Quotes\Notifications;
 
+use App\Domains\Platform\Email\TemplateMail;
 use App\Domains\Quotes\Http\Controllers\QuoteController;
 use App\Domains\Quotes\Models\Quote;
 use App\Domains\Quotes\Settings\QuotationSettings;
@@ -34,20 +35,13 @@ class QuoteMail extends Notification implements ShouldQueue
         $company = app(QuotationSettings::class)->company_name;
         $until = $q->valid_until->format('j F Y');
 
+        $vars = ['name' => $q->client->name, 'reference' => $q->reference(), 'title' => $q->title, 'valid_until' => $until,
+            'message' => $this->message ?: __('Please find our quotation attached.')];
+        $signOff = __('Kind regards,')."\n".$company;
         $mail = match ($this->kind) {
-            'sent' => (new MailMessage)->subject("Quotation {$q->reference()}: {$q->title}")
-                ->greeting(__('Hello :name,', ['name' => $q->client->name]))
-                ->line($this->message ?: __('Please find our quotation attached.'))
-                ->line(__('You can view, download and accept it online. It is valid until :date.', ['date' => $until]))
-                ->action(__('View quotation'), $this->link),
-            'reminder' => (new MailMessage)->subject("Reminder: quotation {$q->reference()} expires on {$until}")
-                ->greeting(__('Hello :name,', ['name' => $q->client->name]))
-                ->line(__('This is a reminder that our quotation “:title” is valid until :date.', ['title' => $q->title, 'date' => $until]))
-                ->action(__('View quotation'), $this->link),
-            default => (new MailMessage)->subject("Accepted: quotation {$q->reference()}")
-                ->greeting(__('Hello :name,', ['name' => $q->client->name]))
-                ->line(__('Thank you for accepting our quotation “:title”. A copy with your acceptance record is attached.', ['title' => $q->title]))
-                ->line(__('We will be in touch about the next steps.')),
+            'sent' => TemplateMail::make('quote.sent', $vars, $this->link, $signOff),
+            'reminder' => TemplateMail::make('quote.reminder', $vars, $this->link, $signOff),
+            default => TemplateMail::make('quote.accepted', $vars, null, $signOff),
         };
 
         if (in_array($this->kind, ['sent', 'accepted'], true)) {
@@ -55,6 +49,6 @@ class QuoteMail extends Notification implements ShouldQueue
             $mail->attachData($pdf, "{$q->reference()}.pdf", ['mime' => 'application/pdf']);
         }
 
-        return $mail->salutation(__('Kind regards,')."\n".$company);
+        return $mail;
     }
 }
