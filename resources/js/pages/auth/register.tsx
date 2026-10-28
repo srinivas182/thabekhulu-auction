@@ -33,6 +33,7 @@ export default function Register({ passwordRules }: Props) {
                                         First name
                                     </Label>
                                     <Input
+                                        className="h-11"
                                         id="first_name"
                                         type="text"
                                         required
@@ -45,6 +46,7 @@ export default function Register({ passwordRules }: Props) {
                                 <div className="grid gap-2">
                                     <Label htmlFor="last_name">Last name</Label>
                                     <Input
+                                        className="h-11"
                                         id="last_name"
                                         type="text"
                                         required
@@ -58,32 +60,50 @@ export default function Register({ passwordRules }: Props) {
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email address</Label>
                                 <Input
+                                    className="h-11"
                                     id="email"
                                     type="email"
                                     required
                                     autoComplete="email"
                                     name="email"
                                     placeholder="you@example.com"
+                                    aria-describedby="email-hint"
                                 />
+                                <p
+                                    id="email-hint"
+                                    className="text-sm text-muted-foreground"
+                                >
+                                    We’ll send a link to confirm it.
+                                </p>
                                 <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="mobile">Mobile number</Label>
                                 <Input
+                                    className="h-11"
                                     id="mobile"
                                     type="tel"
                                     required
                                     autoComplete="tel"
                                     name="mobile"
                                     placeholder="082 123 4567"
+                                    aria-describedby="mobile-hint"
                                 />
+                                <p
+                                    id="mobile-hint"
+                                    className="text-sm text-muted-foreground"
+                                >
+                                    For bid confirmation codes and auction
+                                    alerts.
+                                </p>
                                 <InputError message={errors.mobile} />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password">Password</Label>
                                 <PasswordInput
+                                    className="h-11"
                                     id="password"
                                     required
                                     autoComplete="new-password"
@@ -102,6 +122,7 @@ export default function Register({ passwordRules }: Props) {
                                     Confirm password
                                 </Label>
                                 <PasswordInput
+                                    className="h-11"
                                     id="password_confirmation"
                                     required
                                     autoComplete="new-password"
@@ -127,8 +148,16 @@ export default function Register({ passwordRules }: Props) {
                                     >
                                         I accept the Terms of Use and consent to
                                         Thabekhulu processing my personal
-                                        information as described in the Privacy
-                                        Notice (POPIA).
+                                        information as described in the{' '}
+                                        <a
+                                            href="/privacy"
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="underline underline-offset-2"
+                                        >
+                                            Privacy Notice
+                                        </a>{' '}
+                                        (POPIA).
                                     </Label>
                                 </div>
                                 <InputError message={errors.terms} />
@@ -136,7 +165,7 @@ export default function Register({ passwordRules }: Props) {
 
                             <Button
                                 type="submit"
-                                className="mt-2 w-full"
+                                className="mt-2 h-12 w-full text-base"
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
@@ -156,7 +185,8 @@ export default function Register({ passwordRules }: Props) {
 }
 
 Register.layout = {
-    title: 'Register to bid',
+    variant: 'brand',
+    title: 'Create your account',
     description:
-        'Create your account. You’ll verify your identity before your first bid.',
+        'It takes a minute. You’ll verify your identity before your first bid.',
 };
