@@ -36,6 +36,11 @@ type Props = {
         idNumber: string | null;
         passportCountry: string | null;
         dateOfBirth: string | null;
+        age: number | null;
+        passportCountryName: string | null;
+        passportExpiresOn: string | null;
+        passportDaysLeft: number | null;
+        settlementConflicts: { listing: string; settles: string }[];
         maritalStatus: string | null;
         spouse: { name: string | null; idNumber: string | null } | null;
         checks: Record<string, Check>;
@@ -129,7 +134,7 @@ export default function KycShow({
                         <div>
                             <dt className="text-muted-foreground">
                                 {v.documentType === 'passport'
-                                    ? `Passport (${v.passportCountry})`
+                                    ? `Passport (${v.passportCountryName ?? v.passportCountry})`
                                     : 'SA ID number'}
                             </dt>
                             <dd className="font-mono">{v.idNumber}</dd>
@@ -138,8 +143,67 @@ export default function KycShow({
                             <dt className="text-muted-foreground">
                                 Date of birth
                             </dt>
-                            <dd>{v.dateOfBirth ?? '—'}</dd>
+                            <dd>
+                                {v.dateOfBirth ?? '—'}
+                                {v.age !== null && (
+                                    <span
+                                        className={
+                                            v.age < 18
+                                                ? 'ml-2 font-semibold text-destructive'
+                                                : 'ml-2 text-muted-foreground'
+                                        }
+                                    >
+                                        (age {v.age})
+                                    </span>
+                                )}
+                            </dd>
                         </div>
+                        {v.documentType === 'passport' && (
+                            <div>
+                                <dt className="text-muted-foreground">
+                                    Passport expiry
+                                </dt>
+                                <dd>
+                                    {v.passportExpiresOn ?? '—'}
+                                    {v.passportDaysLeft !== null && (
+                                        <span
+                                            className={
+                                                v.passportDaysLeft <= 0
+                                                    ? 'ml-2 font-semibold text-destructive'
+                                                    : v.passportDaysLeft < 92
+                                                      ? 'ml-2 font-semibold text-amber-700 dark:text-amber-400'
+                                                      : 'ml-2 text-muted-foreground'
+                                            }
+                                        >
+                                            {v.passportDaysLeft <= 0
+                                                ? '(expired)'
+                                                : `(${v.passportDaysLeft} days left)`}
+                                        </span>
+                                    )}
+                                </dd>
+                            </div>
+                        )}
+                        {v.settlementConflicts.length > 0 && (
+                            <div
+                                role="alert"
+                                className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-amber-900 sm:col-span-2 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+                            >
+                                <p className="font-semibold">
+                                    This passport expires before settlement of:
+                                </p>
+                                <ul className="mt-1 list-disc pl-5">
+                                    {v.settlementConflicts.map((c) => (
+                                        <li key={c.listing}>
+                                            {c.listing} (settles {c.settles})
+                                        </li>
+                                    ))}
+                                </ul>
+                                <p className="mt-1">
+                                    Ask the buyer for a renewed passport before
+                                    approving them for these auctions.
+                                </p>
+                            </div>
+                        )}
                         <div>
                             <dt className="text-muted-foreground">Email</dt>
                             <dd>{v.email}</dd>

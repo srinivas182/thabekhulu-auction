@@ -16,6 +16,8 @@ type V = {
     documentType: string | null;
     idNumberLast4: string | null;
     passportCountry: string | null;
+    passportExpiresOn: string | null;
+    dateOfBirthInput: string | null;
     maritalStatus: string | null;
     spouseName: string | null;
     documents: string[];
@@ -27,6 +29,7 @@ type V = {
 type Props = {
     verification: V | null;
     maritalOptions: Record<string, string>;
+    countries: Record<string, string>;
     user: { firstName: string; lastName: string };
 };
 
@@ -126,11 +129,24 @@ function FileField({
 export default function Verification({
     verification: v,
     maritalOptions,
+    countries,
     user,
 }: Props) {
     const has = (k: string) => v?.documents.includes(k) ?? false;
     const [docType, setDocType] = useState(v?.documentType ?? 'sa_id');
     const [marital, setMarital] = useState(v?.maritalStatus ?? 'single');
+    const [expiry, setExpiry] = useState(v?.passportExpiresOn ?? '');
+    const day = 86_400_000;
+    const iso = (d: Date) => d.toISOString().slice(0, 10);
+    const now = new Date();
+    const tomorrow = iso(new Date(now.getTime() + day));
+    const adultBy = iso(
+        new Date(now.getFullYear() - 18, now.getMonth(), now.getDate()),
+    );
+    const left = expiry
+        ? (new Date(expiry).getTime() - now.getTime()) / day
+        : null;
+    const expiresSoon = left !== null && left > 0 && left < 92; // about 3 months
     const errors = (usePage().props.errors ?? {}) as Record<string, string>;
     const locked =
         v !== null && ['submitted', 'review', 'verified'].includes(v.status);
@@ -347,30 +363,122 @@ export default function Verification({
                                                     )}
                                                 </label>
                                                 {docType === 'passport' && (
-                                                    <label className="flex flex-col gap-1.5 text-sm font-semibold">
-                                                        Issuing country
-                                                        (2-letter code)
-                                                        <input
-                                                            name="passport_country"
-                                                            maxLength={2}
-                                                            defaultValue={
-                                                                v?.passportCountry ??
-                                                                ''
-                                                            }
-                                                            placeholder="e.g. GB"
-                                                            className={cn(
-                                                                field,
-                                                                'uppercase',
-                                                            )}
-                                                        />
-                                                        {errors.passport_country && (
-                                                            <span className="text-destructive">
-                                                                {
-                                                                    errors.passport_country
+                                                    <>
+                                                        <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                                                            Issuing country
+                                                            <select
+                                                                name="passport_country"
+                                                                defaultValue={
+                                                                    v?.passportCountry ??
+                                                                    ''
                                                                 }
+                                                                className={
+                                                                    field
+                                                                }
+                                                            >
+                                                                <option value="">
+                                                                    Choose a
+                                                                    country
+                                                                </option>
+                                                                {Object.entries(
+                                                                    countries,
+                                                                ).map(
+                                                                    ([
+                                                                        code,
+                                                                        name,
+                                                                    ]) => (
+                                                                        <option
+                                                                            key={
+                                                                                code
+                                                                            }
+                                                                            value={
+                                                                                code
+                                                                            }
+                                                                        >
+                                                                            {
+                                                                                name
+                                                                            }
+                                                                        </option>
+                                                                    ),
+                                                                )}
+                                                            </select>
+                                                            {errors.passport_country && (
+                                                                <span className="text-destructive">
+                                                                    {
+                                                                        errors.passport_country
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                        </label>
+                                                        <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                                                            Date of birth
+                                                            <input
+                                                                type="date"
+                                                                name="date_of_birth"
+                                                                defaultValue={
+                                                                    v?.dateOfBirthInput ??
+                                                                    ''
+                                                                }
+                                                                max={adultBy}
+                                                                className={
+                                                                    field
+                                                                }
+                                                            />
+                                                            <span className="font-normal text-muted-foreground">
+                                                                As shown in your
+                                                                passport. You
+                                                                must be 18 or
+                                                                older.
                                                             </span>
-                                                        )}
-                                                    </label>
+                                                            {errors.date_of_birth && (
+                                                                <span className="text-destructive">
+                                                                    {
+                                                                        errors.date_of_birth
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                        </label>
+                                                        <label className="flex flex-col gap-1.5 text-sm font-semibold">
+                                                            Passport expiry date
+                                                            <input
+                                                                type="date"
+                                                                name="passport_expires_on"
+                                                                value={expiry}
+                                                                min={tomorrow}
+                                                                onChange={(e) =>
+                                                                    setExpiry(
+                                                                        e.target
+                                                                            .value,
+                                                                    )
+                                                                }
+                                                                className={
+                                                                    field
+                                                                }
+                                                            />
+                                                            {expiresSoon && (
+                                                                <span className="font-normal text-amber-700 dark:text-amber-400">
+                                                                    This
+                                                                    passport
+                                                                    expires
+                                                                    within 3
+                                                                    months. You
+                                                                    may need a
+                                                                    renewed
+                                                                    passport
+                                                                    before an
+                                                                    auction you
+                                                                    win settles.
+                                                                </span>
+                                                            )}
+                                                            {errors.passport_expires_on && (
+                                                                <span className="text-destructive">
+                                                                    {
+                                                                        errors.passport_expires_on
+                                                                    }
+                                                                </span>
+                                                            )}
+                                                        </label>
+                                                    </>
                                                 )}
                                             </div>
                                             <div className="grid gap-4 sm:grid-cols-2">

@@ -9,6 +9,7 @@ use App\Domains\Verification\Data\IdentityRequest;
 use App\Domains\Verification\Enums\CheckType;
 use App\Domains\Verification\Models\Verification;
 use App\Domains\Verification\Models\VerificationDocument;
+use App\Domains\Verification\Support\Countries;
 use App\Domains\Verification\Support\ProviderRegistry;
 use App\Domains\Verification\Support\SaIdNumber;
 use App\Http\Controllers\Controller;
@@ -41,10 +42,11 @@ class BuyerVerificationController extends Controller
         $kinds = $v ? $v->documents()->pluck('kind')->all() : [];
 
         return Inertia::render('account/verification', [
+            'countries' => Countries::forPassports(),
             'verification' => $v === null ? null : [
                 'status' => $v->status, 'statusLabel' => Verification::STATUSES[$v->status] ?? $v->status,
                 'documentType' => $v->document_type, 'idNumberLast4' => $v->id_number ? substr($v->id_number, -4) : null,
-                'passportCountry' => $v->passport_country, 'maritalStatus' => $v->marital_status,
+                'passportCountry' => $v->passport_country, 'passportExpiresOn' => $v->passport_expires_on?->toDateString(), 'dateOfBirthInput' => $v->date_of_birth?->toDateString(), 'maritalStatus' => $v->marital_status,
                 'spouseName' => $v->spouse['name'] ?? null, 'documents' => $kinds, 'rejectionReason' => $v->rejection_reason, 'infoRequested' => $v->info_requested,
                 'verifiedAt' => $v->verified_at?->format('j F Y'), 'expiresAt' => $v->expires_at?->format('j F Y'),
             ],
@@ -59,14 +61,22 @@ class BuyerVerificationController extends Controller
         $data = $request->validate([
             'document_type' => ['required', Rule::in(['sa_id', 'passport'])],
             'id_number' => ['required', 'string', 'max:20'],
-            'passport_country' => ['nullable', 'required_if:document_type,passport', 'string', 'size:2'],
+            'passport_country' => ['nullable', 'required_if:document_type,passport', Rule::in(array_keys(Countries::forPassports()))],
+            'date_of_birth' => ['nullable', 'required_if:document_type,passport', 'date', 'before_or_equal:'.now()->subYears(18)->toDateString(), 'after:1900-01-01'],
+            'passport_expires_on' => ['nullable', 'required_if:document_type,passport', 'date', 'after:today'],
             'front' => [Rule::requiredIf(! $v->documents()->whereIn('kind', ['id_front', 'passport'])->exists()), ...self::DOC_RULE],
             'back' => ['nullable', ...self::DOC_RULE],
         ]);
 
-        $number = $data['document_type'] === 'sa_id' ? (preg_replace('/\D/', '', $data['id_number']) ?? '') : strtoupper(trim($data['id_number']));
+        $number = $data['document_type'] === 'sa_id' ? (preg_replace('/\D/', '', $data['id_number']) ?? '') : strtoupper((string) preg_replace('/[\s-]/', '', $data['id_number']));
         if ($data['document_type'] === 'sa_id' && ! SaIdNumber::isValid($number)) {
             throw ValidationException::withMessages(['id_number' => __('That isn’t a valid South African ID number. Check all 13 digits.')]);
+        }
+        if ($data['document_type'] === 'passport' && ! preg_match('/^[A-Z0-9]{6,20}$/', $number)) {
+            throw ValidationException::withMessages(['id_number' => __('A passport number has 6 to 20 letters and numbers. Check it against your passport.')]);
+        }
+        if ($data['document_type'] === 'sa_id' && SaIdNumber::dateOfBirth($number)?->gt(now()->subYears(18))) {
+            throw ValidationException::withMessages(['id_number' => __('You must be 18 or older to bid.')]);
         }
 
         $hash = Verification::hashIdNumber($data['document_type'].':'.$number);
@@ -77,7 +87,8 @@ class BuyerVerificationController extends Controller
         $v->fill([
             'document_type' => $data['document_type'], 'id_number' => $number, 'id_number_hash' => $hash,
             'passport_country' => $data['document_type'] === 'passport' ? strtoupper((string) $data['passport_country']) : null,
-            'date_of_birth' => $data['document_type'] === 'sa_id' ? SaIdNumber::dateOfBirth($number) : null,
+            'date_of_birth' => $data['document_type'] === 'sa_id' ? SaIdNumber::dateOfBirth($number) : $data['date_of_birth'],
+            'passport_expires_on' => $data['document_type'] === 'passport' ? $data['passport_expires_on'] : null,
         ])->save();
 
         $this->store($v, $request->file('front'), $data['document_type'] === 'passport' ? 'passport' : 'id_front');
