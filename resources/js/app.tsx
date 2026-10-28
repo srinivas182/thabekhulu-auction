@@ -2,7 +2,9 @@ import { createInertiaApp } from '@inertiajs/react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
+import AccountLayout from '@/layouts/account-layout';
 import AppLayout from '@/layouts/app-layout';
+import ShellLayout from '@/layouts/shell-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import PublicLayout from '@/layouts/public-layout';
 import SettingsLayout from '@/layouts/settings/layout';
@@ -35,13 +37,14 @@ void createInertiaApp({
             case name === 'error':
                 return null;
             case name.startsWith('public/'):
+                return PublicLayout;
             case name.startsWith('account/'):
             case name.startsWith('seller/'):
-                return PublicLayout;
+                return AccountLayout;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
+                return [ShellLayout, SettingsLayout];
             default:
                 return AppLayout;
         }

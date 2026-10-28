@@ -19,18 +19,6 @@ type Props = {
 };
 
 const card = 'rounded-[18px] border border-border bg-card';
-const nav = [
-    ['Dashboard', '/account'],
-    ['Verification', '/account/verification'],
-    ['Bank account', '/account/bank'],
-    ['Companies and trusts', '/account/entities'],
-    ['Bidding approvals', '/account/approvals'],
-    ['Purchases', '/account/purchases'],
-    ['Saved and watching', '/account/saved'],
-    ['Quotations', '/account/quotes'],
-    ['Alerts', '/account/notifications'],
-    ['Profile and security', '/settings/profile'],
-] as const;
 
 /** Buyer dashboard from the approved design. */
 export default function Dashboard({
@@ -43,30 +31,7 @@ export default function Dashboard({
     return (
         <>
             <Head title="My account" />
-            <nav
-                aria-label="Account"
-                className="border-b border-border bg-card"
-            >
-                <div className="mx-auto flex max-w-[1280px] gap-x-7 overflow-x-auto px-5 text-[15px] whitespace-nowrap sm:px-8">
-                    {nav.map(([label, href]) => (
-                        <Link
-                            key={href}
-                            href={href}
-                            aria-current={
-                                href === '/account' ? 'page' : undefined
-                            }
-                            className={cn(
-                                'py-3.5',
-                                href === '/account'
-                                    ? 'border-b-2 border-primary font-semibold'
-                                    : 'text-muted-foreground hover:text-foreground',
-                            )}
-                        >
-                            {label}
-                        </Link>
-                    ))}
-                </div>
-            </nav>
+
             <section className="mx-auto flex max-w-[1280px] flex-col gap-10 px-5 py-10 pb-24 sm:px-8">
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <h1 className="font-display text-4xl sm:text-5xl">

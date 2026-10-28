@@ -1,7 +1,8 @@
 import { usePage } from '@inertiajs/react';
 import AppLogoIcon from '@/components/app-logo-icon';
 
-export default function AppLogo() {
+/** `label` sits under the name: "Back office" for staff, "My account" in the buyer area. */
+export default function AppLogo({ label = 'Back office' }: { label?: string }) {
     const { theme } = usePage().props;
 
     if (theme.logoLight) {
@@ -24,7 +25,7 @@ export default function AppLogo() {
                     Thabekhulu
                 </span>
                 <span className="truncate text-xs leading-tight text-muted-foreground">
-                    Back office
+                    {label}
                 </span>
             </div>
         </>
