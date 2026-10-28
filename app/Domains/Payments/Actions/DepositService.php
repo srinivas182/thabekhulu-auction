@@ -37,8 +37,9 @@ class DepositService
     {
         $listing = $approval->listing;
 
-        if ($approval->user_id !== $buyer->id || ! in_array($approval->status, ['pending', 'approved'], true)) {
-            throw ValidationException::withMessages(['deposit' => __('Apply to bid on this listing first.')]);
+        if ($approval->user_id !== $buyer->id || $approval->status !== 'approved') {
+            // Approve first, then pay: nobody pays a deposit for an application that may be declined.
+            throw ValidationException::withMessages(['deposit' => __('You can pay the deposit once you’re approved to bid.')]);
         }
         if (! self::complianceComplete($listing)) {
             throw ValidationException::withMessages(['deposit' => __('Deposits for this listing open once our legal checks are complete. We’ll email you.')]);

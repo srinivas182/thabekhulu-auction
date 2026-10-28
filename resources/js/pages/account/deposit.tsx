@@ -1,6 +1,7 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Form, Head, Link, router } from '@inertiajs/react';
 import { Check, Copy, Download } from 'lucide-react';
 import { useState } from 'react';
+import depositRoutes from '@/routes/deposits';
 import { randCents as rand } from '@/lib/cents';
 import { rand as randWhole } from '@/lib/money';
 import { cn } from '@/lib/utils';
@@ -21,6 +22,7 @@ type Props = {
         reference: string;
         status: string;
         statusLabel: string;
+        proofUploadedAt: string | null;
         amount: number;
         paid: number;
         receipts: { number: string; amount: number; url: string }[];
@@ -257,6 +259,63 @@ export default function DepositPage({
                             our account, usually within one working day, and
                             email your receipt.
                         </p>
+                        {deposit &&
+                            ['awaiting', 'part_paid'].includes(
+                                deposit.status,
+                            ) && (
+                                <Form
+                                    action={
+                                        depositRoutes.proof(listing.ulid).url
+                                    }
+                                    method="post"
+                                    options={{ preserveScroll: true }}
+                                    resetOnSuccess
+                                    className="grid gap-2 rounded-[14px] border border-border bg-background p-4"
+                                >
+                                    {({ processing, errors }) => (
+                                        <>
+                                            <label
+                                                htmlFor="proof"
+                                                className="text-sm font-semibold"
+                                            >
+                                                Upload your proof of payment
+                                                (optional)
+                                            </label>
+                                            <p className="text-sm text-muted-foreground">
+                                                It helps us find your payment
+                                                faster. Your deposit is
+                                                confirmed once the money
+                                                reflects in our account.
+                                            </p>
+                                            <input
+                                                id="proof"
+                                                type="file"
+                                                name="proof"
+                                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                                className="text-sm"
+                                            />
+                                            {errors.proof && (
+                                                <span className="text-sm text-destructive">
+                                                    {errors.proof}
+                                                </span>
+                                            )}
+                                            {deposit.proofUploadedAt && (
+                                                <span className="text-sm text-status-live">
+                                                    Proof received on{' '}
+                                                    {deposit.proofUploadedAt}.
+                                                    You can replace it.
+                                                </span>
+                                            )}
+                                            <button
+                                                disabled={processing}
+                                                className="w-fit rounded-[10px] border border-input px-4 py-2 text-sm font-semibold"
+                                            >
+                                                Upload proof
+                                            </button>
+                                        </>
+                                    )}
+                                </Form>
+                            )}
                     </section>
                 )}
 

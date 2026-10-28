@@ -1,7 +1,10 @@
-import { Form, Link } from '@inertiajs/react';
+import { Form, Link, router } from '@inertiajs/react';
+import advanceRoutes from '@/routes/auctions/advance';
 import { Check } from 'lucide-react';
+import { useState } from 'react';
+import { rand } from '@/lib/money';
 import { register } from '@/routes';
-import { apply } from '@/routes/auctions';
+import { advance, apply } from '@/routes/auctions';
 
 export type BidderState = {
     verification: string | null;
@@ -9,6 +12,14 @@ export type BidderState = {
     bidderNumber: string | null;
     reason: string | null;
     needsFunds: boolean;
+    depositPaid: boolean;
+    depositAmount: number;
+    depositUrl: string;
+    scheduled: boolean;
+    sealed: boolean;
+    opens: string | null;
+    advanceMax: number | null;
+    otpFrom: number;
     entities: { ulid: string; name: string; verified: boolean }[];
 } | null;
 
@@ -46,17 +57,40 @@ export default function BidderPanel({
 
     if (state.approval === 'approved') {
         return (
-            <div
-                role="status"
-                className="grid gap-1 rounded-[10px] bg-status-live/10 p-4"
-            >
+            <div className="grid gap-3 rounded-[10px] bg-status-live/10 p-4">
                 <p className="inline-flex items-center gap-1.5 font-semibold text-status-live">
                     <Check className="size-4" aria-hidden="true" />
                     Approved to bid as bidder #{state.bidderNumber}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                    Next: pay the deposit when online payments open.
-                </p>
+                {!state.depositPaid && state.depositAmount > 0 ? (
+                    <>
+                        <p className="text-sm">
+                            Next: pay the{' '}
+                            <strong>{rand(state.depositAmount)}</strong>{' '}
+                            deposit. Online payment confirms straight away; an
+                            EFT once it reflects in our account. Bidding unlocks
+                            as soon as it’s confirmed.
+                        </p>
+                        <Link
+                            href={state.depositUrl}
+                            className="inline-flex min-h-11 w-fit items-center rounded-[10px] bg-primary px-5 font-semibold text-primary-foreground"
+                        >
+                            Pay deposit
+                        </Link>
+                    </>
+                ) : state.scheduled && !state.sealed ? (
+                    <AdvanceMaximum
+                        ulid={ulid}
+                        state={state}
+                        minimum={minimum}
+                    />
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                        {state.sealed
+                            ? 'Submit your confidential offer here once the tender opens.'
+                            : 'Your deposit is received. You can bid here while the auction is live.'}
+                    </p>
+                )}
             </div>
         );
     }
@@ -179,6 +213,124 @@ export default function BidderPanel({
                         </Link>
                         .
                     </p>
+                </>
+            )}
+        </Form>
+    );
+}
+
+/** Before bidding opens: the most the buyer will pay; the system bids for them from the start, only as much as needed. */
+function AdvanceMaximum({
+    ulid,
+    state,
+    minimum,
+}: {
+    ulid: string;
+    state: NonNullable<BidderState>;
+    minimum: number | null;
+}) {
+    const [editing, setEditing] = useState(state.advanceMax === null);
+    const [value, setValue] = useState(
+        state.advanceMax ? String(state.advanceMax) : '',
+    );
+    const amount = Number(value.replace(/\D/g, '')) || 0;
+
+    if (!editing && state.advanceMax !== null) {
+        return (
+            <div className="grid gap-2 text-sm">
+                <p>
+                    Your advance maximum:{' '}
+                    <strong>{rand(state.advanceMax)}</strong>. When bidding
+                    opens {state.opens ? `on ${state.opens} SAST` : ''}, we’ll
+                    bid for you, only as much as needed to keep you in the lead.
+                    Only you can see it.
+                </p>
+                <div className="flex gap-2">
+                    <button
+                        type="button"
+                        onClick={() => setEditing(true)}
+                        className="rounded-[10px] border border-input bg-background px-4 py-2 font-semibold"
+                    >
+                        Change
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            router.delete(advanceRoutes.destroy(ulid).url, {
+                                preserveScroll: true,
+                            })
+                        }
+                        className="rounded-[10px] px-4 py-2 font-semibold underline"
+                    >
+                        Remove
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <Form
+            action={advance(ulid).url}
+            method="post"
+            options={{ preserveScroll: true }}
+            onSuccess={() => setEditing(false)}
+            className="grid gap-2 text-sm"
+        >
+            {({ processing, errors }) => (
+                <>
+                    <p>
+                        Bidding opens{' '}
+                        {state.opens ? `on ${state.opens} SAST` : 'soon'}. You
+                        can set an <strong>advance maximum</strong> now: the
+                        most you’ll pay. From the opening, we bid for you, only
+                        as much as needed to keep you in the lead.
+                    </p>
+                    <label htmlFor="advance" className="font-semibold">
+                        Your maximum (R)
+                    </label>
+                    <input
+                        id="advance"
+                        name="maximum"
+                        inputMode="numeric"
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        placeholder={minimum ? `At least ${rand(minimum)}` : ''}
+                        className="h-11 rounded-[10px] border border-input bg-background px-3"
+                    />
+                    {(errors.otp || amount >= state.otpFrom) && (
+                        <>
+                            <label
+                                htmlFor="advance-otp"
+                                className="font-semibold"
+                            >
+                                Confirmation code
+                            </label>
+                            <input
+                                id="advance-otp"
+                                name="otp"
+                                inputMode="numeric"
+                                autoComplete="one-time-code"
+                                maxLength={6}
+                                className="h-11 w-40 rounded-[10px] border border-input bg-background px-3"
+                            />
+                            <span className="text-muted-foreground">
+                                {errors.otp ??
+                                    'For larger amounts we email you a code. Save once to receive it.'}
+                            </span>
+                        </>
+                    )}
+                    {(errors.maximum || errors.bid) && (
+                        <span className="text-destructive">
+                            {errors.maximum ?? errors.bid}
+                        </span>
+                    )}
+                    <button
+                        disabled={processing || amount === 0}
+                        className="w-fit rounded-[10px] bg-primary px-5 py-2.5 font-semibold text-primary-foreground"
+                    >
+                        Save advance maximum
+                    </button>
                 </>
             )}
         </Form>

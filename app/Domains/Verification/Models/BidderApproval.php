@@ -3,9 +3,11 @@
 namespace App\Domains\Verification\Models;
 
 use App\Domains\Listings\Models\Listing;
+use App\Domains\Payments\Models\Deposit;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -60,5 +62,11 @@ class BidderApproval extends Model
     public function proofOfFunds(): BelongsTo
     {
         return $this->belongsTo(ProofOfFunds::class, 'proof_of_funds_id');
+    }
+
+    /** @return HasMany<Deposit, $this> */
+    public function deposits(): HasMany
+    {
+        return $this->hasMany(Deposit::class);
     }
 }

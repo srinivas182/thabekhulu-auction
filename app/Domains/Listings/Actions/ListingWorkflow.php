@@ -3,6 +3,7 @@
 namespace App\Domains\Listings\Actions;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\Bidding\Actions\AdvanceBids;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Support\Pricing;
@@ -69,6 +70,8 @@ class ListingWorkflow
     {
         if ($listing->status === ListingStatus::Scheduled && $listing->starts_at?->isPast()) {
             $this->move(null, $listing, ListingStatus::Live, 'Auction start time reached');
+            // Place the advance maximums set before opening, through the normal bid engine.
+            app(AdvanceBids::class)->apply($listing->fresh() ?? $listing);
         }
     }
 

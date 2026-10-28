@@ -32,6 +32,7 @@ type Approval = {
     myMaximum: number | null;
     leading: boolean;
     won: boolean;
+    advanceMax: number | null;
     checklist: { label: string; state: string }[];
 };
 
@@ -81,7 +82,15 @@ export default function MyAuctions({ approvals }: { approvals: Approval[] }) {
                         </li>
                         <li>
                             <strong>Pay the deposit</strong> shown on the
-                            listing, using your unique reference.
+                            listing: online (confirmed straight away), or by EFT
+                            with your unique reference (confirmed once it
+                            reflects; you can upload your proof of payment).
+                            Bidding unlocks as soon as it’s confirmed.
+                        </li>
+                        <li>
+                            <strong>Optional: set an advance maximum</strong>{' '}
+                            before bidding opens. From the opening, the system
+                            bids for you, only as much as needed.
                         </li>
                         <li>
                             <strong>Bid while the auction is live.</strong>{' '}
@@ -254,7 +263,9 @@ export default function MyAuctions({ approvals }: { approvals: Approval[] }) {
                                 <p className="text-sm">
                                     You’re approved. Pay the{' '}
                                     <strong>{rand(a.depositAmount)}</strong>{' '}
-                                    deposit to start bidding.
+                                    deposit: online is confirmed straight away;
+                                    an EFT once it reflects (you can upload your
+                                    proof of payment).
                                     {a.deposit?.status === 'part_paid' &&
                                         ` We’ve received ${randCents(a.deposit.amount)} so far.`}
                                 </p>
@@ -269,9 +280,26 @@ export default function MyAuctions({ approvals }: { approvals: Approval[] }) {
                                 <p className="text-sm">
                                     You’re all set. Bidding opens{' '}
                                     {a.opens ? `on ${a.opens} SAST` : 'soon'}.
+                                    {a.advanceMax !== null && (
+                                        <>
+                                            {' '}
+                                            Your advance maximum is{' '}
+                                            <strong>
+                                                {rand(a.advanceMax)}
+                                            </strong>
+                                            .
+                                        </>
+                                    )}
                                 </p>
-                                <Link href={a.url} className={quiet}>
-                                    View auction
+                                <Link
+                                    href={a.url}
+                                    className={a.sealed ? quiet : button}
+                                >
+                                    {a.sealed
+                                        ? 'View auction'
+                                        : a.advanceMax !== null
+                                          ? 'Change advance maximum'
+                                          : 'Set an advance maximum'}
                                 </Link>
                             </div>
                         )}

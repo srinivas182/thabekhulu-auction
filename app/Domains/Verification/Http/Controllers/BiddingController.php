@@ -3,6 +3,7 @@
 namespace App\Domains\Verification\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\Bidding\Models\AdvanceBid;
 use App\Domains\Bidding\Models\AuctionState;
 use App\Domains\Bidding\Models\Bid;
 use App\Domains\Bidding\Models\MaxBid;
@@ -181,6 +182,7 @@ class BiddingController extends Controller
                     'highest' => $sealed ? null : $state?->current_amount, 'bids' => $sealed ? null : (int) ($state->bid_count ?? 0),
                     'myBid' => $myBid === null ? null : (int) $myBid, 'myMaximum' => $myMax === null ? null : (int) $myMax,
                     'leading' => ! $sealed && $state !== null && $state->leader_approval_id === $a->id, 'won' => $won,
+                    'advanceMax' => ($adv = AdvanceBid::where('bidder_approval_id', $a->id)->whereNull('applied_at')->first()) ? (int) $adv->amount : null,
                     // Buyers see what is outstanding, not staff notes.
                     'checklist' => $a->status === 'pending' ? array_map(fn ($i) => ['label' => $i['label'], 'state' => $i['state']], $eligibility->checklist($a)) : [],
                 ];

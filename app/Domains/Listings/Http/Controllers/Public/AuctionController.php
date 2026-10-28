@@ -2,14 +2,18 @@
 
 namespace App\Domains\Listings\Http\Controllers\Public;
 
+use App\Domains\Bidding\Http\Controllers\BidController;
+use App\Domains\Bidding\Models\AdvanceBid;
 use App\Domains\Bidding\Support\AuctionView;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Catalogue\Models\Province;
 use App\Domains\Events\Models\Event;
+use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\ListingSearch;
 use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Payments\Models\Deposit;
 use App\Domains\Platform\Support\Seo;
 use App\Domains\Settings\Settings\GeneralSettings;
 use App\Domains\Verification\Models\BidderApproval;
@@ -89,6 +93,9 @@ class AuctionController extends Controller
             'bidder' => $this->bidderState($listing),
             'auction' => AuctionView::for($listing, request()->user()),
             'office' => ['phone' => $general->contact_phone, 'email' => $general->contact_email],
+            // Public: how many are registered to bid (approved, deposit received). Never names.
+            'registeredBidders' => BidderApproval::where('listing_id', $listing->id)->where('status', 'approved')
+                ->whereHas('deposits', fn ($q) => $q->whereIn('status', ['received', 'applied']))->count(),
             'seo' => Seo::make(($listing->seo_title ?: $listing->title).' | Thabekhulu auctions', $listing->seo_description ?: (string) $listing->summary, $data['image'], $data['url'], 'product'),
             'watching' => request()->user() !== null && DB::table('watchlist_items')->where('user_id', request()->user()->id)->where('listing_id', $listing->id)->exists(),
         ])->withViewData(['structuredData' => $structured]);
@@ -114,6 +121,12 @@ class AuctionController extends Controller
             'verification' => $verification?->status,
             'approval' => $approval?->status,
             'bidderNumber' => $approval?->status === 'approved' ? $approval->bidder_number : null,
+            'depositPaid' => $approval !== null && Deposit::where('bidder_approval_id', $approval->id)->whereIn('status', ['received', 'applied'])->exists(),
+            'depositAmount' => (int) $listing->deposit_amount, 'depositUrl' => route('deposits.show', $listing),
+            'scheduled' => $listing->status === ListingStatus::Scheduled, 'sealed' => $listing->auction_type->value === 'sealed',
+            'opens' => $listing->starts_at?->setTimezone((string) config('platform.display_timezone'))->format('j F, H:i'),
+            'advanceMax' => $approval !== null ? (($a = AdvanceBid::where('bidder_approval_id', $approval->id)->whereNull('applied_at')->first()) ? (int) $a->amount : null) : null,
+            'otpFrom' => BidController::otpThreshold($listing),
             'reason' => $approval !== null && in_array($approval->status, ['rejected', 'revoked'], true) ? $approval->reason : null,
             'needsFunds' => $eligibility->needsProofOfFunds($listing),
             'entities' => BiddingEntity::where('user_id', $user->id)->where('status', '!=', 'rejected')->get(['ulid', 'name', 'status'])

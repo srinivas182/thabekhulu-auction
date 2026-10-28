@@ -21,6 +21,8 @@ type Props = {
         bidder: string;
         amount: number;
         paid: number;
+        proofUrl: string | null;
+        proofAt: string | null;
         status: string;
         statusLabel: string;
         receivedAt: string | null;
@@ -230,6 +232,17 @@ export default function Finance({
                                         </td>
                                         <td className="px-4">
                                             {d.statusLabel}
+                                            {d.proofUrl && (
+                                                <a
+                                                    href={d.proofUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="block text-xs font-semibold underline"
+                                                >
+                                                    Proof of payment (
+                                                    {d.proofAt})
+                                                </a>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

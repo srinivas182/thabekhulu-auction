@@ -41,7 +41,7 @@ class FinanceController extends Controller
                 'received' => Deposit::where('status', 'received')->count(),
             ],
             'deposits' => $tab === 'deposits' ? Deposit::with(['listing:id,title', 'user:id,first_name,last_name'])->latest()->limit(200)->get()->map(fn (Deposit $d) => [
-                'reference' => $d->reference, 'listing' => $d->listing->title, 'bidder' => $d->user->name, 'amount' => $d->amount, 'paid' => $d->balance(),
+                'reference' => $d->reference, 'listing' => $d->listing->title, 'bidder' => $d->user->name, 'amount' => $d->amount, 'paid' => $d->balance(), 'proofUrl' => $d->proof_path ? route('admin.deposits.proof', $d) : null, 'proofAt' => $d->proof_uploaded_at?->setTimezone((string) config('platform.display_timezone'))->format('j M, H:i'),
                 'status' => $d->status, 'statusLabel' => Deposit::STATUSES[$d->status], 'receivedAt' => $d->received_at?->toIso8601String(),
             ]) : [],
             'queue' => $tab === 'queue' ? BankLine::whereIn('status', ['unmatched', 'short', 'over'])->orderBy('posted_on')->get()->map(fn (BankLine $l) => [

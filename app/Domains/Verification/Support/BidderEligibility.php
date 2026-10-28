@@ -60,11 +60,7 @@ final class BidderEligibility
                 $pof ? 'R '.number_format($pof->amount, 0, '.', ' ')." ({$pof->status}".($pof->valid_until ? ', valid until '.$pof->valid_until->format('j M Y') : '').')' : 'Not uploaded');
         }
 
-        if ((int) $approval->listing->deposit_amount > 0) {
-            $deposit = Deposit::where('bidder_approval_id', $approval->id)->first();
-            $items[] = $this->item('deposit', 'Deposit received', in_array($deposit?->status, ['received', 'applied'], true),
-                $deposit ? "{$deposit->reference} (".Deposit::STATUSES[$deposit->status].')' : 'Not started');
-        }
+        // The deposit isn't part of approval: buyers pay once approved, and bidding unlocks when it's received (BidEligibility).
         if ($approval->listing->category->documentTypes()->where('visibility', 'approved_nda')->exists()) {
             $version = app(DataRoomSettings::class)->nda_version;
             $signed = DB::table('nda_acceptances')->where('listing_id', $approval->listing_id)->where('user_id', $userId)->where('nda_version', $version)->value('accepted_at');
