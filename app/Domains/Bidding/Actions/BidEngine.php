@@ -7,6 +7,7 @@ use App\Domains\Bidding\Events\AuctionUpdated;
 use App\Domains\Bidding\Models\AuctionState;
 use App\Domains\Bidding\Models\Bid;
 use App\Domains\Bidding\Models\MaxBid;
+use App\Domains\Bidding\Notifications\AutoBidPlaced;
 use App\Domains\Bidding\Notifications\Outbid;
 use App\Domains\Bidding\Support\AuctionView;
 use App\Domains\Bidding\Support\BidEligibility;
@@ -95,7 +96,7 @@ class BidEngine
             $this->softClose($state, $now);
             $state->save();
 
-            self::announce($listing, $state, $previousLeader);
+            self::announce($listing, $state, $previousLeader, $approval->id);
 
             Audit::record('bidding', 'bid', "Bidder #{$approval->bidder_number} bid R ".number_format($amount, 0, '.', ' ')." on {$listing->title}", $listing, $user, [
                 'amount' => $amount, 'maximum_set' => $maximum !== null, 'leader' => $state->leader_approval_id === $approval->id,
@@ -109,7 +110,7 @@ class BidEngine
      * After the transaction commits: live feed update for everyone, and an
      * outbid notice to whoever just lost the lead.
      */
-    public static function announce(Listing $listing, AuctionState $state, ?int $previousLeader = null): void
+    public static function announce(Listing $listing, AuctionState $state, ?int $previousLeader = null, ?int $actor = null): void
     {
         // Built after the commit, so other bidders don't wait on the lock while the feed is read.
         $snapshot = clone $state;
@@ -126,6 +127,11 @@ class BidEngine
         if ($previousLeader !== null && $previousLeader !== $state->leader_approval_id) {
             $loser = BidderApproval::with('user')->find($previousLeader)?->user;
             DB::afterCommit(fn () => $loser?->notify(new Outbid($listing, (int) $state->current_amount)));
+        }
+        if ($actor !== null && $previousLeader !== null && $previousLeader === $state->leader_approval_id && $actor !== $previousLeader) {
+            $leader = BidderApproval::with('user')->find($previousLeader)?->user;
+            $max = MaxBid::where('listing_id', $listing->id)->where('bidder_approval_id', $previousLeader)->whereNull('voided_at')->latest('id')->first()?->amount;
+            DB::afterCommit(fn () => $leader?->notify(new AutoBidPlaced($listing, (int) $state->current_amount, $max === null ? null : (int) $max)));
         }
     }
 

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { bid } from '@/routes/auctions';
 
 export type AuctionLive = {
+    otpFrom?: number | null; // sealed tenders only (not broadcast)
     kind?: 'open' | 'sealed';
     outcome?: 'under_offer' | 'sold' | 'not_sold' | 'no_bids' | 'closed' | null;
     mining?: boolean;
@@ -24,13 +25,14 @@ export type AuctionLive = {
     bidCount: number;
     paused: boolean;
     closed: boolean;
-    otpFrom: number;
     recent: { number: string; amount: number; kind: string; time: string }[];
     mine: {
         bidderNumber: string | null;
         canBid: boolean;
         leading: boolean;
         hasBid: boolean;
+        codeFrom: number | null;
+        codeFirstOnly: boolean;
         offer?: number | null;
     } | null;
 };
@@ -65,7 +67,13 @@ export default function BidForm({
     const mine = auction.mine!;
     const value = Number(amount.replace(/\D/g, '')) || 0;
     const max = useMax ? Number(maximum.replace(/\D/g, '')) || 0 : null;
-    const needsCode = Math.max(value, max ?? 0) >= auction.otpFrom;
+    // Per bidder: "first bid in each auction" stops asking once they've bid.
+    const codeFrom =
+        auction.mine?.codeFirstOnly && auction.mine?.hasBid
+            ? null
+            : (auction.mine?.codeFrom ?? null);
+    const needsCode =
+        codeFrom !== null && Math.max(value, max ?? 0) >= codeFrom;
 
     if (auction.paused)
         return (

@@ -41,6 +41,8 @@ final class AuctionView
                     'canBid' => Deposit::where('bidder_approval_id', $approval->id)->where('status', 'received')->exists() || (int) $listing->deposit_amount === 0,
                     'leading' => $state->leader_approval_id === $approval->id,
                     'hasBid' => Bid::where('listing_id', $listing->id)->where('bidder_approval_id', $approval->id)->whereNull('voided_at')->exists(),
+                    // Per bidder, never broadcast: from which amount an emailed code is needed (null: none).
+                    'codeFrom' => StepUp::requiredFrom($listing, $user), 'codeFirstOnly' => StepUp::mode() === 'first',
                 ];
             }
         }
@@ -71,7 +73,7 @@ final class AuctionView
         return [
             'kind' => 'sealed', 'endsAt' => $listing->ends_at?->toIso8601String(), 'endsAtText' => $listing->ends_at?->setTimezone($tz)->format('j F Y, H:i').' SAST',
             'closed' => $listing->status !== ListingStatus::Live || ($listing->ends_at?->isPast() ?? true),
-            'outcome' => self::outcome($listing), 'result' => SoldResult::for($listing), 'mining' => $listing->category->slug === 'mining', 'otpFrom' => StepUp::threshold($listing), 'minimum' => (int) $listing->minimum_price, 'mine' => $mine,
+            'outcome' => self::outcome($listing), 'result' => SoldResult::for($listing), 'mining' => $listing->category->slug === 'mining', 'otpFrom' => StepUp::requiredFrom($listing, $user), 'minimum' => (int) $listing->minimum_price, 'mine' => $mine,
         ];
     }
 
@@ -111,7 +113,6 @@ final class AuctionView
             'bidCount' => $state->bid_count,
             'paused' => $state->paused_at !== null,
             'closed' => $state->ends_at->isPast() || $listing->status !== ListingStatus::Live,
-            'otpFrom' => StepUp::threshold($listing),
             'recent' => $recent->map(fn (Bid $b) => ['number' => $b->bidder_number, 'amount' => $b->amount, 'kind' => $b->kind, 'time' => $b->placed_at->setTimezone($tz)->format('H:i:s')])->values()->all(),
         ];
     }

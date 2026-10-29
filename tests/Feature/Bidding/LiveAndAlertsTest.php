@@ -4,6 +4,7 @@ use App\Domains\Access\Enums\SystemRole;
 use App\Domains\Bidding\Actions\BidEngine;
 use App\Domains\Bidding\Events\AuctionUpdated;
 use App\Domains\Bidding\Models\AuctionState;
+use App\Domains\Bidding\Notifications\AutoBidPlaced;
 use App\Domains\Bidding\Notifications\ClosingSoon;
 use App\Domains\Bidding\Notifications\Outbid;
 use App\Domains\Catalogue\Models\Category;
@@ -67,7 +68,10 @@ it('tells the previous leader they were outbid, and only them', function () {
 
     $engine->place($this->listing, $this->a, 1000000, 1100000);
     $engine->place($this->listing, $this->b, 1025000);                   // A's maximum defends: nobody lost the lead
-    Notification::assertNothingSent();
+    // A is told their automatic bid rose (B's bid plus one step); B gets nothing.
+    Notification::assertSentTo($this->a, AutoBidPlaced::class, fn ($n) => $n->amount === 1050000 && $n->maximum === 1100000);
+    Notification::assertNotSentTo($this->a, Outbid::class);
+    Notification::assertNothingSentTo($this->b);
 
     $engine->place($this->listing, $this->b, 1200000);                   // B takes the lead
     Notification::assertSentTo($this->a, Outbid::class, fn (Outbid $n) => $n->current === 1200000);

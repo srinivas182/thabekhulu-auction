@@ -48,6 +48,7 @@ use App\Domains\Quotes\Http\Controllers\QuoteSetupController;
 use App\Domains\Quotes\Http\Controllers\QuoteWorkflowController;
 use App\Domains\Sellers\Http\Controllers\SellerAdminController;
 use App\Domains\Sellers\Http\Controllers\SellerController;
+use App\Domains\Settings\Http\Controllers\AuctionRulesController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
 use App\Domains\Settlement\Http\Controllers\PayoutController;
 use App\Domains\Settlement\Http\Controllers\SettlementController;
@@ -176,6 +177,8 @@ Route::middleware(['auth', 'verified', 'staff', 'password.fresh', 'staff.2fa', '
     ->group(function () {
         Route::get('/', AdminDashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
 
+        Route::get('settings/auction-rules', [AuctionRulesController::class, 'edit'])->middleware('can:settings.manage')->name('settings.auction-rules');
+        Route::put('settings/auction-rules', [AuctionRulesController::class, 'update'])->middleware('can:settings.manage')->name('settings.auction-rules.update');
         Route::get('staff', [StaffController::class, 'index'])->middleware('can:staff.view')->name('staff.index');
         Route::post('staff/invitations', [StaffController::class, 'invite'])->middleware('can:staff.invite')->name('staff.invite');
         Route::post('staff', [StaffController::class, 'create'])->middleware(['can:staff.invite', 'throttle:20,1'])->name('staff.create');
