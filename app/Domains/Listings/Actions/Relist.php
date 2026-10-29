@@ -22,7 +22,7 @@ class Relist
 {
     public function handle(Listing $listing, User $by): void
     {
-        if ($listing->status !== ListingStatus::NoBids) {
+        if (! in_array($listing->status, [ListingStatus::NoBids, ListingStatus::NotSold], true)) {
             throw ValidationException::withMessages(['status' => __('Only listings that closed without bids can be relisted.')]);
         }
 

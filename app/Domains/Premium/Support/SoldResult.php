@@ -2,6 +2,7 @@
 
 namespace App\Domains\Premium\Support;
 
+use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Settlement\Models\SettlementCase;
 use App\Domains\Verification\Models\BidderApproval;
@@ -18,6 +19,9 @@ final class SoldResult
     /** @return array{price: int, date: string, bidderNumber: string|null}|null */
     public static function for(Listing $listing): ?array
     {
+        if ($listing->status !== ListingStatus::Sold) {
+            return null; // the price is published once settlement completes, not while under offer
+        }
         $r = DB::table('auction_results')->where('listing_id', $listing->id)->where('outcome', 'sold')->first();
         if ($r === null) {
             return null;

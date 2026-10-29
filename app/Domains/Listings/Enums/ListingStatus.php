@@ -15,7 +15,9 @@ enum ListingStatus: string
     case Live = 'live';
     case Withdrawn = 'withdrawn';
     case Closed = 'closed';      // bidding ended; results being determined (tenders await opening)
-    case Sold = 'sold';          // winner recorded; pending settlement
+    case UnderOffer = 'under_offer'; // winning bid accepted; settlement in progress (public: Under offer)
+    case Sold = 'sold';          // settlement completed: agreement accepted, balance confirmed
+    case NotSold = 'not_sold';   // the sale fell through (default, runner-up declined or lapsed); relistable
     case NoBids = 'no_bids';     // closed without a valid bid
 
     public function label(): string
@@ -28,7 +30,9 @@ enum ListingStatus: string
             self::Live => 'Live',
             self::Withdrawn => 'Withdrawn',
             self::Closed => 'Closed',
-            self::Sold => 'Sold, pending settlement',
+            self::UnderOffer => 'Under offer',
+            self::Sold => 'Sold',
+            self::NotSold => 'Not sold',
             self::NoBids => 'Closed, no bids',
         };
     }
@@ -43,7 +47,7 @@ enum ListingStatus: string
     public function isShown(): bool
     {
         // No-bids listings are hidden (PRD) and can be relisted.
-        return $this->isPublic() || in_array($this, [self::Closed, self::Sold], true);
+        return $this->isPublic() || in_array($this, [self::Closed, self::UnderOffer, self::Sold], true); // not-sold is hidden, like no bids
     }
 
     /** Listings managers can still edit content. */

@@ -155,7 +155,7 @@ class BiddingController extends Controller
                 $deposit = Deposit::where('bidder_approval_id', $a->id)->latest('id')->first();
                 $sealed = $l->auction_type->value === 'sealed';
                 $live = $l->status === ListingStatus::Live;
-                $closed = in_array($l->status->value, ['closed', 'sold', 'no_bids'], true);
+                $closed = in_array($l->status->value, ['closed', 'under_offer', 'sold', 'not_sold', 'no_bids'], true);
                 $paid = $deposit !== null && in_array($deposit->status, ['received', 'applied'], true);
                 $myBid = $sealed ? null : Bid::where('bidder_approval_id', $a->id)->whereNull('voided_at')->max('amount');
                 $myMax = $sealed ? null : MaxBid::where('bidder_approval_id', $a->id)->whereNull('voided_at')->latest('id')->first()?->amount;

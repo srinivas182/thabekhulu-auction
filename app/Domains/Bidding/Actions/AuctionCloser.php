@@ -81,7 +81,8 @@ class AuctionCloser
             'listing_id' => $listing->id, 'kind' => $kind, 'outcome' => $outcome, 'winner_approval_id' => $winner, 'winning_amount' => $amount,
             'runner_up_approval_id' => $runnerUp, 'runner_up_amount' => $runnerUpAmount, 'bidders' => $bidders, 'closed_at' => now(),
         ]);
-        $listing->forceFill(['status' => $outcome === 'sold' ? ListingStatus::Sold : ListingStatus::NoBids])->save();
+        // A winning bid puts the listing under offer; it's Sold only when settlement completes.
+        $listing->forceFill(['status' => $outcome === 'sold' ? ListingStatus::UnderOffer : ListingStatus::NoBids])->save();
 
         Audit::record('bidding', 'auction_closed', "{$listing->title} closed: ".($outcome === 'sold' ? 'winning bid R '.number_format((int) $amount, 0, '.', ' ') : 'no bids'), $listing, null, [
             'winner_approval' => $winner, 'runner_up_approval' => $runnerUp, 'bidders' => $bidders,

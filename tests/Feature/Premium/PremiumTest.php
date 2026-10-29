@@ -119,6 +119,10 @@ it('shows a sold result with price, date and bidder number, never the name', fun
     app(BidEngine::class)->place($l, $a, 1250000);
     p7Close($l);
 
+    // Under offer: the price isn't published until settlement completes.
+    $this->get("/auctions/homes/emalahleni/{$l->slug}")->assertInertia(fn (Assert $p) => $p->where('auction.outcome', 'under_offer')->where('auction.result', null));
+    $l->fresh()->forceFill(['status' => ListingStatus::Sold])->save(); // settlement completed
+
     $this->get("/auctions/homes/emalahleni/{$l->slug}")->assertInertia(function (Assert $p) {
         $p->where('auction.outcome', 'sold')->where('auction.result.price', 1250000)->where('auction.result.bidderNumber', '1111')->where('auction.result.date', now('Africa/Johannesburg')->format('j F Y'));
         expect(json_encode($p->toArray()['props']))->not->toContain('Amahle')->not->toContain('Secret');
@@ -144,6 +148,6 @@ it('hides a no-bids listing and relists it cleanly so it can close again', funct
     $b = p7Bidder($l, 'Bheki', '3333');
     app(BidEngine::class)->place($l, $b, 1000000);
     p7Close($l);
-    expect($l->fresh()->status)->toBe(ListingStatus::Sold)->and(DB::table('auction_results')->where('listing_id', $l->id)->count())->toBe(1)
+    expect($l->fresh()->status)->toBe(ListingStatus::UnderOffer)->and(DB::table('auction_results')->where('listing_id', $l->id)->count())->toBe(1)
         ->and(Bid::where('listing_id', $l->id)->whereNull('voided_at')->count())->toBe(1);
 });

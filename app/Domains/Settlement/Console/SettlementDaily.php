@@ -3,6 +3,7 @@
 namespace App\Domains\Settlement\Console;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Settlement\Models\SettlementCase;
 use App\Domains\Settlement\Notifications\SettlementNotice;
 use Carbon\CarbonImmutable;
@@ -20,6 +21,7 @@ class SettlementDaily extends Command
         $expired = 0;
         foreach (SettlementCase::with('listing')->where('status', 'offered')->where('offer_expires_at', '<=', now())->get() as $case) {
             $case->forceFill(['status' => 'expired'])->save();
+            $case->listing->forceFill(['status' => ListingStatus::NotSold])->save(); // runner-up offer lapsed
             Audit::record('settlement', 'offer_expired', "Runner-up offer for {$case->listing->title} expired; their refund proceeds", $case);
             $expired++;
         }

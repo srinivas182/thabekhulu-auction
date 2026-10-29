@@ -5,6 +5,7 @@ use App\Domains\Bidding\Actions\BidEngine;
 use App\Domains\Bidding\Models\AuctionState;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
+use App\Domains\Listings\Actions\Relist;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Actions\DepositService;
@@ -28,6 +29,7 @@ use App\Models\User;
 use Database\Seeders\AccessSeeder;
 use Database\Seeders\CatalogueSeeder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -192,7 +194,7 @@ it('labels a sold Mining listing as preferred bidder, subject to approvals', fun
     [$l] = settledAuction('security', 'mining');
 
     $this->get("/auctions/mining/emalahleni/{$l->slug}")->assertInertia(fn (Assert $p) => $p
-        ->where('listing.status.label', 'Preferred bidder: subject to approvals')->where('auction.mining', true)->where('auction.outcome', 'sold'));
+        ->where('listing.status.label', 'Preferred bidder: subject to approvals')->where('auction.mining', true)->where('auction.outcome', 'under_offer'));
 });
 
 it('limits settlement pages to staff', function () {
@@ -283,4 +285,44 @@ it('tracks transfer stages per listing type and shows them to the buyer', functi
     [, , $mine] = settledAuction('security', 'mining');
     $mine = completeCase($mine, $this->auctioneer);
     $this->actingAs($this->auctioneer)->post(route('admin.settlement.transfer', $mine), ['stage' => 's11_applied', 'done_on' => today()->toDateString()])->assertSessionHasNoErrors();
+});
+
+it('shows a winning bid as under offer, and sold only once settlement completes', function () {
+    [$l, , $case] = settledAuction('applied');
+    expect($l->status)->toBe(ListingStatus::UnderOffer);
+    $this->get("/auctions/homes/emalahleni/{$l->slug}")->assertOk()->assertInertia(fn (Assert $p) => $p->where('auction.outcome', 'under_offer')->where('auction.result', null));
+
+    foreach (array_keys(SettlementCase::STEPS) as $step) {
+        $this->actingAs($this->auctioneer)->post(route('admin.settlement.step', $case), ['step' => $step, 'done_on' => today()->toDateString()])->assertSessionHasNoErrors();
+    }
+    expect($l->fresh()->status)->toBe(ListingStatus::UnderOffer); // steps alone don't make it sold
+    $this->actingAs($this->auctioneer)->post(route('admin.settlement.complete', $case))->assertSessionHasNoErrors();
+
+    expect($l->fresh()->status)->toBe(ListingStatus::Sold);
+    $this->get("/auctions/homes/emalahleni/{$l->slug}")->assertInertia(fn (Assert $p) => $p->where('auction.outcome', 'sold')->where('auction.result.price', 1200000));
+});
+
+it('marks the listing not sold when the runner-up declines, and lets it be relisted', function () {
+    [$l, $u] = settledAuction('applied');
+    $offer = app(SettlementService::class)->offerRunnerUp($l);
+    expect($offer)->not->toBeNull()->and($l->fresh()->status)->toBe(ListingStatus::UnderOffer); // still under offer while the runner-up decides
+
+    app(SettlementService::class)->declineOffer($offer, $u['B']);
+    expect($l->fresh()->status)->toBe(ListingStatus::NotSold)
+        ->and($l->fresh()->status->isShown())->toBeFalse();                       // hidden from the public, like no bids
+    app(Relist::class)->handle($l->fresh(), $this->auctioneer);
+    expect($l->fresh()->status)->not->toBe(ListingStatus::NotSold);
+});
+
+it('marks the listing not sold when there is no runner-up, or the offer lapses', function () {
+    [$l] = settledAuction('applied');
+    DB::table('auction_results')->where('listing_id', $l->id)->update(['runner_up_approval_id' => null, 'runner_up_amount' => null]);
+    expect(app(SettlementService::class)->offerRunnerUp($l))->toBeNull()
+        ->and($l->fresh()->status)->toBe(ListingStatus::NotSold);
+
+    [$l2] = settledAuction('applied');
+    $offer = app(SettlementService::class)->offerRunnerUp($l2);
+    $offer->forceFill(['offer_expires_at' => now()->subMinute()])->save();
+    $this->artisan('settlement:daily')->assertSuccessful();
+    expect($l2->fresh()->status)->toBe(ListingStatus::NotSold);
 });

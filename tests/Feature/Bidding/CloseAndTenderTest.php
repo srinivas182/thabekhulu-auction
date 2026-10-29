@@ -85,7 +85,7 @@ it('closes an open auction: winner kept, runner-up held, others refunded, result
 
     $r = DB::table('auction_results')->where('listing_id', $l->id)->get();
     expect($r)->toHaveCount(1)->and($r[0]->winner_approval_id)->toBe(approvalOf($l, $a)->id)->and((int) $r[0]->winning_amount)->toBe(1200000)
-        ->and($r[0]->runner_up_approval_id)->toBe(approvalOf($l, $b)->id)->and($l->fresh()->status)->toBe(ListingStatus::Sold);
+        ->and($r[0]->runner_up_approval_id)->toBe(approvalOf($l, $b)->id)->and($l->fresh()->status)->toBe(ListingStatus::UnderOffer);
 
     $refund = fn (User $u) => Refund::whereHas('deposit', fn ($q) => $q->where('user_id', $u->id))->first();
     expect(Deposit::where('user_id', $a->id)->value('status'))->toBe('received')                   // winner: kept for settlement
@@ -154,7 +154,7 @@ it('keeps sealed offers raise-only and hidden until a two-person opening', funct
 
     $r = DB::table('auction_results')->where('listing_id', $l->id)->first();
     expect($r->winner_approval_id)->toBe(approvalOf($l, $a)->id)->and($r->runner_up_approval_id)->toBe(approvalOf($l, $b)->id)
-        ->and($l->fresh()->status)->toBe(ListingStatus::Sold)
+        ->and($l->fresh()->status)->toBe(ListingStatus::UnderOffer)
         ->and(Refund::whereHas('deposit', fn ($q) => $q->where('user_id', $c->id))->value('reason'))->toBe('unsuccessful');
 });
 
@@ -178,7 +178,7 @@ it('keeps a closed listing visible with its outcome and refuses bids', function 
     AuctionState::query()->update(['ends_at' => now()->subSecond()]);
     $this->artisan('auctions:close');
 
-    $this->get("/auctions/homes/emalahleni/{$l->slug}")->assertOk()->assertInertia(fn (Assert $p) => $p->where('auction.outcome', 'sold')->where('auction.closed', true));
+    $this->get("/auctions/homes/emalahleni/{$l->slug}")->assertOk()->assertInertia(fn (Assert $p) => $p->where('auction.outcome', 'under_offer')->where('auction.closed', true));
     expect(fn () => app(BidEngine::class)->place($l->fresh(), $a, 1100000))->toThrow(ValidationException::class);
 
     $admin = User::factory()->staff(SystemRole::SuperAdmin)->create();
@@ -212,7 +212,7 @@ it('finishes the close for everyone when one deposit cannot be refunded', functi
 
     $this->artisan('auctions:close')->assertSuccessful();
 
-    expect($l->fresh()->status)->toBe(ListingStatus::Sold)
+    expect($l->fresh()->status)->toBe(ListingStatus::UnderOffer)
         ->and(Refund::whereHas('deposit', fn ($q) => $q->where('user_id', $c->id))->exists())->toBeTrue()
         ->and(AuditEntry::where('event', 'refund_not_scheduled')->exists())->toBeTrue();
     Notification::assertSentTo($c, AuctionResult::class);
@@ -233,7 +233,7 @@ it('never lets a live-feed outage fail a bid or a close', function () {
     AuctionState::query()->update(['ends_at' => now()->subSecond()]);
     $this->artisan('auctions:close')->assertSuccessful();
 
-    expect($l->fresh()->status)->toBe(ListingStatus::Sold)
+    expect($l->fresh()->status)->toBe(ListingStatus::UnderOffer)
         ->and(SettlementCase::where('listing_id', $l->id)->count())->toBe(1)
         ->and(DB::table('auction_results')->where('listing_id', $l->id)->value('handed_off_at'))->not->toBeNull();
 });

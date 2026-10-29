@@ -450,9 +450,15 @@ export default function AuctionShow({
                                     : auction.result
                                       ? `Sold for ${rand(auction.result.price)} on ${auction.result.date} to bidder #${auction.result.bidderNumber}, subject to the conditions of sale.`
                                       : 'This auction has closed. The property is sold, subject to the conditions of sale.'
-                                : auction.outcome === 'no_bids'
-                                  ? 'This auction closed without a valid bid.'
-                                  : 'This auction has closed. Results are being finalised.'}
+                                : auction.outcome === 'under_offer'
+                                  ? auction.mining
+                                      ? 'Preferred bidder: subject to approvals.'
+                                      : 'Under offer: the winning bidder is completing the purchase.'
+                                  : auction.outcome === 'not_sold'
+                                    ? 'This auction closed, but the sale didn’t go ahead.'
+                                    : auction.outcome === 'no_bids'
+                                      ? 'This auction closed without a valid bid.'
+                                      : 'This auction has closed. Results are being finalised.'}
                         </p>
                     ) : auction?.mine?.canBid &&
                       bidder?.approval === 'approved' ? (

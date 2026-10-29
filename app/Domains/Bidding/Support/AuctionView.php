@@ -78,7 +78,9 @@ final class AuctionView
     private static function outcome(Listing $listing): ?string
     {
         return match ($listing->status) {
+            ListingStatus::UnderOffer => 'under_offer',
             ListingStatus::Sold => 'sold',
+            ListingStatus::NotSold => 'not_sold',
             ListingStatus::NoBids => 'no_bids',
             ListingStatus::Closed => 'closed',
             default => null,

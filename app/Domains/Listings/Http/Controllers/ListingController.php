@@ -394,7 +394,7 @@ class ListingController extends Controller
                 ListingStatus::InReview, ListingStatus::Scheduled => Gate::allows('listings.publish'),
                 ListingStatus::Live => $user->isSuperAdmin(),
                 // After the close, pricing and times are part of the auction record.
-                ListingStatus::Withdrawn, ListingStatus::Closed, ListingStatus::Sold, ListingStatus::NoBids => false,
+                ListingStatus::Withdrawn, ListingStatus::Closed, ListingStatus::UnderOffer, ListingStatus::Sold, ListingStatus::NotSold, ListingStatus::NoBids => false,
             };
         }
 
