@@ -9,6 +9,7 @@ use App\Domains\Payments\Models\BankLine;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Settings\PaymentSettings;
 use App\Domains\Payments\Support\DepositReference;
+use App\Domains\Settlement\Models\SettlementPayment;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -40,8 +41,21 @@ class FinanceController extends Controller
                 'awaiting' => Deposit::whereIn('status', ['awaiting', 'part_paid'])->count(),
                 'received' => Deposit::where('status', 'received')->count(),
             ],
+            // After the award: balances paid to Thabekhulu.
+            'balances' => $tab === 'balances' ? SettlementPayment::with(['case.listing:id,title', 'case.approval.user:id,first_name,last_name'])->latest()->limit(200)->get()->map(fn ($p) => [
+                'ulid' => $p->ulid, 'reference' => $p->reference, 'listing' => $p->case->listing->title, 'buyer' => $p->case->approval->user->name,
+                'due' => $p->amount_due, 'received' => $p->received, 'status' => $p->status, 'statusLabel' => SettlementPayment::STATUSES[$p->status],
+                'balanceDue' => $p->case->balance_due?->format('j M Y'),
+                'proofUrl' => $p->proof_path ? route('admin.balances.proof', $p) : null, 'proofAt' => $p->proof_uploaded_at?->setTimezone((string) config('platform.display_timezone'))->format('j M, H:i'),
+            ]) : [],
+            // Manual confirmations waiting for a second finance user.
+            'confirmations' => DB::table('payment_confirmations as c')->join('users as u', 'u.id', '=', 'c.requested_by')->where('c.status', 'pending')->orderBy('c.id')
+                ->get(['c.id', 'c.kind', 'c.target_id', 'c.amount', 'c.bank_reference', 'c.paid_on', 'c.note', 'c.requested_by', 'u.first_name', 'u.last_name'])
+                ->map(fn ($c) => ['id' => $c->id, 'kind' => $c->kind, 'amount' => (int) $c->amount, 'bankReference' => $c->bank_reference, 'paidOn' => $c->paid_on, 'note' => $c->note,
+                    'by' => trim("{$c->first_name} {$c->last_name}"), 'mine' => (int) $c->requested_by === $request->user()?->id,
+                    'target' => $c->kind === 'deposit' ? (string) Deposit::whereKey($c->target_id)->value('reference') : (string) SettlementPayment::whereKey($c->target_id)->value('reference')]),
             'deposits' => $tab === 'deposits' ? Deposit::with(['listing:id,title', 'user:id,first_name,last_name'])->latest()->limit(200)->get()->map(fn (Deposit $d) => [
-                'reference' => $d->reference, 'listing' => $d->listing->title, 'bidder' => $d->user->name, 'amount' => $d->amount, 'paid' => $d->balance(), 'proofUrl' => $d->proof_path ? route('admin.deposits.proof', $d) : null, 'proofAt' => $d->proof_uploaded_at?->setTimezone((string) config('platform.display_timezone'))->format('j M, H:i'),
+                'ulid' => $d->ulid, 'reference' => $d->reference, 'listing' => $d->listing->title, 'bidder' => $d->user->name, 'amount' => $d->amount, 'paid' => $d->balance(), 'proofUrl' => $d->proof_path ? route('admin.deposits.proof', $d) : null, 'proofAt' => $d->proof_uploaded_at?->setTimezone((string) config('platform.display_timezone'))->format('j M, H:i'),
                 'status' => $d->status, 'statusLabel' => Deposit::STATUSES[$d->status], 'receivedAt' => $d->received_at?->toIso8601String(),
             ]) : [],
             'queue' => $tab === 'queue' ? BankLine::whereIn('status', ['unmatched', 'short', 'over'])->orderBy('posted_on')->get()->map(fn (BankLine $l) => [

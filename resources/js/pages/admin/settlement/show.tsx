@@ -2,6 +2,14 @@ import { Form, Head, Link, router, usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { randCents } from '@/lib/cents';
@@ -19,9 +27,25 @@ import {
     transfer as transferRoute,
 } from '@/routes/admin/settlement';
 import payoutRoutes from '@/routes/admin/settlement/payout';
+import uploadRoutes from '@/routes/admin/settlement-uploads';
 
 type Props = {
     case: {
+        uploads: {
+            id: number;
+            step: string;
+            status: string;
+            reason: string | null;
+            url: string;
+            at: string;
+        }[];
+        balance: {
+            reference: string;
+            due: number;
+            received: number;
+            status: string;
+            proofUrl: string | null;
+        } | null;
         ulid: string;
         listing: string;
         mining: boolean;
@@ -266,6 +290,7 @@ export default function SettlementShow({
                 </div>
 
                 <aside className="grid min-w-0 content-start gap-5 [&_*]:min-w-0">
+                    <BuyerPayments c={c} />
                     <section
                         aria-labelledby="dep-h"
                         className="rounded-xl border border-border bg-card p-5 text-sm"
@@ -759,3 +784,166 @@ export default function SettlementShow({
 SettlementShow.layout = {
     breadcrumbs: [{ title: 'Settlement', href: index() }],
 };
+
+/** The winner's balance payment and their uploads, with accept or reject for each upload. */
+function BuyerPayments({ c }: { c: Props['case'] }) {
+    const [rejecting, setRejecting] = useState<number | null>(null);
+    const [reason, setReason] = useState('');
+    const opts = { preserveScroll: true };
+
+    return (
+        <section
+            aria-labelledby="buyer-pay-h"
+            className="grid gap-3 rounded-xl border border-border bg-card p-5 text-sm"
+        >
+            <h2 id="buyer-pay-h" className="font-semibold">
+                Buyer payments and uploads
+            </h2>
+            {c.balance ? (
+                <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1">
+                    <dt>Balance due</dt>
+                    <dd className="tabular text-right">
+                        {randCents(c.balance.due)}
+                    </dd>
+                    <dt>Received</dt>
+                    <dd className="tabular text-right">
+                        {randCents(c.balance.received)}
+                    </dd>
+                    <dt>Status</dt>
+                    <dd className="text-right font-medium">
+                        {c.balance.status}
+                    </dd>
+                    <dt>Reference</dt>
+                    <dd className="text-right font-mono text-xs">
+                        {c.balance.reference}
+                    </dd>
+                    {c.balance.proofUrl && (
+                        <>
+                            <dt>Proof of payment</dt>
+                            <dd className="text-right">
+                                <a
+                                    href={c.balance.proofUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="underline"
+                                >
+                                    Open
+                                </a>
+                            </dd>
+                        </>
+                    )}
+                </dl>
+            ) : (
+                <p className="text-muted-foreground">
+                    The buyer hasn’t opened their balance payment yet.
+                </p>
+            )}
+            <p className="text-muted-foreground">
+                Confirm money received in Finance » Balances (statement import
+                or “Confirm received”, two people).
+            </p>
+
+            <h3 className="mt-2 font-semibold">Uploaded by the buyer</h3>
+            {c.uploads.length === 0 && (
+                <p className="text-muted-foreground">Nothing yet.</p>
+            )}
+            <ul className="grid gap-2">
+                {c.uploads.map((u) => (
+                    <li
+                        key={u.id}
+                        className="rounded-lg border border-border p-3"
+                    >
+                        <p>
+                            <span className="font-medium">{u.step}</span> ·{' '}
+                            {u.at} · {u.status}
+                            {u.reason ? `: ${u.reason}` : ''}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            <a
+                                href={u.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="underline"
+                            >
+                                Open
+                            </a>
+                            {u.status === 'pending' && (
+                                <>
+                                    <Button
+                                        size="sm"
+                                        onClick={() =>
+                                            router.post(
+                                                uploadRoutes.accept(u.id).url,
+                                                {},
+                                                opts,
+                                            )
+                                        }
+                                    >
+                                        Accept and record step
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            setReason('');
+                                            setRejecting(u.id);
+                                        }}
+                                    >
+                                        Reject
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                    </li>
+                ))}
+            </ul>
+
+            <Dialog
+                open={rejecting !== null}
+                onOpenChange={(o) => !o && setRejecting(null)}
+            >
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="font-display text-2xl">
+                            Reject this upload
+                        </DialogTitle>
+                        <DialogDescription>
+                            The buyer sees the reason and can upload again.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Label htmlFor="upl-reason">Reason</Label>
+                    <textarea
+                        id="upl-reason"
+                        rows={3}
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-2"
+                    />
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setRejecting(null)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            disabled={reason.trim() === ''}
+                            onClick={() => {
+                                if (rejecting !== null)
+                                    router.post(
+                                        uploadRoutes.reject(rejecting).url,
+                                        { reason: reason.trim() },
+                                        opts,
+                                    );
+                                setRejecting(null);
+                            }}
+                        >
+                            Reject upload
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </section>
+    );
+}
