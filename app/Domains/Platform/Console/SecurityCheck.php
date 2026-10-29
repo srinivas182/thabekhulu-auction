@@ -2,6 +2,7 @@
 
 namespace App\Domains\Platform\Console;
 
+use App\Domains\Bidding\Support\StepUp;
 use App\Domains\Platform\Email\EmailConfig;
 use App\Domains\Settings\Settings\SecuritySettings;
 use Illuminate\Console\Command;
@@ -38,6 +39,7 @@ class SecurityCheck extends Command
             'Live feed must use Reverb' => config('broadcasting.default') !== 'reverb' ? 'BROADCAST_CONNECTION is '.config('broadcasting.default') : null,
             'Email verification must be required' => ! app(SecuritySettings::class)->email_verification_required ? 'switched off in Settings » Security' : null,
             'Staff two-factor must be required' => ! app(SecuritySettings::class)->staff_two_factor_required ? 'switched off in Settings » Security' : null,
+            'Bid confirmation codes must be on' => StepUp::mode() === 'off' ? 'switched off in Settings » Auction rules' : null,
         ]);
     }
 

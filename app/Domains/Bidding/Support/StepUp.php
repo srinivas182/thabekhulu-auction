@@ -18,9 +18,41 @@ final class StepUp
         return min(app(AuctionSettings::class)->step_up_threshold, 2 * (int) $listing->minimum_price);
     }
 
+    public const MODES = ['off', 'first', 'every', 'threshold'];
+
+    public static function mode(): string
+    {
+        $mode = app(AuctionSettings::class)->step_up_mode;
+
+        return in_array($mode, self::MODES, true) ? $mode : 'threshold';
+    }
+
+    /**
+     * From which amount this bidder must confirm with an emailed code; null means no code is needed.
+     * "first": once per auction, on the bidder's first bid or advance maximum.
+     */
+    public static function requiredFrom(Listing $listing, ?User $user): ?int
+    {
+        return match (self::mode()) {
+            'off' => null,
+            'every' => 0,
+            'first' => $user !== null && self::hasCommitted($listing, $user) ? null : 0,
+            default => self::threshold($listing),
+        };
+    }
+
+    private static function hasCommitted(Listing $listing, User $user): bool
+    {
+        $approvals = DB::table('bidder_approvals')->where('listing_id', $listing->id)->where('user_id', $user->id)->pluck('id');
+
+        return DB::table('bids')->whereIn('bidder_approval_id', $approvals)->whereNull('voided_at')->exists()
+            || DB::table('advance_bids')->whereIn('bidder_approval_id', $approvals)->exists();
+    }
+
     public static function verify(Listing $listing, User $user, int $amount, ?string $otp): void
     {
-        if ($amount < self::threshold($listing)) {
+        $from = self::requiredFrom($listing, $user);
+        if ($from === null || $amount < $from) {
             return;
         }
         $row = DB::table('bid_otps')->where('user_id', $user->id)->where('listing_id', $listing->id)->where('expires_at', '>', now())->latest('id')->first();

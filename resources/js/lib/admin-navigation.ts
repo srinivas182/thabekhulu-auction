@@ -22,6 +22,7 @@ import {
     FolderTree,
     LayoutGrid,
     MapPin,
+    Scale,
     Settings,
     ToggleRight,
     Users,
@@ -39,6 +40,7 @@ import { index as eventsAdmin } from '@/routes/admin/events';
 import { index as premiumAdmin } from '@/routes/admin/premium';
 import { queue as bidderQueue } from '@/routes/admin/bidders';
 import { index as compliance } from '@/routes/admin/compliance';
+import { auctionRules as auctionRulesRoute } from '@/routes/admin/settings';
 import { email as emailProvider } from '@/routes/admin/settings';
 import { index as emailTemplates } from '@/routes/admin/email-templates';
 import { index as kyc } from '@/routes/admin/kyc';
@@ -193,6 +195,12 @@ export const adminNavigation: NavItem[] = [
         href: roles(),
         icon: ShieldCheck,
         permission: 'roles.view',
+    },
+    {
+        title: 'Auction rules',
+        href: auctionRulesRoute(),
+        icon: Scale,
+        permission: 'settings.manage',
     },
     {
         title: 'Settings',

@@ -6,12 +6,15 @@ use App\Domains\Bidding\Models\AuctionState;
 use App\Domains\Bidding\Models\Bid;
 use App\Domains\Bidding\Models\MaxBid;
 use App\Domains\Bidding\Notifications\BidCode;
+use App\Domains\Bidding\Support\Increments;
+use App\Domains\Bidding\Support\StepUp;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Support\DepositReference;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Screening;
 use App\Domains\Verification\Models\Verification;
@@ -142,6 +145,9 @@ it('extends the close for bids in the soft-close window only', function () {
 });
 
 it('asks for an emailed code on large bids, once', function () {
+    $rules = app(AuctionSettings::class);
+    $rules->step_up_mode = 'threshold';
+    $rules->save();
     // Threshold = min(setting, 2 × minimum) = R2 000 000 here.
     $this->actingAs($this->a)->post(route('auctions.bid', $this->listing->ulid), ['amount' => 2000000])->assertSessionHasErrors('otp');
     $code = null;
@@ -204,4 +210,40 @@ it('exports the bidders’ record for staff only', function () {
     expect($csv)->toContain('1111')->toContain('Alice Mokoena')->toContain('Self');
 
     $this->actingAs($this->a)->get(route('admin.listings.bidders-record', $this->listing))->assertForbidden();
+});
+
+it('asks for a code by the chosen mode: off, first bid in each auction, or every bid', function () {
+    $rules = app(AuctionSettings::class);
+    $listing = test()->listing;
+    $buyer = bidder('Mode', 'Tester', '4040');
+
+    $rules->step_up_mode = 'off';
+    $rules->save();
+    expect(StepUp::requiredFrom($listing, $buyer))->toBeNull();
+
+    $rules->step_up_mode = 'every';
+    $rules->save();
+    expect(StepUp::requiredFrom($listing, $buyer))->toBe(0);
+
+    $rules->step_up_mode = 'first';
+    $rules->save();
+    expect(StepUp::requiredFrom($listing, $buyer))->toBe(0);       // no bid yet: code needed
+    app(BidEngine::class)->place($listing, $buyer, (int) $listing->minimum_price);
+    expect(StepUp::requiredFrom($listing, $buyer))->toBeNull();    // has bid: later bids need none
+});
+
+it('saves the auction rules, rejecting increment bands out of order', function () {
+    $admin = User::factory()->staff(SystemRole::SuperAdmin)->create();
+    $rules = ['step_up_mode' => 'first', 'step_up_threshold' => 2000000, 'soft_close_enabled' => true, 'soft_close_window_minutes' => 3,
+        'soft_close_extension_minutes' => 3, 'closing_soon_hours' => 24];
+
+    $this->actingAs($admin)->put(route('admin.settings.auction-rules.update'), $rules + ['increment_bands' => [['upTo' => 5000000, 'step' => 25000], ['upTo' => 1000000, 'step' => 10000], ['upTo' => null, 'step' => 50000]]])
+        ->assertSessionHasErrors('increment_bands');
+    $this->actingAs($admin)->put(route('admin.settings.auction-rules.update'), $rules + ['increment_bands' => [['upTo' => 2000000, 'step' => 20000], ['upTo' => null, 'step' => 40000]]])
+        ->assertSessionHasNoErrors();
+
+    $saved = app(AuctionSettings::class)->refresh();
+    expect($saved->step_up_mode)->toBe('first')->and($saved->increment_bands)->toBe([[2000000, 20000], [null, 40000]])
+        ->and(Increments::at(1500000))->toBe(20000);
+    $this->actingAs(User::factory()->staff(SystemRole::Finance)->create())->get(route('admin.settings.auction-rules'))->assertForbidden();
 });

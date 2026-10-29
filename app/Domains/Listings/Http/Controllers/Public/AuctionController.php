@@ -2,9 +2,9 @@
 
 namespace App\Domains\Listings\Http\Controllers\Public;
 
-use App\Domains\Bidding\Http\Controllers\BidController;
 use App\Domains\Bidding\Models\AdvanceBid;
 use App\Domains\Bidding\Support\AuctionView;
+use App\Domains\Bidding\Support\StepUp;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Catalogue\Models\Province;
@@ -128,7 +128,7 @@ class AuctionController extends Controller
             'scheduled' => $listing->status === ListingStatus::Scheduled, 'sealed' => $listing->auction_type->value === 'sealed',
             'opens' => $listing->starts_at?->setTimezone((string) config('platform.display_timezone'))->format('j F, H:i'),
             'advanceMax' => $approval !== null ? (($a = AdvanceBid::where('bidder_approval_id', $approval->id)->whereNull('applied_at')->first()) ? (int) $a->amount : null) : null,
-            'otpFrom' => BidController::otpThreshold($listing),
+            'otpFrom' => StepUp::requiredFrom($listing, $user),
             'reason' => $approval !== null && in_array($approval->status, ['rejected', 'revoked'], true) ? $approval->reason : null,
             'needsFunds' => $eligibility->needsProofOfFunds($listing),
             'entities' => BiddingEntity::where('user_id', $user->id)->where('status', '!=', 'rejected')->get(['ulid', 'name', 'status'])

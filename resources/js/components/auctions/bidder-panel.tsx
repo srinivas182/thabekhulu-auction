@@ -20,7 +20,7 @@ export type BidderState = {
     sealed: boolean;
     opens: string | null;
     advanceMax: number | null;
-    otpFrom: number;
+    otpFrom: number | null;
     entities: { ulid: string; name: string; verified: boolean }[];
 } | null;
 
@@ -307,7 +307,9 @@ function AdvanceMaximum({
                         placeholder={minimum ? `At least ${rand(minimum)}` : ''}
                         className="h-11 rounded-[10px] border border-input bg-background px-3"
                     />
-                    {(errors.otp || amount >= state.otpFrom) && (
+                    {(errors.otp ||
+                        (state.otpFrom !== null &&
+                            amount >= state.otpFrom)) && (
                         <>
                             <label
                                 htmlFor="advance-otp"

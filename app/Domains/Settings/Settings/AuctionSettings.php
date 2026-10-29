@@ -27,6 +27,9 @@ class AuctionSettings extends Settings
     /** Bids at or above this amount (in rand) need a one-time PIN. */
     public int $step_up_threshold;
 
+    /** off | first (first bid in each auction) | every | threshold */
+    public string $step_up_mode;
+
     public int $default_suspension_months;
 
     public int $hot_badge_min_bids;

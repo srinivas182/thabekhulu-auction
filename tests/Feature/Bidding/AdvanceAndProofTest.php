@@ -16,6 +16,7 @@ use App\Domains\Payments\Actions\DepositService;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Notifications\DepositsOpen;
 use App\Domains\Payments\Support\DepositReference;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Screening;
@@ -73,6 +74,9 @@ it('opens a deposit only once the buyer is approved', function () {
 });
 
 it('needs a received deposit, the minimum, and a listing not yet live for an advance maximum', function () {
+    $rules = app(AuctionSettings::class);
+    $rules->step_up_mode = 'threshold';
+    $rules->save();
     $unpaid = advBidder('Unpaid', '1111', 'awaiting');
     $paid = advBidder('Paid', '2222');
     $advance = app(AdvanceBids::class);
