@@ -21,6 +21,7 @@ use App\Domains\Settlement\Models\Payout;
 use App\Domains\Settlement\Models\SettlementCase;
 use App\Domains\Settlement\Models\Suspension;
 use App\Domains\Settlement\Notifications\SettlementNotice;
+use App\Domains\Settlement\Notifications\SettlementQuestion;
 use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Screening;
@@ -325,4 +326,30 @@ it('marks the listing not sold when there is no runner-up, or the offer lapses',
     $offer->forceFill(['offer_expires_at' => now()->subMinute()])->save();
     $this->artisan('settlement:daily')->assertSuccessful();
     expect($l2->fresh()->status)->toBe(ListingStatus::NotSold);
+});
+
+it('lets staff ask the buyer a question and the buyer reply, without rejecting the upload', function () {
+    [, $u, $case] = settledAuction('applied');
+    $this->actingAs($u['A'])->post(route('account.purchases.agreement', $case), ['document' => UploadedFile::fake()->create('agreement.pdf', 80, 'application/pdf')])->assertSessionHasNoErrors();
+    $upload = (int) DB::table('settlement_uploads')->where('settlement_case_id', $case->id)->value('id');
+
+    $this->actingAs($this->auctioneer)->post(route('admin.settlement.questions', $case), ['question' => 'Page 3 is not initialled. Please initial it.', 'upload' => $upload])->assertSessionHasNoErrors();
+    Notification::assertSentTo($u['A'], SettlementQuestion::class);
+    expect($case->fresh()->hasOpenQuestion())->toBeTrue()
+        ->and(DB::table('settlement_uploads')->where('id', $upload)->value('status'))->toBe('pending'); // asking doesn't reject
+
+    $this->actingAs($u['A'])->get(route('account.purchases'))->assertInertia(fn (Assert $p) => $p->where('cases.0.openQuestion', true)->where('cases.0.messages.1.body', 'Page 3 is not initialled. Please initial it.'));
+    $this->actingAs($u['A'])->post(route('account.purchases.reply', $case), ['reply' => 'Initialled and uploaded again.'])->assertSessionHasNoErrors();
+    expect($case->fresh()->hasOpenQuestion())->toBeFalse();
+
+    $this->actingAs($this->auctioneer)->post(route('admin.settlement-uploads.accept', $upload))->assertSessionHasNoErrors();
+    expect($case->fresh()->messages()->pluck('kind')->all())->toBe(['upload', 'question', 'reply', 'accepted'])
+        ->and($case->fresh()->messages()->where('kind', 'question')->value('settlement_upload_id'))->toBe($upload);
+    $this->actingAs($this->auctioneer)->get(route('admin.settlement.show', $case))->assertInertia(fn (Assert $p) => $p->has('case.messages', 4)->where('case.openQuestion', false));
+});
+
+it('keeps the conversation to the buyer and settlement staff', function () {
+    [, $u, $case] = settledAuction('applied');
+    $this->actingAs($u['B'])->post(route('account.purchases.reply', $case), ['reply' => 'Not mine'])->assertForbidden();
+    $this->actingAs(User::factory()->staff(SystemRole::Support)->create())->post(route('admin.settlement.questions', $case), ['question' => 'Hello?'])->assertForbidden();
 });

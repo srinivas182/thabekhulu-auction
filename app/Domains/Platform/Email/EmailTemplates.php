@@ -104,6 +104,13 @@ final class EmailTemplates
                 'We hope to see you at a future auction.', null,
                 ['refund_date'], $person + $listing + ['refund_date' => 'Scheduled refund date'], $ex + ['refund_date' => '4 November 2026']),
 
+            // Settlement
+            'settlement.question' => self::t('Settlement', 'Question about a purchase', 'Sent when staff ask a winning bidder a question during settlement.',
+                'A question about your purchase: {{listing}}', 'Hello {{first_name}},',
+                "We have a question about your purchase of {{listing}}:\n\n{{question}}",
+                'You can reply and upload any documents from your Purchases page. We’ll confirm once everything is in order.', 'Reply',
+                ['question'], $person + $listing + ['question' => 'The question from our team'], $ex + ['question' => 'The signed agreement is missing your initials on page 3. Please initial it and upload it again.']),
+
             // Events
             'event.tickets' => self::t('Events', 'Event tickets', 'Sent with the tickets after booking an event.',
                 'Your tickets: {{event}}', 'Hello {{name}},',

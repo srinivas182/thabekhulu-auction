@@ -9,6 +9,7 @@ use App\Domains\Settlement\Actions\SettlementPayments;
 use App\Domains\Settlement\Actions\SettlementService;
 use App\Domains\Settlement\Models\SettlementCase;
 use App\Domains\Settlement\Models\SettlementPayment;
+use App\Domains\Settlement\Notifications\SettlementQuestion;
 use App\Domains\Verification\Support\SecureFiles;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -39,6 +40,7 @@ class SettlementPaymentController extends Controller
         SecureFiles::delete($p->proof_path);
         $p->forceFill(['proof_path' => SecureFiles::put($file, 'balance-proofs'), 'proof_mime' => (string) $file->getMimeType(), 'proof_uploaded_at' => now()])->save();
         Audit::record('settlement', 'balance_proof_uploaded', "Proof of balance payment uploaded for {$p->reference}", $case, $user);
+        $case->note('buyer', 'upload', 'Uploaded proof of the balance payment', $user->id);
 
         return $this->toast(__('Thank you. Your balance is confirmed once the payment reflects in our account.'));
     }
@@ -53,6 +55,7 @@ class SettlementPaymentController extends Controller
         DB::table('settlement_uploads')->insert(['settlement_case_id' => $case->id, 'step' => 'agreement_signed', 'path' => SecureFiles::put($file, 'settlement-uploads'),
             'mime' => (string) $file->getMimeType(), 'status' => 'pending', 'created_at' => now(), 'updated_at' => now()]);
         Audit::record('settlement', 'agreement_uploaded', 'Buyer uploaded the signed sale agreement', $case, $user);
+        $case->note('buyer', 'upload', 'Uploaded the signed sale agreement', $user->id, (int) DB::table('settlement_uploads')->where('settlement_case_id', $case->id)->max('id'));
 
         return $this->toast(__('Uploaded. We’ll check it and confirm.'));
     }
@@ -76,6 +79,7 @@ class SettlementPaymentController extends Controller
         $document = new UploadedFile($tmp, 'buyer-upload.'.(str_contains((string) $u->mime, 'pdf') ? 'pdf' : 'jpg'), (string) $u->mime, null, true);
         $service->recordStep($case, (string) $u->step, now()->toDateString(), $document, 'Uploaded by the buyer, accepted', $actor);
         DB::table('settlement_uploads')->where('id', $upload)->update(['status' => 'accepted', 'reviewed_by' => $actor->id, 'updated_at' => now()]);
+        $case->note('staff', 'accepted', SettlementCase::STEPS[(string) $u->step] ?? null, $actor->id, $upload);
 
         return $this->toast(__('Accepted, and the step is recorded.'));
     }
@@ -86,6 +90,7 @@ class SettlementPaymentController extends Controller
         $n = DB::table('settlement_uploads')->where('id', $upload)->where('status', 'pending')->update(['status' => 'rejected', 'reason' => $reason, 'reviewed_by' => $actor->id, 'updated_at' => now()]);
         abort_if($n === 0, 404);
         Audit::record('settlement', 'upload_rejected', "Rejected buyer upload #{$upload}: {$reason}", null, $actor);
+        SettlementCase::find((int) DB::table('settlement_uploads')->where('id', $upload)->value('settlement_case_id'))?->note('staff', 'rejected', $reason, $actor->id, $upload);
 
         return $this->toast(__('Rejected. The buyer sees the reason and can upload again.'));
     }
@@ -144,5 +149,31 @@ class SettlementPaymentController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => $message]);
 
         return back();
+    }
+
+    // --- conversation --------------------------------------------------------------------------
+
+    /** Staff ask the buyer a question, about the whole case or one upload; the upload stays pending. */
+    public function ask(Request $request, SettlementCase $case, #[CurrentUser] User $actor): RedirectResponse
+    {
+        $data = $request->validate(['question' => ['required', 'string', 'max:1000'], 'upload' => ['nullable', 'integer']]);
+        $uploadId = isset($data['upload']) && DB::table('settlement_uploads')->where('id', $data['upload'])->where('settlement_case_id', $case->id)->exists() ? (int) $data['upload'] : null;
+        $case->note('staff', 'question', $data['question'], $actor->id, $uploadId);
+        $case->loadMissing(['approval.user', 'listing']);
+        $case->approval->user->notify(new SettlementQuestion($case->listing->title, $data['question']));
+        Audit::record('settlement', 'question_asked', "Asked the buyer about {$case->listing->title}", $case, $actor);
+
+        return $this->toast(__('Question sent. The buyer can reply and upload from their Purchases page.'));
+    }
+
+    /** The buyer answers in writing (alongside any new upload). */
+    public function reply(Request $request, SettlementCase $case, #[CurrentUser] User $user): RedirectResponse
+    {
+        abort_unless($case->approval->user_id === $user->id, 403);
+        $body = $request->validate(['reply' => ['required', 'string', 'max:2000']])['reply'];
+        $case->note('buyer', 'reply', $body, $user->id);
+        Audit::record('settlement', 'buyer_replied', 'Buyer replied in the settlement conversation', $case, $user);
+
+        return $this->toast(__('Reply sent. We’ll come back to you shortly.'));
     }
 }

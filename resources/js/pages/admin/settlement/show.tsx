@@ -1,4 +1,4 @@
-import { Form, Head, Link, router, usePage } from '@inertiajs/react';
+import { Form, Head, Link, router, usePage, usePoll } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import {
     complete,
     defaultMethod,
     index,
+    questions,
     step,
 } from '@/routes/admin/settlement';
 import defaultRoutes from '@/routes/admin/settlement/default';
@@ -31,6 +32,15 @@ import uploadRoutes from '@/routes/admin/settlement-uploads';
 
 type Props = {
     case: {
+        messages: {
+            author: string;
+            kind: string;
+            body: string | null;
+            by: string | null;
+            at: string;
+            upload: number | null;
+        }[];
+        openQuestion: boolean;
         uploads: {
             id: number;
             step: string;
@@ -291,6 +301,7 @@ export default function SettlementShow({
 
                 <aside className="grid min-w-0 content-start gap-5 [&_*]:min-w-0">
                     <BuyerPayments c={c} />
+                    <Conversation c={c} />
                     <section
                         aria-labelledby="dep-h"
                         className="rounded-xl border border-border bg-card p-5 text-sm"
@@ -940,6 +951,171 @@ function BuyerPayments({ c }: { c: Props['case'] }) {
                             }}
                         >
                             Reject upload
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </section>
+    );
+}
+
+const msgLabel: Record<string, string> = {
+    question: 'Asked',
+    reply: 'Replied',
+    upload: 'Uploaded',
+    accepted: 'Accepted',
+    rejected: 'Rejected',
+};
+const stepLabel: Record<string, string> = {
+    agreement_signed: 'signed agreement',
+    balance_paid: 'balance proof',
+    attorney_appointed: 'attorney appointment',
+};
+
+/** Questions to the buyer, their replies and uploads, and decisions; refreshes while the case is open. */
+function Conversation({ c }: { c: Props['case'] }) {
+    const [asking, setAsking] = useState(false);
+    const [text, setText] = useState('');
+    const [upload, setUpload] = useState('');
+    usePoll(20000, { only: ['case'] });
+    const presets = [
+        'The signed agreement is missing your initials on some pages. Please initial every page and upload it again.',
+        'Please confirm which bank account the balance was paid from, and upload the bank’s confirmation.',
+        'Please upload the guarantee letter from your bank, or confirm when it will be issued.',
+        'Which attorney would you like to handle the transfer? Please send their name and contact details.',
+    ];
+    const pending = c.uploads.filter((u) => u.status === 'pending');
+
+    return (
+        <section
+            aria-labelledby="conv-h"
+            className="grid gap-3 rounded-xl border border-border bg-card p-5 text-sm"
+        >
+            <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 id="conv-h" className="font-semibold">
+                        Conversation with the buyer
+                    </h2>
+                    <p className="text-muted-foreground">
+                        {c.openQuestion
+                            ? 'Waiting for the buyer to reply.'
+                            : 'Questions, replies, uploads and decisions. Updates every 20 seconds.'}
+                    </p>
+                </div>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                        setText('');
+                        setUpload('');
+                        setAsking(true);
+                    }}
+                >
+                    Ask a question
+                </Button>
+            </div>
+            <ol className="grid gap-2">
+                {c.messages.map((m, i) => (
+                    <li
+                        key={i}
+                        className={
+                            m.author === 'buyer'
+                                ? 'ml-6 rounded-lg bg-muted/60 p-3'
+                                : 'mr-6 rounded-lg border border-border p-3'
+                        }
+                    >
+                        <p className="text-xs text-muted-foreground">
+                            {m.author === 'buyer' ? 'Buyer' : (m.by ?? 'Staff')}{' '}
+                            · {msgLabel[m.kind] ?? m.kind} · {m.at}
+                        </p>
+                        {m.body && (
+                            <p className="mt-1 whitespace-pre-line">{m.body}</p>
+                        )}
+                    </li>
+                ))}
+                {c.messages.length === 0 && (
+                    <li className="text-muted-foreground">Nothing yet.</li>
+                )}
+            </ol>
+
+            <Dialog open={asking} onOpenChange={setAsking}>
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="font-display text-2xl">
+                            Ask the buyer a question
+                        </DialogTitle>
+                        <DialogDescription>
+                            The buyer is emailed and sees it on their Purchases
+                            page, where they can reply and upload. Any pending
+                            upload stays pending.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {pending.length > 0 && (
+                        <div className="grid gap-1">
+                            <Label htmlFor="q-upload">About</Label>
+                            <select
+                                id="q-upload"
+                                value={upload}
+                                onChange={(e) => setUpload(e.target.value)}
+                                className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                            >
+                                <option value="">
+                                    The purchase in general
+                                </option>
+                                {pending.map((u) => (
+                                    <option
+                                        key={u.id}
+                                        value={u.id}
+                                    >{`The ${stepLabel[u.step] ?? u.step} uploaded ${u.at}`}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    <div className="grid gap-2">
+                        <Label htmlFor="q-text">Question</Label>
+                        <textarea
+                            id="q-text"
+                            rows={4}
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                            Suggestions (click to use, then edit):
+                        </p>
+                        {presets.map((p) => (
+                            <button
+                                key={p}
+                                type="button"
+                                onClick={() => setText(p)}
+                                className="rounded-md border border-border px-3 py-1.5 text-left text-xs hover:bg-muted"
+                            >
+                                {p}
+                            </button>
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => setAsking(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            disabled={text.trim() === ''}
+                            onClick={() => {
+                                router.post(
+                                    questions(c.ulid).url,
+                                    {
+                                        question: text.trim(),
+                                        upload: upload || null,
+                                    },
+                                    { preserveScroll: true },
+                                );
+                                setAsking(false);
+                            }}
+                        >
+                            Send question
                         </Button>
                     </DialogFooter>
                 </DialogContent>
