@@ -22,7 +22,7 @@ class StarterContent extends Command
     // Company details used across the legal and contact pages.
     public const COMPANY = 'Thabekhulu Development Group (Pty) Ltd';
 
-    public const ADDRESS = '6th Floor, Royal Towers, 30 Dorothy Nyembe Street, Durban, 4100';
+    public const ADDRESS = '6th Floor, Royal Towers, 30 Dorothy Nyembe Street, Durban, 4001';
 
     public const EMAIL = 'admin@stevemaqueens.co.za';
 
