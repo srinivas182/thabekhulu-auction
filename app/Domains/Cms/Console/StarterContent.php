@@ -35,7 +35,8 @@ class StarterContent extends Command
     public function handle(): int
     {
         $pages = ['about' => self::about(), 'how-it-works' => self::howItWorks(), 'buyers-guide' => self::buyersGuide(), 'rules-of-auction' => self::rulesOfAuction(),
-            'fees' => self::fees(), 'privacy' => self::privacy(), 'paia-manual' => self::paiaManual(), 'disclaimer' => self::disclaimer(), 'contact' => self::contact()];
+            'fees' => self::fees(), 'privacy' => self::privacy(), 'paia-manual' => self::paiaManual(), 'disclaimer' => self::disclaimer(), 'contact' => self::contact(),
+            'automatically-available-records' => self::automaticallyAvailableRecords()];
         foreach ($pages as $slug => $blocks) {
             $page = Page::where('slug', $slug)->first();
             if ($page === null) {
@@ -139,7 +140,7 @@ class StarterContent extends Command
     public static function rulesOfAuction(): array
     {
         return [
-            ['type' => 'rich_text', 'html' => '<p><em>Draft for review by Thabekhulu’s attorney.</em></p><p>These rules apply to every auction run by '.self::COMPANY.' (“the auctioneer”) on this website, as required by section 45 of the Consumer Protection Act 68 of 2008 and its regulations. The conditions of sale for each listing form part of these rules; if they conflict, the conditions of sale apply.</p>'],
+            ['type' => 'rich_text', 'html' => '<p>These rules apply to every auction run by '.self::COMPANY.' (“the auctioneer”) on this website, as required by section 45 of the Consumer Protection Act 68 of 2008 and its regulations. The conditions of sale for each listing form part of these rules; if they conflict, the conditions of sale apply.</p>'],
             ['type' => 'rich_text', 'html' => '<h3>1. Registration and verification</h3><p>Only registered bidders may bid. Every bidder must verify their identity and be screened as the Financial Intelligence Centre Act requires, and be approved for each auction. A person bidding for a company, trust or another person must prove their authority to do so.</p>'
                 .'<h3>2. Deposits</h3><p>Each listing states its deposit, which must be received before the bidder may bid. The deposit of the successful bidder counts towards the purchase price or is held as stated in the conditions of sale. Deposits of unsuccessful bidders are refunded to their verified bank accounts after the auction, except that the runner-up’s deposit may be held for the period stated in the conditions of sale.</p>'
                 .'<h3>3. Bidding</h3><p>Every bid is an irrevocable offer to buy on the conditions of sale. Bids rise by at least the increment shown. Bidders may set a maximum, and the system then bids for them only as much as needed; maximums are confidential. Every bid in an open auction is shown with the bidder’s number. The auctioneer may refuse a bid that does not comply with these rules.</p>'
@@ -172,7 +173,7 @@ class StarterContent extends Command
     public static function privacy(): array
     {
         return [
-            ['type' => 'rich_text', 'html' => '<p><em>Draft for review by Thabekhulu’s attorney.</em></p><p>'.self::COMPANY.', of '.self::ADDRESS.' (“we”), respects your privacy and processes personal information under the Protection of Personal Information Act 4 of 2013 (POPIA). This notice explains what we collect, why, and your rights.</p>'],
+            ['type' => 'rich_text', 'html' => '<p>'.self::COMPANY.', of '.self::ADDRESS.' (“we”), respects your privacy and processes personal information under the Protection of Personal Information Act 4 of 2013 (POPIA). This notice explains what we collect, why, and your rights.</p>'],
             ['type' => 'rich_text', 'html' => '<h3>What we collect</h3><ul><li>Account details: name, email address, mobile number and password (stored securely).</li><li>Verification records: identity document or passport, selfie, proof of address, marital status and, for companies and trusts, registration documents and the people who control them.</li><li>Bank details for refunds, and records of deposits, bids, payments and refunds.</li><li>Records of your use of the website, such as sign-ins, documents opened and enquiries.</li></ul>'
                 .'<h3>Why we use it</h3><ul><li>To run auctions and sales, including approving bidders and processing deposits and refunds.</li><li>To meet our legal duties, including identity verification, screening and record-keeping under the Financial Intelligence Centre Act.</li><li>To keep the platform secure and prevent fraud.</li><li>To send you messages you asked for, such as auction alerts and newsletters, which you can stop at any time.</li></ul>'
                 .'<h3>Who we share it with</h3><p>Only those who help us provide the service or whom the law requires: identity verification and payment providers, our banks and attorneys, transferring attorneys for a sale you win, and authorities such as the Financial Intelligence Centre where the law requires. Other bidders never see your name; bids are shown by bidder number only.</p>'
@@ -186,7 +187,7 @@ class StarterContent extends Command
     public static function paiaManual(): array
     {
         return [
-            ['type' => 'rich_text', 'html' => '<p><em>Draft for review by Thabekhulu’s attorney.</em></p><p>This manual is published under section 51 of the Promotion of Access to Information Act 2 of 2000 (PAIA). It explains how to request records held by '.self::COMPANY.'.</p>'],
+            ['type' => 'rich_text', 'html' => '<p>This manual is published under section 51 of the Promotion of Access to Information Act 2 of 2000 (PAIA). It explains how to request records held by '.self::COMPANY.'.</p>'],
             ['type' => 'rich_text', 'html' => '<h3>1. Contact details</h3><p>Information Officer: '.self::OFFICER.' (Chief Executive Officer)<br>Email: '.self::EMAIL.'<br>Telephone: '.self::PHONE.'<br>Physical address: '.self::ADDRESS.'<br>Postal address: as for the physical address</p>'
                 .'<h3>2. Guide by the Information Regulator</h3><p>The Information Regulator publishes a guide on how to use PAIA. It is available from the Information Regulator (inforegulator.org.za) and on request from our Information Officer.</p>'
                 .'<h3>3. Records we hold</h3><ul><li>Company records: incorporation documents, statutory registers and minutes.</li><li>Financial records: financial statements, accounting records, tax records and banking records.</li><li>Auction and sale records: listings, conditions of sale, bidders’ records, deposits, refunds and settlement records.</li><li>Client records: verification and screening records, correspondence and agreements.</li><li>Employee records: employment contracts and payroll records.</li></ul>'
@@ -201,7 +202,7 @@ class StarterContent extends Command
     public static function disclaimer(): array
     {
         return [
-            ['type' => 'rich_text', 'html' => '<p><em>Draft for review by Thabekhulu’s attorney.</em></p><p>We take care that the information on this website is accurate, but listings are prepared from information supplied by sellers and third parties. Please read this before you rely on anything here.</p>'],
+            ['type' => 'rich_text', 'html' => '<p>We take care that the information on this website is accurate, but listings are prepared from information supplied by sellers and third parties. Please read this before you rely on anything here.</p>'],
             ['type' => 'rich_text', 'html' => '<h3>Listings</h3><p>Descriptions, sizes, photographs, zoning and other details are given in good faith but are not guaranteed. Bidders must inspect the property and review the documents in the data room before bidding. The conditions of sale for each listing apply.</p>'
                 .'<h3>Mining rights</h3><p>A winning bid or tender does not by itself transfer a mining or prospecting right. Transfer requires the approvals required by law, including consent under section 11 of the Mineral and Petroleum Resources Development Act.</p>'
                 .'<h3>No advice</h3><p>Nothing on this website is legal, tax, financial or investment advice. Get your own professional advice before you bid.</p>'
@@ -218,6 +219,25 @@ class StarterContent extends Command
                 'left' => '<h3>Our office</h3><p>'.self::COMPANY.'<br>'.self::ADDRESS.'</p>',
                 'right' => '<h3>Phone and email</h3><p>Telephone: <a href="tel:'.str_replace(' ', '', self::PHONE).'">'.self::PHONE.'</a><br>Email: <a href="mailto:'.self::EMAIL.'">'.self::EMAIL.'</a></p>'],
             ['type' => 'rich_text', 'html' => '<p>Questions about an auction, a listing, registering to bid or selling with us? Send us a message below and we’ll get back to you.</p>'],
+        ];
+    }
+
+    /** @return list<array<string, mixed>> */
+    public static function automaticallyAvailableRecords(): array
+    {
+        return [
+            ['type' => 'rich_text', 'html' => '<p>In terms of section 52 of the Promotion of Access to Information Act 2 of 2000 (PAIA), '.self::COMPANY.' makes the records below available without a formal request for access. You do not need to complete a PAIA request form or pay a request fee for them.</p>'],
+            ['type' => 'rich_text', 'html' => '<h3>1. Available to everyone on this website, free of charge</h3><ul>'
+                .'<li>Rules of Auction</li><li>Privacy notice</li><li>PAIA manual and this notice</li><li>Disclaimer</li><li>Buyer’s guide and Fees and costs</li>'
+                .'<li>Listings: descriptions, photographs, location, minimum bid, deposit and auction dates</li>'
+                .'<li>Results of completed auctions: sale price, date and the winning bidder’s number (never the bidder’s name)</li>'
+                .'<li>Articles, events and other information we publish about our company and our auctions</li></ul>'
+                .'<h3>2. Available to registered bidders approved for a listing</h3><ul>'
+                .'<li>The conditions of sale for that listing</li>'
+                .'<li>The documents in that listing’s data room, such as the title deed, reports and approvals, where necessary after accepting a confidentiality agreement</li></ul>'
+                .'<h3>3. Your own records</h3><p>Registered users can see their own details, verification status, bids, deposits, receipts and purchases in their account at any time. To ask for a copy of personal information we hold about you, or to correct it, contact our Information Officer; this is free under the Protection of Personal Information Act.</p>'
+                .'<h3>4. Other records</h3><p>Records not listed here may be requested under PAIA, as explained in our PAIA manual.</p>'
+                .'<h3>5. Contact</h3><p>Information Officer: '.self::OFFICER.'<br>Email: '.self::EMAIL.'<br>Telephone: '.self::PHONE.'<br>Address: '.self::ADDRESS.'</p>'],
         ];
     }
 }
