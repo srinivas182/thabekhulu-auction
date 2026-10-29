@@ -10,6 +10,7 @@ use App\Domains\Bidding\Models\MaxBid;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Payments\Actions\DepositService;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Settlement\Models\Suspension;
 use App\Domains\Verification\Models\BidderApproval;
@@ -178,7 +179,7 @@ class BiddingController extends Controller
                     'status' => $a->status, 'statusLabel' => BidderApproval::STATUSES[$a->status], 'bidderNumber' => $a->bidder_number, 'reason' => $a->reason,
                     'biddingAs' => $a->entity?->name, 'stage' => $stage,
                     'deposit' => $deposit === null ? null : ['status' => $deposit->status, 'amount' => (int) $deposit->amount],
-                    'depositAmount' => (int) $l->deposit_amount, 'depositUrl' => route('deposits.show', $l),
+                    'depositAmount' => (int) $l->deposit_amount, 'depositUrl' => route('deposits.show', $l), 'depositsOpen' => DepositService::complianceComplete($l),
                     'highest' => $sealed ? null : $state?->current_amount, 'bids' => $sealed ? null : (int) ($state->bid_count ?? 0),
                     'myBid' => $myBid === null ? null : (int) $myBid, 'myMaximum' => $myMax === null ? null : (int) $myMax,
                     'leading' => ! $sealed && $state !== null && $state->leader_approval_id === $a->id, 'won' => $won,

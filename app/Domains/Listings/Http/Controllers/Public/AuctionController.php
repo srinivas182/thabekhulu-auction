@@ -13,6 +13,7 @@ use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\ListingSearch;
 use App\Domains\Listings\Public\PublicListing;
+use App\Domains\Payments\Actions\DepositService;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Platform\Support\Seo;
 use App\Domains\Settings\Settings\GeneralSettings;
@@ -123,6 +124,7 @@ class AuctionController extends Controller
             'bidderNumber' => $approval?->status === 'approved' ? $approval->bidder_number : null,
             'depositPaid' => $approval !== null && Deposit::where('bidder_approval_id', $approval->id)->whereIn('status', ['received', 'applied'])->exists(),
             'depositAmount' => (int) $listing->deposit_amount, 'depositUrl' => route('deposits.show', $listing),
+            'depositsOpen' => DepositService::complianceComplete($listing),
             'scheduled' => $listing->status === ListingStatus::Scheduled, 'sealed' => $listing->auction_type->value === 'sealed',
             'opens' => $listing->starts_at?->setTimezone((string) config('platform.display_timezone'))->format('j F, H:i'),
             'advanceMax' => $approval !== null ? (($a = AdvanceBid::where('bidder_approval_id', $approval->id)->whereNull('applied_at')->first()) ? (int) $a->amount : null) : null,

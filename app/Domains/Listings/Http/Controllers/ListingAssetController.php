@@ -7,6 +7,9 @@ use App\Domains\Catalogue\Models\DocumentType;
 use App\Domains\Listings\Enums\ComplianceItem;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Models\ListingDocument;
+use App\Domains\Payments\Actions\DepositService;
+use App\Domains\Payments\Notifications\DepositsOpen;
+use App\Domains\Verification\Models\BidderApproval;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -142,10 +145,18 @@ class ListingAssetController extends Controller
     {
         $item = ComplianceItem::tryFrom($item) ?? abort(404);
         $note = $request->validate(['note' => ['required', 'string', 'max:1000']])['note'];
+        $wasComplete = DepositService::complianceComplete($listing);
 
         $listing->complianceItems()->updateOrCreate(['item' => $item->value], [
             'signed_off_by' => $actor->id, 'signed_off_at' => now(), 'note' => $note,
         ]);
+
+        // The last legal check just completed: tell approved bidders who haven't paid that deposits are open.
+        if (! $wasComplete && DepositService::complianceComplete($listing->fresh() ?? $listing)) {
+            BidderApproval::with('user')->where('listing_id', $listing->id)->where('status', 'approved')
+                ->whereDoesntHave('deposits', fn ($q) => $q->whereIn('status', ['received', 'applied']))->get()
+                ->each(fn ($a) => $a->user->notify(new DepositsOpen($listing->title, route('deposits.show', $listing))));
+        }
 
         Audit::record('compliance', 'signed_off', "Signed off “{$item->label()}” for {$listing->title}", $listing, $actor, ['item' => $item->value, 'note' => $note]);
         $this->toast('Signed off.');

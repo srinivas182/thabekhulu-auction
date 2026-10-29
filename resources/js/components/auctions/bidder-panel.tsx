@@ -13,6 +13,7 @@ export type BidderState = {
     reason: string | null;
     needsFunds: boolean;
     depositPaid: boolean;
+    depositsOpen: boolean;
     depositAmount: number;
     depositUrl: string;
     scheduled: boolean;
@@ -62,7 +63,15 @@ export default function BidderPanel({
                     <Check className="size-4" aria-hidden="true" />
                     Approved to bid as bidder #{state.bidderNumber}
                 </p>
-                {!state.depositPaid && state.depositAmount > 0 ? (
+                {!state.depositPaid &&
+                state.depositAmount > 0 &&
+                !state.depositsOpen ? (
+                    <p className="text-sm">
+                        Next: the <strong>{rand(state.depositAmount)}</strong>{' '}
+                        deposit. Deposits for this listing open once our legal
+                        checks are complete. We’ll email you as soon as they do.
+                    </p>
+                ) : !state.depositPaid && state.depositAmount > 0 ? (
                     <>
                         <p className="text-sm">
                             Next: pay the{' '}
