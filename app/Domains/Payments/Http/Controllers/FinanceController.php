@@ -10,6 +10,7 @@ use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Settings\PaymentSettings;
 use App\Domains\Payments\Support\DepositReference;
 use App\Domains\Settlement\Models\SettlementPayment;
+use App\Domains\Verification\Models\BankAccount;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
@@ -66,6 +67,7 @@ class FinanceController extends Controller
                 ->get(['i.file_name', 'i.lines_total', 'i.matched', 'i.queued', 'i.duplicates', 'i.created_at', 'u.first_name', 'u.last_name'])
                 ->map(fn ($i) => ['file' => $i->file_name, 'lines' => $i->lines_total, 'matched' => $i->matched, 'queued' => $i->queued, 'duplicates' => $i->duplicates, 'by' => trim("{$i->first_name} {$i->last_name}"), 'at' => (string) $i->created_at]) : [],
             'can' => ['reconcile' => Gate::allows('deposits.reconcile')],
+            'trustAccountReady' => app(PaymentSettings::class)->trustAccountReady(),
         ]);
     }
 
@@ -116,15 +118,28 @@ class FinanceController extends Controller
         return Inertia::render('admin/finance/settings', ['settings' => [
             'trust_bank' => $s->trust_bank, 'trust_account_name' => $s->trust_account_name, 'trust_account_number' => $s->trust_account_number,
             'trust_branch_code' => $s->trust_branch_code, 'refund_business_days' => $s->refund_business_days, 'runner_up_hold_days' => $s->runner_up_hold_days,
-        ]]);
+        ], 'banks' => BankAccount::BANKS, 'visibleToBuyers' => $s->trustAccountReady()]);
     }
 
     public function updateSettings(Request $request, #[CurrentUser] User $actor): RedirectResponse
     {
+        // People type numbers with spaces or dashes ("62 1234 5678", "250-655"); keep the digits.
+        $request->merge([
+            'trust_account_number' => preg_replace('/[\s-]/', '', (string) $request->input('trust_account_number')),
+            'trust_branch_code' => preg_replace('/[\s-]/', '', (string) $request->input('trust_branch_code')),
+        ]);
+        // Buyers only see the account when bank, number and branch code are all filled, so they're required together.
         $data = $request->validate([
-            'trust_bank' => ['nullable', 'string', 'max:60'], 'trust_account_name' => ['required', 'string', 'max:160'],
-            'trust_account_number' => ['nullable', 'regex:/^\d{6,16}$/'], 'trust_branch_code' => ['nullable', 'digits:6'],
+            'trust_bank' => ['nullable', 'required_with:trust_account_number,trust_branch_code', 'string', 'max:60'], 'trust_account_name' => ['required', 'string', 'max:160'],
+            'trust_account_number' => ['nullable', 'required_with:trust_bank,trust_branch_code', 'regex:/^\d{6,16}$/'],
+            'trust_branch_code' => ['nullable', 'required_with:trust_bank,trust_account_number', 'digits:6'],
             'refund_business_days' => ['required', 'integer', 'min:0', 'max:60'], 'runner_up_hold_days' => ['required', 'integer', 'min:0', 'max:120'],
+        ], [
+            'trust_account_number.regex' => __('Enter the account number using 6 to 16 digits.'),
+            'trust_branch_code.digits' => __('The branch code has 6 digits.'),
+            'trust_bank.required_with' => __('Choose the bank: buyers need the bank, account number and branch code together.'),
+            'trust_account_number.required_with' => __('Enter the account number: buyers need the bank, account number and branch code together.'),
+            'trust_branch_code.required_with' => __('Enter the branch code: buyers need the bank, account number and branch code together.'),
         ]);
         $s = app(PaymentSettings::class);
         foreach ($data as $k => $v) {
