@@ -49,6 +49,7 @@ type Confirmation = {
 type Props = {
     balances: Balance[];
     confirmations: Confirmation[];
+    trustAccountReady: boolean;
     tab: string;
     counts: { queue: number };
     totals: { held: number; awaiting: number; received: number };
@@ -100,6 +101,7 @@ export default function Finance({
     deposits,
     balances,
     confirmations,
+    trustAccountReady,
     queue,
     imports,
     can,
@@ -225,6 +227,22 @@ export default function Finance({
                     </div>
                 </dl>
 
+                {!trustAccountReady && perms.includes('settings.manage') && (
+                    <p
+                        role="alert"
+                        className="rounded-[10px] bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-100"
+                    >
+                        <strong>Buyers can’t see where to pay by EFT.</strong>{' '}
+                        The trust account’s bank, account number or branch code
+                        is missing.{' '}
+                        <Link
+                            href={financeSettings().url}
+                            className="font-semibold underline"
+                        >
+                            Complete the trust account
+                        </Link>
+                    </p>
+                )}
                 {confirmations.length > 0 && (
                     <section
                         aria-labelledby="conf-h"
