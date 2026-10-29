@@ -2,9 +2,16 @@ import { Form, Head, Link } from '@inertiajs/react';
 import { Check, Lock } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import { store } from '@/routes/account/bank';
+import { reply, store } from '@/routes/account/bank';
 
 type Props = {
+    messages: {
+        author: string;
+        kind: string;
+        body: string | null;
+        by: string | null;
+        at: string;
+    }[];
     account: {
         bank: string;
         branchCode: string;
@@ -14,6 +21,7 @@ type Props = {
         status: string;
         rejectionReason: string | null;
         locked: boolean;
+        infoRequested: boolean;
     } | null;
     verified: boolean;
     banks: Record<string, string>;
@@ -29,13 +37,22 @@ const statusText: Record<string, string> = {
     rejected: 'Not accepted',
 };
 
-export default function Bank({ account, verified, banks, types, name }: Props) {
+export default function Bank({
+    account,
+    verified,
+    banks,
+    types,
+    name,
+    messages,
+}: Props) {
     const [bank, setBank] = useState(account?.bank ?? 'Standard Bank');
     const [branch, setBranch] = useState(
         account?.branchCode ?? banks['Standard Bank'],
     );
     const [editing, setEditing] = useState(
-        account === null || account.status === 'rejected',
+        account === null ||
+            account.status === 'rejected' ||
+            account.status === 'info_requested',
     );
 
     return (
@@ -109,6 +126,80 @@ export default function Bank({ account, verified, banks, types, name }: Props) {
                         <strong>We couldn’t accept your last account:</strong>{' '}
                         {account.rejectionReason}
                     </p>
+                )}
+
+                {account?.infoRequested && (
+                    <section
+                        aria-labelledby="bank-req-h"
+                        className="mt-6 grid gap-3 rounded-[14px] border border-brand-accent/30 bg-brand-accent-soft p-4"
+                    >
+                        <h2
+                            id="bank-req-h"
+                            className="font-semibold text-brand-accent"
+                        >
+                            We need a little more about your bank account
+                        </h2>
+                        <ol className="grid gap-2 text-sm">
+                            {messages.map((m, i) => (
+                                <li
+                                    key={i}
+                                    className={
+                                        m.author === 'buyer'
+                                            ? 'ml-6 rounded-lg bg-background/70 px-3 py-2'
+                                            : 'mr-6 rounded-lg bg-background px-3 py-2'
+                                    }
+                                >
+                                    <span className="block text-xs text-muted-foreground">
+                                        {m.author === 'buyer'
+                                            ? 'You'
+                                            : 'Thabekhulu'}{' '}
+                                        · {m.at}
+                                    </span>
+                                    {m.body}
+                                </li>
+                            ))}
+                        </ol>
+                        <Form
+                            action={reply().url}
+                            method="post"
+                            options={{ preserveScroll: true }}
+                            resetOnSuccess
+                            className="grid gap-2"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    <label
+                                        htmlFor="bank-reply"
+                                        className="text-sm font-semibold"
+                                    >
+                                        Reply (optional)
+                                    </label>
+                                    <textarea
+                                        id="bank-reply"
+                                        name="reply"
+                                        rows={3}
+                                        placeholder="For example: I’ve uploaded a letter dated this month."
+                                        className="w-full rounded-[10px] border border-input bg-background px-3 py-2 text-sm"
+                                    />
+                                    {errors.reply && (
+                                        <span className="text-sm text-destructive">
+                                            {errors.reply}
+                                        </span>
+                                    )}
+                                    <button
+                                        disabled={processing}
+                                        className="w-fit rounded-[10px] border border-input bg-background px-4 py-2 text-sm font-semibold"
+                                    >
+                                        Send reply
+                                    </button>
+                                </>
+                            )}
+                        </Form>
+                        <p className="text-sm">
+                            If we asked for a new letter or different details,
+                            submit them in the form below.
+                        </p>
+                    </section>
                 )}
 
                 {editing && verified && (

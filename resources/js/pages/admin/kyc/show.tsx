@@ -80,6 +80,22 @@ type Props = {
         by: string | null;
         at: string;
     }[];
+    bankMessages: {
+        author: string;
+        kind: string;
+        body: string | null;
+        by: string | null;
+        at: string;
+    }[];
+    previousBanks: {
+        id: number;
+        bank: string;
+        last4: string;
+        holder: string;
+        status: string;
+        at: string | null;
+        proofUrl: string | null;
+    }[];
     bank: {
         id: number;
         bank: string;
@@ -110,6 +126,13 @@ const outcomeTone: Record<string, string> = {
 };
 const opts = { preserveScroll: true };
 
+const bankMsgLabel: Record<string, string> = {
+    info_request: 'Asked for more information',
+    reply: 'Replied',
+    submitted: 'Submitted',
+    verified: 'Verified',
+    rejected: 'Rejected',
+};
 const msgLabel: Record<string, string> = {
     info_request: 'Asked for more information',
     reply: 'Replied',
@@ -123,6 +146,8 @@ export default function KycShow({
     verification: v,
     screenings,
     bank,
+    bankMessages,
+    previousBanks,
     screeningResults,
     can,
 }: Props) {
@@ -163,6 +188,18 @@ export default function KycShow({
                 'Please upload a proof of address dated within the last three months.',
                 'The photo of your ID is blurred. Please upload a clearer photo of the front.',
                 'The name on your document doesn’t match your account. Please check and correct it.',
+            ],
+        },
+        'What should the buyer correct about their bank account?': {
+            title: 'Ask about the bank account',
+            label: 'What should the buyer correct or add?',
+            hint: 'The account stays neither verified nor rejected. The buyer is emailed, and can reply and submit a corrected letter.',
+            confirm: 'Send request',
+            presets: [
+                'The bank letter is older than three months. Please upload one dated within the last three months.',
+                'The account holder’s name on the letter doesn’t match your verified name. Please check and resubmit.',
+                'The letter must be on the bank’s letterhead or stamped by the bank. Please upload an official confirmation.',
+                'The account number on the letter doesn’t match the number you entered. Please check both.',
             ],
         },
         'Reason for rejecting (emailed to the buyer)': {
@@ -586,7 +623,94 @@ export default function KycShow({
                                             Reject
                                         </Button>
                                     )}
+                                    {can.reject && (
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() =>
+                                                ask(
+                                                    'What should the buyer correct about their bank account?',
+                                                    (reason) =>
+                                                        router.post(
+                                                            bankRoute(bank.id)
+                                                                .url,
+                                                            {
+                                                                decision:
+                                                                    'info',
+                                                                reason,
+                                                            },
+                                                            opts,
+                                                        ),
+                                                )
+                                            }
+                                        >
+                                            Ask for more information
+                                        </Button>
+                                    )}
                                 </div>
+                            )}
+                            {bank.status === 'info_requested' && (
+                                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                                    Waiting for the buyer to reply or submit a
+                                    corrected letter.
+                                </p>
+                            )}
+                            {bankMessages.length > 0 && (
+                                <ol
+                                    className="mt-2 grid gap-2 text-sm"
+                                    aria-label="Bank account conversation"
+                                >
+                                    {bankMessages.map((m, i) => (
+                                        <li
+                                            key={i}
+                                            className={
+                                                m.author === 'buyer'
+                                                    ? 'ml-6 rounded-lg bg-muted/60 p-2.5'
+                                                    : 'mr-6 rounded-lg border border-border p-2.5'
+                                            }
+                                        >
+                                            <p className="text-xs text-muted-foreground">
+                                                {m.author === 'buyer'
+                                                    ? 'Buyer'
+                                                    : (m.by ?? 'Reviewer')}{' '}
+                                                ·{' '}
+                                                {bankMsgLabel[m.kind] ?? m.kind}{' '}
+                                                · {m.at}
+                                            </p>
+                                            {m.body && (
+                                                <p className="mt-0.5 whitespace-pre-line">
+                                                    {m.body}
+                                                </p>
+                                            )}
+                                        </li>
+                                    ))}
+                                </ol>
+                            )}
+                            {previousBanks.length > 0 && (
+                                <details className="mt-2 text-sm">
+                                    <summary className="cursor-pointer font-semibold">
+                                        Earlier submissions (
+                                        {previousBanks.length})
+                                    </summary>
+                                    <ul className="mt-2 grid gap-1">
+                                        {previousBanks.map((b) => (
+                                            <li key={b.id}>
+                                                {b.bank} ending {b.last4} ·{' '}
+                                                {b.holder} · {b.status} · {b.at}
+                                                {b.proofUrl && (
+                                                    <a
+                                                        href={b.proofUrl}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="ml-2 underline"
+                                                    >
+                                                        Letter
+                                                    </a>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </details>
                             )}
                         </section>
                     )}

@@ -153,7 +153,9 @@ it('sends a changed account back for checking', function () {
         'holder_name' => 'Naledi Dube', 'proof' => UploadedFile::fake()->create('letter.pdf', 30, 'application/pdf'),
     ])->assertSessionHasNoErrors();
 
-    expect(BankAccount::count())->toBe(1)->and(BankAccount::first()->status)->toBe('pending')->and(BankAccount::first()->verified_at)->toBeNull();
+    // The earlier submission is kept (superseded) for the KYC record; the new one needs checking again.
+    expect(BankAccount::count())->toBe(2)->and(BankAccount::oldest('id')->first()->status)->toBe('superseded')
+        ->and(BankAccount::latest('id')->first()->status)->toBe('pending')->and(BankAccount::latest('id')->first()->verified_at)->toBeNull();
 });
 
 it('lists verified buyers who are due for re-screening', function () {

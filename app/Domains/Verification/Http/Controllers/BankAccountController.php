@@ -4,6 +4,7 @@ namespace App\Domains\Verification\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
 use App\Domains\Verification\Models\BankAccount;
+use App\Domains\Verification\Models\BankMessage;
 use App\Domains\Verification\Models\Verification;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -34,8 +35,10 @@ class BankAccountController extends Controller
             'account' => $bank === null ? null : [
                 'bank' => $bank->bank, 'branchCode' => $bank->branch_code, 'last4' => $bank->account_last4, 'type' => $bank->account_type,
                 'holder' => $bank->holder_name, 'status' => $bank->status, 'rejectionReason' => $bank->rejection_reason, 'locked' => $bank->locked,
+                'infoRequested' => $bank->status === 'info_requested',
             ],
             'verified' => Verification::where('user_id', $user->id)->where('status', 'verified')->exists(),
+            'messages' => BankMessage::thread($user->id),
             'banks' => BankAccount::BANKS,
             'types' => BankAccount::TYPES,
             'name' => $user->name,
@@ -70,21 +73,20 @@ class BankAccountController extends Controller
         $path = "bank-proof/{$user->id}/".Str::uuid().'.enc';
         Storage::disk('local')->put($path, Crypt::encryptString(base64_encode((string) file_get_contents($proof->getRealPath()))));
 
-        if ($current !== null && $current->proof_path) {
-            Storage::disk('local')->delete($current->proof_path);
-        }
-
-        // A new or changed account always needs checking again.
-        $account = BankAccount::updateOrCreate(['user_id' => $user->id], [
-            'bank' => $data['bank'], 'branch_code' => $data['branch_code'], 'account_number' => $number, 'account_last4' => substr($number, -4),
+        // Each submission is its own record. Earlier ones (and their letters) are kept for the KYC record,
+        // marked superseded so refunds can only ever use the current, verified account.
+        BankAccount::where('user_id', $user->id)->where('status', '!=', 'superseded')->update(['status' => 'superseded']);
+        $account = BankAccount::create([
+            'user_id' => $user->id, 'bank' => $data['bank'], 'branch_code' => $data['branch_code'], 'account_number' => $number, 'account_last4' => substr($number, -4),
             'account_type' => $data['account_type'], 'holder_name' => $data['holder_name'], 'status' => 'pending', 'proof_path' => $path,
-            'rejection_reason' => null, 'verified_by' => null, 'verified_at' => null,
         ]);
 
         Audit::record('kyc', 'bank_submitted', "{$user->name} submitted a refund bank account ending {$account->account_last4}", $account, $user, [
             'name_matches' => $this->namesMatch($data['holder_name'], $user->name),
         ]);
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Thank you. We’ll confirm the account is in your name and email you.')]);
+
+        BankMessage::note($user->id, $account->id, 'buyer', 'submitted', $current !== null && in_array($current->status, ['info_requested', 'rejected'], true) ? 'Submitted updated bank details and letter' : 'Submitted bank details', $user->id);
 
         return back();
     }
@@ -95,5 +97,17 @@ class BankAccountController extends Controller
         $norm = fn (string $s): string => Str::of($s)->lower()->replaceMatches('/^(mr|mrs|ms|dr|prof)\.?\s+/', '')->replaceMatches('/[^a-z ]/', '')->squish()->toString();
 
         return $norm($holder) === $norm($name) || str_contains($norm($holder), $norm($name));
+    }
+
+    /** The buyer answers a question about their bank account (alongside any corrected letter). */
+    public function reply(Request $request, #[CurrentUser] User $user): RedirectResponse
+    {
+        $bank = BankAccount::where('user_id', $user->id)->latest('id')->first();
+        abort_unless($bank !== null && $bank->status === 'info_requested', 422, 'There is no open request to reply to.');
+        $body = $request->validate(['reply' => ['required', 'string', 'max:2000']])['reply'];
+        BankMessage::note($user->id, $bank->id, 'buyer', 'reply', $body, $user->id);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Reply sent. If we asked for a new letter, submit it below as well.')]);
+
+        return back();
     }
 }
