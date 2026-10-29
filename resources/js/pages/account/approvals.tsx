@@ -26,6 +26,7 @@ type Approval = {
     deposit: { status: string; amount: number } | null;
     depositAmount: number;
     depositUrl: string;
+    depositsOpen: boolean;
     highest: number | null;
     bids: number | null;
     myBid: number | null;
@@ -38,10 +39,10 @@ type Approval = {
 
 const steps = ['Applied', 'Approved', 'Deposit paid', 'Bidding'];
 const reached: Record<Stage, number> = {
-    review: 1,
     declined: 1,
-    deposit: 2,
-    waiting: 3,
+    review: 2,
+    deposit: 3,
+    waiting: 4,
     bidding: 4,
     closed: 4,
 };
@@ -269,9 +270,19 @@ export default function MyAuctions({ approvals }: { approvals: Approval[] }) {
                                     {a.deposit?.status === 'part_paid' &&
                                         ` We’ve received ${randCents(a.deposit.amount)} so far.`}
                                 </p>
-                                <Link href={a.depositUrl} className={button}>
-                                    Pay deposit
-                                </Link>
+                                {a.depositsOpen ? (
+                                    <Link
+                                        href={a.depositUrl}
+                                        className={button}
+                                    >
+                                        Pay deposit
+                                    </Link>
+                                ) : (
+                                    <span className="text-sm text-muted-foreground">
+                                        Deposits open once our legal checks are
+                                        complete. We’ll email you.
+                                    </span>
+                                )}
                             </div>
                         )}
 

@@ -64,6 +64,11 @@ final class EmailTemplates
                 ['reason'], $person + ['reason' => 'Why verification failed'], $ex + ['reason' => 'The account holder’s name doesn’t match your verified name.']),
 
             // Money
+            'deposit.open' => self::t('Money', 'Deposits now open', 'Sent to approved bidders when a listing’s legal checks are complete and deposits open.',
+                'You can now pay your deposit: {{listing}}', 'Hello {{first_name}},',
+                'Our legal checks for {{listing}} are complete, so you can now pay your deposit. Once it’s confirmed, you can bid.',
+                'Online payment is confirmed straight away; an EFT once it reflects in our account.', 'Pay deposit',
+                [], $person + $listing, $ex),
             'deposit.received' => self::t('Money', 'Deposit received', 'Sent with the receipt when a deposit is confirmed.',
                 'Deposit received: {{listing}}', 'Hello {{first_name}},',
                 "We’ve received your deposit of R {{amount}} for {{listing}} (reference {{reference}}). Your receipt {{receipt_number}} is attached.\n\nYour refund bank account is now locked until this deposit is refunded or applied to your purchase.",

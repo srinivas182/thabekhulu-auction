@@ -24,6 +24,8 @@ type Application = {
     listingUlid: string;
     closes: string | null;
     ready: boolean;
+    checksSigned: number;
+    checksTotal: number;
     missing: string[];
 };
 
@@ -89,6 +91,13 @@ export default function BidderQueue({
                                         </span>
                                     )}
                                 </p>
+                                {a.checksSigned < a.checksTotal && (
+                                    <p className="font-medium text-amber-700 dark:text-amber-400">
+                                        Deposits not open yet: {a.checksSigned}{' '}
+                                        of {a.checksTotal} legal checks signed
+                                        off on this listing.
+                                    </p>
+                                )}
                                 {a.ready ? (
                                     <p className="font-medium text-status-live">
                                         Ready to approve: every requirement is

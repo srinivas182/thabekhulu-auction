@@ -4,6 +4,7 @@ namespace App\Domains\Verification\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
 use App\Domains\DataRoom\Settings\DataRoomSettings;
+use App\Domains\Listings\Enums\ComplianceItem;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
 use App\Domains\Verification\Models\BidderApproval;
@@ -227,6 +228,7 @@ class BidderApprovalController extends Controller
                     'listing' => $a->listing->title, 'listingUlid' => $a->listing->ulid,
                     'closes' => $a->listing->ends_at?->setTimezone($tz)->format('j M Y, H:i'),
                     'ready' => BidderEligibility::passes($checklist),
+                    'checksSigned' => $a->listing->complianceItems()->distinct()->count('item'), 'checksTotal' => count(ComplianceItem::cases()),
                     'missing' => array_values(array_map(fn ($i) => $i['label'], array_filter($checklist, fn ($i) => $i['state'] === 'missing'))),
                 ];
             }),

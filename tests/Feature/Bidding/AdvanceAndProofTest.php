@@ -9,10 +9,12 @@ use App\Domains\Bidding\Notifications\BidCode;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Listings\Actions\ListingWorkflow;
+use App\Domains\Listings\Enums\ComplianceItem;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Actions\DepositService;
 use App\Domains\Payments\Models\Deposit;
+use App\Domains\Payments\Notifications\DepositsOpen;
 use App\Domains\Payments\Support\DepositReference;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Screening;
@@ -133,4 +135,28 @@ it('takes proof of an EFT payment and lets finance open it, logged', function ()
     $this->actingAs(User::factory()->staff(SystemRole::Finance)->create())->get(route('admin.deposits.proof', $deposit))->assertOk();
     expect(AuditEntry::where('event', 'deposit_proof_viewed')->exists())->toBeTrue();
     $this->actingAs(User::factory()->staff(SystemRole::ListingsManager)->create())->get(route('admin.deposits.proof', $deposit))->assertForbidden();
+});
+
+it('emails approved, unpaid bidders once, when the last legal check is signed off', function () {
+    $unpaid = advBidder('Unpaid', '1111', null);
+    $paid = advBidder('Paid', '2222');
+    $pendingUser = User::factory()->create(['type' => 'buyer']);
+    BidderApproval::create(['listing_id' => $this->listing->id, 'user_id' => $pendingUser->id, 'status' => 'pending']);
+    $admin = User::factory()->staff(SystemRole::SuperAdmin)->create();
+    $items = ComplianceItem::cases();
+
+    $this->actingAs($unpaid)->get("/auctions/homes/sandton/{$this->listing->slug}")->assertInertia(fn ($p) => $p->where('bidder.depositsOpen', false));
+    foreach (array_slice($items, 0, -1) as $item) {
+        $this->actingAs($admin)->post(route('admin.listings.compliance.signoff', [$this->listing, $item->value]), ['note' => 'Checked'])->assertSessionHasNoErrors();
+    }
+    Notification::assertNothingSent();
+    $this->actingAs($admin)->get(route('admin.bidders.queue'))->assertInertia(fn ($p) => $p->where('applications.0.checksSigned', count($items) - 1)->where('applications.0.checksTotal', count($items)));
+
+    $this->actingAs($admin)->post(route('admin.listings.compliance.signoff', [$this->listing, end($items)->value]), ['note' => 'Checked'])->assertSessionHasNoErrors();
+    Notification::assertSentTo($unpaid, DepositsOpen::class);
+    Notification::assertNotSentTo([$paid, $pendingUser], DepositsOpen::class);
+
+    $this->actingAs($admin)->post(route('admin.listings.compliance.signoff', [$this->listing, $items[0]->value]), ['note' => 'Re-checked'])->assertSessionHasNoErrors();
+    Notification::assertSentToTimes($unpaid, DepositsOpen::class, 1);
+    $this->actingAs($unpaid)->get("/auctions/homes/sandton/{$this->listing->slug}")->assertInertia(fn ($p) => $p->where('bidder.depositsOpen', true));
 });
