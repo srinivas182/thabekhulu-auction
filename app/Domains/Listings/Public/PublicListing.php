@@ -157,14 +157,26 @@ final class PublicListing
             ->all());
     }
 
-    /** @return array{lat: float, lng: float}|null */
+    /**
+     * The listing's own coordinates (rounded for privacy) or, failing that, its city's centre, marked approximate.
+     * Listings in the same city get a small fixed offset so their markers don't sit exactly on top of each other.
+     *
+     * @return array{lat: float, lng: float, approximate: bool}|null
+     */
     private static function position(Listing $listing): ?array
     {
-        if ($listing->latitude === null || $listing->longitude === null) {
+        if ($listing->latitude !== null && $listing->longitude !== null) {
+            return ['lat' => round((float) $listing->latitude, 2), 'lng' => round((float) $listing->longitude, 2), 'approximate' => false];
+        }
+        $city = $listing->city;
+        $lat = $city?->getAttribute('latitude');
+        $lng = $city?->getAttribute('longitude');
+        if ($lat === null || $lng === null) {
             return null;
         }
+        $offset = (crc32((string) $listing->ulid) % 7 - 3) * 0.012; // -0.036 … +0.036 degrees, the same every time
 
-        return ['lat' => round((float) $listing->latitude, 2), 'lng' => round((float) $listing->longitude, 2)];
+        return ['lat' => round((float) $lat + $offset, 3), 'lng' => round((float) $lng - $offset, 3), 'approximate' => true];
     }
 
     private static function image(?Media $media, string $conversion): ?string
