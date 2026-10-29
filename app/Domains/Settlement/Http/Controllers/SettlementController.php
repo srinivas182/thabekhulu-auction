@@ -4,12 +4,15 @@ namespace App\Domains\Settlement\Http\Controllers;
 
 use App\Domains\Audit\Support\Audit;
 use App\Domains\Payments\Models\Deposit;
+use App\Domains\Payments\Settings\PaymentSettings;
 use App\Domains\Settlement\Actions\PayoutService;
+use App\Domains\Settlement\Actions\SettlementPayments;
 use App\Domains\Settlement\Actions\SettlementService;
 use App\Domains\Settlement\Models\Invoice;
 use App\Domains\Settlement\Models\Payout;
 use App\Domains\Settlement\Models\SettlementCase;
 use App\Domains\Settlement\Models\SettlementDefault;
+use App\Domains\Settlement\Models\SettlementPayment;
 use App\Domains\Settlement\Models\SettlementStep;
 use App\Domains\Verification\Support\SecureFiles;
 use App\Http\Controllers\Controller;
@@ -19,6 +22,7 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response as HttpResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -51,12 +55,19 @@ class SettlementController extends Controller
     {
         $this->mayView();
         $case->load(['listing.category', 'approval.user', 'steps', 'default']);
+        $uploads = DB::table('settlement_uploads')->where('settlement_case_id', $case->id)->latest('id')->get()
+            ->map(fn ($u) => ['id' => $u->id, 'step' => SettlementCase::STEPS[$u->step] ?? $u->step, 'status' => $u->status, 'reason' => $u->reason,
+                'url' => route('admin.settlement-uploads.file', $u->id), 'at' => Carbon::parse((string) $u->created_at)->format('j M Y, H:i')]);
+        $balance = SettlementPayment::where('settlement_case_id', $case->id)->first();
         $deposit = Deposit::where('bidder_approval_id', $case->bidder_approval_id)->first();
         $d = $case->default;
         $tz = (string) config('platform.display_timezone');
 
         return Inertia::render('admin/settlement/show', [
             'case' => [
+                'uploads' => $uploads,
+                'balance' => $balance === null ? null : ['reference' => $balance->reference, 'due' => $balance->amount_due, 'received' => $balance->received,
+                    'status' => SettlementPayment::STATUSES[$balance->status], 'proofUrl' => $balance->proof_path ? route('admin.balances.proof', $balance) : null],
                 'ulid' => $case->ulid, 'listing' => $case->listing->title, 'mining' => $case->listing->category->slug === 'mining', 'kind' => $case->kind,
                 'buyer' => '#'.$case->approval->bidder_number.' '.$case->approval->user->name, 'email' => $case->approval->user->email,
                 'price' => $case->price, 'status' => $case->status, 'statusLabel' => SettlementCase::STATUSES[$case->status],
@@ -165,9 +176,26 @@ class SettlementController extends Controller
                 'offerExpires' => $c->offer_expires_at?->setTimezone($tz)->format('j F Y, H:i'),
                 'steps' => collect(SettlementCase::STEPS)->map(fn ($label, $key) => ['label' => $label, 'done' => $c->steps->contains('step', $key)])->values(),
                 'transfer' => $c->status === 'completed' ? self::transfer($c)['stages'] : [],
+                'balance' => $c->status === 'open' && $c->kind === 'sale' ? (function () use ($c) {
+                    $p = app(SettlementPayments::class)->forCase($c);
+                    $b = SettlementPayments::breakdown($c);
+
+                    return ['reference' => $p->reference, 'price' => $b['price'], 'deposit' => $b['deposit'], 'due' => $p->amount_due, 'received' => $p->received,
+                        'status' => $p->status, 'proofUploadedAt' => $p->proof_uploaded_at?->format('j F Y')];
+                })() : null,
+                'agreement' => (function () use ($c) {
+                    $u = DB::table('settlement_uploads')->where('settlement_case_id', $c->id)->where('step', 'agreement_signed')->latest('id')->first();
+
+                    return $u === null ? null : ['status' => $u->status, 'reason' => $u->reason];
+                })(),
             ]);
 
-        return Inertia::render('account/settlements', ['cases' => $cases]);
+        $finance = app(PaymentSettings::class);
+
+        return Inertia::render('account/settlements', [
+            'cases' => $cases,
+            'bank' => $finance->trustAccountReady() ? ['bank' => $finance->trust_bank, 'name' => $finance->trust_account_name, 'number' => $finance->trust_account_number, 'branch' => $finance->trust_branch_code] : null,
+        ]);
     }
 
     public function accept(SettlementCase $case, SettlementService $service, #[CurrentUser] User $user): RedirectResponse

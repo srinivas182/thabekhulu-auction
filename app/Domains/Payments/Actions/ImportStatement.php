@@ -5,8 +5,11 @@ namespace App\Domains\Payments\Actions;
 use App\Domains\Audit\Support\Audit;
 use App\Domains\Payments\Models\BankLine;
 use App\Domains\Payments\Models\Deposit;
+use App\Domains\Payments\Support\BalanceReference;
 use App\Domains\Payments\Support\DepositReference;
 use App\Domains\Payments\Support\StatementParser;
+use App\Domains\Settlement\Actions\SettlementPayments;
+use App\Domains\Settlement\Models\SettlementPayment;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -54,6 +57,30 @@ class ImportStatement
 
             if (BankLine::where('line_hash', $lineHash)->exists()) {
                 $counts['duplicates']++;
+
+                continue;
+            }
+
+            // Balance payments (TDG-B-…) after an award: matched the same way as deposits.
+            $balanceRef = BalanceReference::find($line['description']);
+            $balance = $balanceRef ? SettlementPayment::where('reference', $balanceRef)->first() : null;
+            if ($balance !== null) {
+                $outstanding = $balance->outstanding();
+                $status = match (true) {
+                    $line['amount'] === $outstanding => 'matched',
+                    $line['amount'] < $outstanding => 'short',
+                    default => 'over',
+                };
+                BankLine::create([
+                    'bank_import_id' => $importId, 'line_hash' => $lineHash, 'posted_on' => $line['date'], 'amount' => $line['amount'],
+                    'description' => mb_substr($line['description'], 0, 255), 'reference_found' => $balanceRef, 'settlement_payment_id' => $balance->id, 'status' => $status,
+                ]);
+                if ($status === 'matched') {
+                    app(SettlementPayments::class)->receive($balance, $line['amount'], 'bank import', $by);
+                    $counts['matched']++;
+                } else {
+                    $counts['queued']++; // short or over: finance confirms by hand (two people)
+                }
 
                 continue;
             }

@@ -51,6 +51,7 @@ use App\Domains\Sellers\Http\Controllers\SellerController;
 use App\Domains\Settings\Http\Controllers\SettingsController;
 use App\Domains\Settlement\Http\Controllers\PayoutController;
 use App\Domains\Settlement\Http\Controllers\SettlementController;
+use App\Domains\Settlement\Http\Controllers\SettlementPaymentController;
 use App\Domains\Theme\Http\Controllers\ThemeController;
 use App\Domains\Verification\Http\Controllers\BankAccountController;
 use App\Domains\Verification\Http\Controllers\BidderApprovalController;
@@ -136,6 +137,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('account/saved-searches/{ulid}', [GrowthController::class, 'deleteSearch'])->name('account.saved-searches.destroy');
     Route::post('auctions/watch/{listing}', [GrowthController::class, 'toggleWatch'])->middleware('throttle:30,1')->name('auctions.watch');
     Route::get('account/purchases', [SettlementController::class, 'mine'])->name('account.purchases');
+    Route::post('account/purchases/{case}/balance-proof', [SettlementPaymentController::class, 'balanceProof'])->middleware('throttle:10,1')->name('account.purchases.balance-proof');
+    Route::post('account/purchases/{case}/agreement', [SettlementPaymentController::class, 'agreement'])->middleware('throttle:10,1')->name('account.purchases.agreement');
     Route::post('account/purchases/{case}/accept', [SettlementController::class, 'accept'])->middleware('throttle:10,1')->name('account.purchases.accept');
     Route::post('account/purchases/{case}/decline', [SettlementController::class, 'decline'])->middleware('throttle:10,1')->name('account.purchases.decline');
     Route::get('account/notifications', [NotificationPreferenceController::class, 'show'])->name('account.notifications');
@@ -211,6 +214,17 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
         });
         Route::get('listings/{listing}/bidders', [BidderApprovalController::class, 'bidders'])->middleware('can:bidders.approve')->name('listings.bidders');
         Route::get('deposits/{deposit}/proof', [BuyerDepositController::class, 'showProof'])->middleware('can:deposits.view')->name('deposits.proof');
+        Route::middleware('can:settlement.manage')->group(function () {
+            Route::get('settlement-uploads/{upload}', [SettlementPaymentController::class, 'file'])->name('settlement-uploads.file');
+            Route::post('settlement-uploads/{upload}/accept', [SettlementPaymentController::class, 'acceptUpload'])->name('settlement-uploads.accept');
+            Route::post('settlement-uploads/{upload}/reject', [SettlementPaymentController::class, 'rejectUpload'])->name('settlement-uploads.reject');
+        });
+        Route::get('balances/{payment}/proof', [SettlementPaymentController::class, 'balanceProofFile'])->middleware('can:deposits.view')->name('balances.proof');
+        Route::middleware('can:deposits.reconcile')->prefix('confirmations')->name('confirmations.')->group(function () {
+            Route::post('/', [SettlementPaymentController::class, 'requestConfirmation'])->name('store');
+            Route::post('{confirmation}/approve', [SettlementPaymentController::class, 'approveConfirmation'])->name('approve');
+            Route::post('{confirmation}/reject', [SettlementPaymentController::class, 'rejectConfirmation'])->name('reject');
+        });
         Route::get('bidders', [BidderApprovalController::class, 'queue'])->middleware('can:bidders.approve')->name('bidders.queue');
         Route::post('bidders/{approval}', [BidderApprovalController::class, 'decide'])->middleware('can:bidders.approve')->name('bidders.decide');
         Route::get('listings/{listing}/documents/{document}', [ListingAssetController::class, 'downloadDocument'])->middleware('can:listings.view')->name('listings.documents.download');
