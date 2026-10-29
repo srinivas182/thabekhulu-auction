@@ -3,8 +3,10 @@
 namespace App\Domains\Identity\Http\Controllers;
 
 use App\Domains\Access\Enums\SystemRole;
+use App\Domains\Audit\Support\Audit;
 use App\Domains\Identity\Actions\InviteStaff;
 use App\Domains\Identity\Actions\ManageStaff;
+use App\Domains\Identity\Enums\UserType;
 use App\Domains\Identity\Http\Requests\ChangeStaffRoleRequest;
 use App\Domains\Identity\Http\Requests\InviteStaffRequest;
 use App\Domains\Identity\Models\StaffInvitation;
@@ -12,6 +14,9 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -128,5 +133,31 @@ class StaffController extends Controller
             ->get(['name', 'label'])
             ->map(fn (Role $role): array => ['name' => $role->name, 'label' => (string) ($role->getAttribute('label') ?? $role->name)])
             ->all());
+    }
+
+    /**
+     * Create a staff account directly, for when email isn't set up. The system generates the temporary
+     * password (shown once); the person must choose their own at first sign-in.
+     */
+    public function create(Request $request, #[CurrentUser] User $actor): RedirectResponse
+    {
+        $data = $request->validate([
+            'first_name' => ['required', 'string', 'max:60'], 'last_name' => ['required', 'string', 'max:60'],
+            'email' => ['required', 'email:rfc', 'max:160', 'unique:users,email'],
+            'role' => ['required', Rule::in(array_column($this->staffRoleOptions(), 'name'))],
+        ], ['email.unique' => __('Someone already has an account with this email address.')]);
+        $role = $this->role($data['role']);
+        abort_if($role->name === SystemRole::SuperAdmin->value && ! $actor->hasRole(SystemRole::SuperAdmin->value), 403);
+
+        $temporary = Str::password(16, symbols: false);
+        $user = new User(['first_name' => $data['first_name'], 'last_name' => $data['last_name'], 'email' => mb_strtolower($data['email']), 'password' => $temporary]);
+        $user->forceFill(['type' => UserType::Staff, 'email_verified_at' => now(), 'must_change_password' => true])->save();
+        $user->assignRole($role);
+        Audit::record('staff', 'created_with_password', "Created staff account for {$user->email} ({$role->name}) with a temporary password", $user, $actor);
+
+        // Shown once to the person who created the account; never stored in readable form.
+        Inertia::flash('temporaryPassword', ['email' => $user->email, 'password' => $temporary]);
+
+        return back();
     }
 }

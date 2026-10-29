@@ -1,4 +1,14 @@
 import { Form, Head, router, usePage } from '@inertiajs/react';
+import { Check, Copy } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -40,6 +50,23 @@ const selectClass =
     'h-9 rounded-md border border-input bg-background px-3 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50';
 
 export default function StaffIndex({ staff, invitations, roles }: Props) {
+    // A temporary password is flashed once after "Add staff with a password"; shown here, never stored readable.
+    const flashed = (
+        usePage() as unknown as {
+            flash?: { temporaryPassword?: { email: string; password: string } };
+        }
+    ).flash?.temporaryPassword;
+    const [created, setCreated] = useState<{
+        email: string;
+        password: string;
+    } | null>(null);
+    const [copied, setCopied] = useState(false);
+    useEffect(() => {
+        if (flashed) {
+            setCreated(flashed);
+            setCopied(false);
+        }
+    }, [flashed]);
     const can = useCan();
     const { auth } = usePage().props;
 
@@ -144,6 +171,169 @@ export default function StaffIndex({ staff, invitations, roles }: Props) {
                         </Form>
                     </section>
                 )}
+
+                {can('staff.invite') && (
+                    <section
+                        aria-labelledby="direct-heading"
+                        className="rounded-xl border border-border bg-card p-5"
+                    >
+                        <h2 id="direct-heading" className="font-semibold">
+                            Add staff with a password
+                        </h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            For when email isn’t set up yet. We create a
+                            temporary password for you to pass on in person or
+                            by phone; they choose their own the first time they
+                            sign in.
+                        </p>
+                        <Form
+                            {...staffRoutes.create.form()}
+                            resetOnSuccess
+                            options={{ preserveScroll: true }}
+                            className="mt-4 grid gap-4 sm:grid-cols-2"
+                        >
+                            {({ processing, errors }) => (
+                                <>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="direct-first">
+                                            First name
+                                        </Label>
+                                        <Input
+                                            id="direct-first"
+                                            name="first_name"
+                                            required
+                                        />
+                                        <InputError
+                                            message={errors.first_name}
+                                        />
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="direct-last">
+                                            Last name
+                                        </Label>
+                                        <Input
+                                            id="direct-last"
+                                            name="last_name"
+                                            required
+                                        />
+                                        <InputError
+                                            message={errors.last_name}
+                                        />
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="direct-email">
+                                            Email (they sign in with it)
+                                        </Label>
+                                        <Input
+                                            id="direct-email"
+                                            name="email"
+                                            type="email"
+                                            required
+                                        />
+                                        <InputError message={errors.email} />
+                                    </div>
+                                    <div className="grid gap-1.5">
+                                        <Label htmlFor="direct-role">
+                                            Role
+                                        </Label>
+                                        <select
+                                            id="direct-role"
+                                            name="role"
+                                            required
+                                            defaultValue=""
+                                            className="h-9 rounded-md border border-input bg-background px-2 text-sm"
+                                        >
+                                            <option value="" disabled>
+                                                Choose a role
+                                            </option>
+                                            {roles.map((r) => (
+                                                <option
+                                                    key={r.name}
+                                                    value={r.name}
+                                                >
+                                                    {r.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <InputError message={errors.role} />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                        <Button disabled={processing}>
+                                            Create account
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
+                        </Form>
+                    </section>
+                )}
+
+                <Dialog
+                    open={created !== null}
+                    onOpenChange={(open) => !open && setCreated(null)}
+                >
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="font-display text-2xl">
+                                Account created
+                            </DialogTitle>
+                            <DialogDescription>
+                                Give these details to the new staff member in
+                                person or by phone, not by email. This password
+                                is shown only now; they’ll choose their own when
+                                they first sign in.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <dl className="grid gap-2 text-sm">
+                            <div>
+                                <dt className="text-muted-foreground">
+                                    Sign-in email
+                                </dt>
+                                <dd className="font-medium">
+                                    {created?.email}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt className="text-muted-foreground">
+                                    Temporary password
+                                </dt>
+                                <dd className="flex items-center gap-2">
+                                    <code className="rounded bg-muted px-2 py-1 font-mono text-base tracking-wide">
+                                        {created?.password}
+                                    </code>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                            void navigator.clipboard?.writeText(
+                                                created?.password ?? '',
+                                            );
+                                            setCopied(true);
+                                        }}
+                                    >
+                                        {copied ? (
+                                            <Check
+                                                className="size-4"
+                                                aria-hidden="true"
+                                            />
+                                        ) : (
+                                            <Copy
+                                                className="size-4"
+                                                aria-hidden="true"
+                                            />
+                                        )}
+                                        {copied ? 'Copied' : 'Copy'}
+                                    </Button>
+                                </dd>
+                            </div>
+                        </dl>
+                        <DialogFooter>
+                            <Button onClick={() => setCreated(null)}>
+                                Done
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 {invitations.length > 0 && (
                     <section className="rounded-xl border border-border bg-card">
