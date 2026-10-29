@@ -27,6 +27,8 @@ const labels: Record<string, string> = {
     database: 'Database',
     cache: 'Cache',
     queue: 'Queue',
+    migrations: 'Database updates',
+    uploads: 'Upload limits',
 };
 
 export default function AdminDashboard({ attention, groups, health }: Props) {

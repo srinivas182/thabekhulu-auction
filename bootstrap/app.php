@@ -13,6 +13,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -62,6 +63,17 @@ return Application::configure(basePath: dirname(__DIR__))
         );
 
         // Branded error pages outside local development.
+        // An upload bigger than PHP allows: tell the person plainly instead of showing an error page.
+        $exceptions->render(function (PostTooLargeException $e, Request $request) {
+            if ($request->header('X-Inertia')) {
+                Inertia::flash('toast', ['type' => 'error', 'message' => __('That file is too large to upload (the limit is :size). Please choose a smaller file, or a PDF instead of a photo.', ['size' => ini_get('upload_max_filesize')])]);
+
+                return back(303);
+            }
+
+            return null;
+        });
+
         $exceptions->respond(function (Response $response, Throwable $exception, Request $request) {
             $status = $response->getStatusCode();
 
