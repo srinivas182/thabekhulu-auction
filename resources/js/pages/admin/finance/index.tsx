@@ -17,6 +17,7 @@ import {
     index,
     resolve,
 } from '@/routes/admin/finance';
+import { settings as financeSettings } from '@/routes/admin/finance';
 import providers from '@/routes/admin/finance/providers';
 import refundRoutes from '@/routes/admin/finance/refunds';
 import confirmRoutes from '@/routes/admin/confirmations';
@@ -103,6 +104,8 @@ export default function Finance({
     imports,
     can,
 }: Props) {
+    const perms =
+        (usePage().props.auth as { permissions?: string[] }).permissions ?? [];
     const [rejectingConf, setRejectingConf] = useState<number | null>(null);
     const [rejectNote, setRejectNote] = useState('');
     const [confirming, setConfirming] = useState<{
@@ -136,28 +139,35 @@ export default function Finance({
                 <div className="flex flex-wrap items-end justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-3">
                         <h1 className="font-display text-3xl">Finance</h1>
-                        {(
-                            (usePage().props.auth as { permissions?: string[] })
-                                .permissions ?? []
-                        ).includes('payments.providers') && (
-                            <Link
-                                href={providers.index()}
-                                className="text-sm underline"
-                            >
-                                Payment providers
-                            </Link>
-                        )}
-                        {(
-                            (usePage().props.auth as { permissions?: string[] })
-                                .permissions ?? []
-                        ).includes('refunds.view') && (
-                            <Link
-                                href={refundRoutes.index()}
-                                className="text-sm underline"
-                            >
-                                Refunds
-                            </Link>
-                        )}
+                        <nav
+                            aria-label="Finance setup"
+                            className="flex flex-wrap gap-2"
+                        >
+                            {perms.includes('payments.providers') && (
+                                <Link
+                                    href={providers.index()}
+                                    className="rounded-[10px] border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-muted"
+                                >
+                                    Payment providers
+                                </Link>
+                            )}
+                            {perms.includes('settings.manage') && (
+                                <Link
+                                    href={financeSettings().url}
+                                    className="rounded-[10px] border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-muted"
+                                >
+                                    Trust account &amp; settings
+                                </Link>
+                            )}
+                            {perms.includes('refunds.view') && (
+                                <Link
+                                    href={refundRoutes.index()}
+                                    className="rounded-[10px] border border-input bg-card px-3 py-1.5 text-sm font-semibold hover:bg-muted"
+                                >
+                                    Refunds
+                                </Link>
+                            )}
+                        </nav>
                     </div>
                     {can.reconcile && (
                         <Form
