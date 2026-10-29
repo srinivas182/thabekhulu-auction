@@ -92,4 +92,23 @@ class SettlementCase extends Model
 
         return null;
     }
+
+    /** @return HasMany<SettlementMessage, $this> */
+    public function messages(): HasMany
+    {
+        return $this->hasMany(SettlementMessage::class)->orderBy('id');
+    }
+
+    public function note(string $author, string $kind, ?string $body = null, ?int $userId = null, ?int $uploadId = null): void
+    {
+        $this->messages()->create(['author' => $author, 'kind' => $kind, 'body' => $body, 'user_id' => $userId, 'settlement_upload_id' => $uploadId, 'created_at' => now()]);
+    }
+
+    /** A staff question the buyer hasn't answered yet (no buyer reply or upload since). */
+    public function hasOpenQuestion(): bool
+    {
+        $lastQuestion = $this->messages()->where('kind', 'question')->max('id');
+
+        return $lastQuestion !== null && ! $this->messages()->where('author', 'buyer')->where('id', '>', $lastQuestion)->exists();
+    }
 }

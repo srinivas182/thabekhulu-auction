@@ -16,6 +16,15 @@ type C = {
     offerExpires: string | null;
     steps: { label: string; done: boolean }[];
     transfer: { key: string; label: string; doneOn: string | null }[];
+    messages: {
+        author: string;
+        kind: string;
+        body: string | null;
+        by: string | null;
+        at: string;
+        upload: number | null;
+    }[];
+    openQuestion: boolean;
     balance: {
         reference: string;
         price: number;
@@ -50,7 +59,11 @@ export default function Purchases({ cases, bank }: { cases: C[]; bank: Bank }) {
                     {cases.map((c) => (
                         <li
                             key={c.ulid}
-                            className="grid gap-3 rounded-[18px] border border-border bg-card p-5"
+                            className={
+                                c.openQuestion
+                                    ? 'grid gap-3 rounded-[18px] border-2 border-brand-accent bg-card p-5'
+                                    : 'grid gap-3 rounded-[18px] border border-border bg-card p-5'
+                            }
                         >
                             <div className="flex flex-wrap justify-between gap-2">
                                 <p className="font-display text-2xl">
@@ -169,6 +182,7 @@ export default function Purchases({ cases, bank }: { cases: C[]; bank: Bank }) {
                             {c.status === 'open' && (
                                 <PayAndUpload c={c} bank={bank} />
                             )}
+                            <PurchaseConversation c={c} />
                         </li>
                     ))}
                 </ul>
@@ -351,5 +365,86 @@ function PayAndUpload({ c, bank }: { c: C; bank: Bank }) {
                 )}
             </section>
         </div>
+    );
+}
+
+/** Questions from Thabekhulu about this purchase, the buyer's replies and uploads, and decisions. */
+function PurchaseConversation({ c }: { c: C }) {
+    if (c.messages.length === 0) {
+        return null;
+    }
+    const label: Record<string, string> = {
+        question: 'asked',
+        reply: 'replied',
+        upload: 'uploaded',
+        accepted: 'accepted',
+        rejected: 'asked for a new upload',
+    };
+
+    return (
+        <section
+            aria-labelledby={`conv-${c.ulid}`}
+            className="grid gap-3 rounded-[14px] bg-muted/40 p-4 text-sm"
+        >
+            <h3 id={`conv-${c.ulid}`} className="font-semibold">
+                {c.openQuestion
+                    ? 'We have a question for you'
+                    : 'Messages about this purchase'}
+            </h3>
+            <ol className="grid gap-2">
+                {c.messages.map((m, i) => (
+                    <li
+                        key={i}
+                        className={
+                            m.author === 'buyer'
+                                ? 'ml-6 rounded-lg bg-background/80 px-3 py-2'
+                                : 'mr-6 rounded-lg bg-background px-3 py-2'
+                        }
+                    >
+                        <span className="block text-xs text-muted-foreground">
+                            {m.author === 'buyer' ? 'You' : 'Thabekhulu'}{' '}
+                            {label[m.kind] ?? m.kind} · {m.at}
+                        </span>
+                        {m.body}
+                    </li>
+                ))}
+            </ol>
+            <Form
+                action={purchases.reply(c.ulid).url}
+                method="post"
+                options={{ preserveScroll: true }}
+                resetOnSuccess
+                className="grid gap-2"
+            >
+                {({ processing, errors }) => (
+                    <>
+                        <label
+                            htmlFor={`reply-${c.ulid}`}
+                            className="font-semibold"
+                        >
+                            Your reply
+                        </label>
+                        <textarea
+                            id={`reply-${c.ulid}`}
+                            name="reply"
+                            rows={3}
+                            placeholder="Answer here. If we asked for a document, upload it above as well."
+                            className="w-full rounded-[10px] border border-input bg-background px-3 py-2"
+                        />
+                        {errors.reply && (
+                            <span className="text-destructive">
+                                {errors.reply}
+                            </span>
+                        )}
+                        <button
+                            disabled={processing}
+                            className="w-fit rounded-[10px] bg-primary px-4 py-2 font-semibold text-primary-foreground"
+                        >
+                            Send reply
+                        </button>
+                    </>
+                )}
+            </Form>
+        </section>
     );
 }

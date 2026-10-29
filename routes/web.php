@@ -139,6 +139,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('account/purchases', [SettlementController::class, 'mine'])->name('account.purchases');
     Route::post('account/purchases/{case}/balance-proof', [SettlementPaymentController::class, 'balanceProof'])->middleware('throttle:10,1')->name('account.purchases.balance-proof');
     Route::post('account/purchases/{case}/agreement', [SettlementPaymentController::class, 'agreement'])->middleware('throttle:10,1')->name('account.purchases.agreement');
+    Route::post('account/purchases/{case}/reply', [SettlementPaymentController::class, 'reply'])->middleware('throttle:10,1')->name('account.purchases.reply');
     Route::post('account/purchases/{case}/accept', [SettlementController::class, 'accept'])->middleware('throttle:10,1')->name('account.purchases.accept');
     Route::post('account/purchases/{case}/decline', [SettlementController::class, 'decline'])->middleware('throttle:10,1')->name('account.purchases.decline');
     Route::get('account/notifications', [NotificationPreferenceController::class, 'show'])->name('account.notifications');
@@ -217,6 +218,7 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
         Route::middleware('can:settlement.manage')->group(function () {
             Route::get('settlement-uploads/{upload}', [SettlementPaymentController::class, 'file'])->name('settlement-uploads.file');
             Route::post('settlement-uploads/{upload}/accept', [SettlementPaymentController::class, 'acceptUpload'])->name('settlement-uploads.accept');
+            Route::post('settlement-cases/{case}/questions', [SettlementPaymentController::class, 'ask'])->middleware('throttle:30,1')->name('settlement.questions');
             Route::post('settlement-uploads/{upload}/reject', [SettlementPaymentController::class, 'rejectUpload'])->name('settlement-uploads.reject');
         });
         Route::get('balances/{payment}/proof', [SettlementPaymentController::class, 'balanceProofFile'])->middleware('can:deposits.view')->name('balances.proof');

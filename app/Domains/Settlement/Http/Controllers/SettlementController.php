@@ -66,6 +66,7 @@ class SettlementController extends Controller
         return Inertia::render('admin/settlement/show', [
             'case' => [
                 'uploads' => $uploads,
+                'messages' => $case->messages()->with('user')->get()->map(fn ($m) => $m->present())->values(), 'openQuestion' => $case->hasOpenQuestion(),
                 'balance' => $balance === null ? null : ['reference' => $balance->reference, 'due' => $balance->amount_due, 'received' => $balance->received,
                     'status' => SettlementPayment::STATUSES[$balance->status], 'proofUrl' => $balance->proof_path ? route('admin.balances.proof', $balance) : null],
                 'ulid' => $case->ulid, 'listing' => $case->listing->title, 'mining' => $case->listing->category->slug === 'mining', 'kind' => $case->kind,
@@ -176,6 +177,7 @@ class SettlementController extends Controller
                 'offerExpires' => $c->offer_expires_at?->setTimezone($tz)->format('j F Y, H:i'),
                 'steps' => collect(SettlementCase::STEPS)->map(fn ($label, $key) => ['label' => $label, 'done' => $c->steps->contains('step', $key)])->values(),
                 'transfer' => $c->status === 'completed' ? self::transfer($c)['stages'] : [],
+                'messages' => $c->messages()->with('user')->get()->map(fn ($m) => $m->present())->values(), 'openQuestion' => $c->hasOpenQuestion(),
                 'balance' => $c->status === 'open' && $c->kind === 'sale' ? (function () use ($c) {
                     $p = app(SettlementPayments::class)->forCase($c);
                     $b = SettlementPayments::breakdown($c);
