@@ -2,6 +2,7 @@
 
 use App\Domains\Cms\Models\MenuItem;
 use App\Domains\Cms\Models\Page;
+use App\Domains\Settings\Settings\GeneralSettings;
 use Database\Seeders\AccessSeeder;
 use Database\Seeders\CatalogueSeeder;
 use Database\Seeders\CmsSeeder;
@@ -51,6 +52,14 @@ it('fills the buyer’s guide, fees and legal pages, marking legal drafts for th
         $this->get("/{$slug}")->assertOk();
     }
     expect(json_encode(Page::where('slug', 'rules-of-auction')->value('blocks')))->toContain('Consumer Protection Act');
+
+    // No [placeholders] left anywhere, and the company details are in place.
+    foreach (['about', 'how-it-works', 'buyers-guide', 'rules-of-auction', 'fees', 'privacy', 'paia-manual', 'disclaimer', 'contact'] as $slug) {
+        expect(json_encode(Page::where('slug', $slug)->value('blocks'), JSON_UNESCAPED_UNICODE))->not->toMatch('/\\[[A-Za-z]/');
+    }
+    expect(html_entity_decode(json_encode(Page::where('slug', 'contact')->value('blocks'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)))->toContain('+27 61 961 1898')->toContain('admin@stevemaqueens.co.za');
+    expect(json_encode(Page::where('slug', 'paia-manual')->value('blocks')))->toContain('Nonstikelelo');
+    expect(app(GeneralSettings::class)->contact_email)->toBe('admin@stevemaqueens.co.za');
 
     // Pages someone has edited are never overwritten.
     Page::where('slug', 'fees')->update(['blocks' => [], 'needs_content' => false]);
