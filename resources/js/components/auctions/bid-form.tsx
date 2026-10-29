@@ -2,6 +2,7 @@ import { router, usePage } from '@inertiajs/react';
 import { Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { rand } from '@/lib/money';
+import { cn } from '@/lib/utils';
 import { bid } from '@/routes/auctions';
 
 export type AuctionLive = {
@@ -146,17 +147,31 @@ export default function BidForm({
                             </span>
                         )}
                     </label>
-                    <label className="flex items-start gap-2.5 text-sm">
+                    <label
+                        className={cn(
+                            'flex cursor-pointer items-start gap-3 rounded-[12px] border p-3.5 transition-colors',
+                            useMax
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:bg-muted/50',
+                        )}
+                    >
                         <input
                             type="checkbox"
                             checked={useMax}
                             onChange={(e) => setUseMax(e.target.checked)}
-                            className="mt-0.5 size-5 accent-primary"
+                            className="mt-0.5 size-6 shrink-0 cursor-pointer accent-primary"
                         />
-                        <span>
-                            Set a maximum and let us bid for you, only as much
-                            as needed, up to that amount. Nobody, including our
-                            staff, can see your maximum.
+                        <span className="grid gap-1 text-sm">
+                            <span className="font-semibold">
+                                Bid automatically up to a maximum
+                            </span>
+                            <span className="text-muted-foreground">
+                                Tell us the most you’ll pay. When someone
+                                outbids you, we raise your bid by the next step
+                                for you, only as much as needed, never above
+                                your maximum. Nobody, including our staff, can
+                                see it.
+                            </span>
                         </span>
                     </label>
                     {useMax && (
