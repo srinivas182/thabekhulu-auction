@@ -170,7 +170,7 @@ Route::middleware('signed')->prefix('q')->name('quotes.public.')->group(function
 /*
 | Back office: staff only, two-factor required, every page permission-checked
 */
-Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
+Route::middleware(['auth', 'verified', 'staff', 'password.fresh', 'staff.2fa', 'admin.ip'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
@@ -178,6 +178,7 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
 
         Route::get('staff', [StaffController::class, 'index'])->middleware('can:staff.view')->name('staff.index');
         Route::post('staff/invitations', [StaffController::class, 'invite'])->middleware('can:staff.invite')->name('staff.invite');
+        Route::post('staff', [StaffController::class, 'create'])->middleware(['can:staff.invite', 'throttle:20,1'])->name('staff.create');
         Route::delete('staff/invitations/{invitation}', [StaffController::class, 'revokeInvitation'])->middleware('can:staff.invite')->name('staff.invitations.revoke');
         Route::put('staff/{user}/role', [StaffController::class, 'changeRole'])->middleware('can:staff.invite')->name('staff.role');
         Route::post('staff/{user}/deactivate', [StaffController::class, 'deactivate'])->middleware('can:staff.deactivate')->name('staff.deactivate');

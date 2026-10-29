@@ -35,6 +35,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $email
  * @property string|null $mobile
  * @property Carbon|null $email_verified_at
+ * @property bool $must_change_password
  * @property string $password
  * @property string|null $terms_version
  * @property Carbon|null $terms_accepted_at
@@ -74,6 +75,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return [
             'type' => UserType::class,
             'email_verified_at' => 'datetime',
+            'must_change_password' => 'boolean',
             'whatsapp_opt_in_at' => 'datetime',
             'attribution' => 'array',
             'password' => 'hashed',

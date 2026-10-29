@@ -61,6 +61,9 @@ class SecurityController extends Controller
         $user->update([
             'password' => $request->password,
         ]);
+        if ($user->must_change_password) {
+            $user->forceFill(['must_change_password' => false])->save(); // the temporary password is gone
+        }
 
         Audit::record('auth', 'password_changed', 'Password changed', $user, $user);
 

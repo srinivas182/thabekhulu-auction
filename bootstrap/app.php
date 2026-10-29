@@ -10,6 +10,7 @@ use App\Domains\Settings\Http\Middleware\ApplyRuntimeSettings;
 use App\Domains\Settings\Http\Middleware\RestrictAdminIp;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequireFreshPassword;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'feature' => EnsureFeature::class,
             'staff' => EnsureStaff::class,
             'staff.2fa' => RequireStaffTwoFactor::class,
+            'password.fresh' => RequireFreshPassword::class,
             'admin.ip' => RestrictAdminIp::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
