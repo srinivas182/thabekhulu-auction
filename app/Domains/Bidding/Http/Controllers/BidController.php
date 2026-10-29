@@ -7,11 +7,13 @@ use App\Domains\Bidding\Actions\BidEngine;
 use App\Domains\Bidding\Actions\TenderService;
 use App\Domains\Bidding\Support\StepUp;
 use App\Domains\Listings\Models\Listing;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 /** Buyer bids (6a). Large bids need a one-time code (B6). */
@@ -41,6 +43,9 @@ class BidController extends Controller
         ]);
         $amount = (int) $data['amount'];
         $maximum = isset($data['maximum']) ? (int) $data['maximum'] : null;
+        if ($maximum !== null && $maximum > $amount && ! app(AuctionSettings::class)->auto_bid_enabled) {
+            throw ValidationException::withMessages(['maximum' => __('Automatic bidding is switched off. Enter the amount you want to bid.')]);
+        }
 
         StepUp::verify($listing, $user, max($amount, $maximum ?? 0), $data['otp'] ?? null);
 

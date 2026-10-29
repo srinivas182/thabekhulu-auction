@@ -21,6 +21,7 @@ export type BidderState = {
     opens: string | null;
     advanceMax: number | null;
     otpFrom: number | null;
+    autoBid: boolean;
     entities: { ulid: string; name: string; verified: boolean }[];
 } | null;
 
@@ -87,7 +88,7 @@ export default function BidderPanel({
                             Pay deposit
                         </Link>
                     </>
-                ) : state.scheduled && !state.sealed ? (
+                ) : state.scheduled && !state.sealed && state.autoBid ? (
                     <AdvanceMaximum
                         ulid={ulid}
                         state={state}

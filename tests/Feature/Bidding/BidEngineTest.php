@@ -234,7 +234,7 @@ it('asks for a code by the chosen mode: off, first bid in each auction, or every
 
 it('saves the auction rules, rejecting increment bands out of order', function () {
     $admin = User::factory()->staff(SystemRole::SuperAdmin)->create();
-    $rules = ['step_up_mode' => 'first', 'step_up_threshold' => 2000000, 'soft_close_enabled' => true, 'soft_close_window_minutes' => 3,
+    $rules = ['step_up_mode' => 'first', 'step_up_threshold' => 2000000, 'auto_bid_enabled' => true, 'soft_close_enabled' => true, 'soft_close_window_minutes' => 3,
         'soft_close_extension_minutes' => 3, 'closing_soon_hours' => 24];
 
     $this->actingAs($admin)->put(route('admin.settings.auction-rules.update'), $rules + ['increment_bands' => [['upTo' => 5000000, 'step' => 25000], ['upTo' => 1000000, 'step' => 10000], ['upTo' => null, 'step' => 50000]]])
@@ -246,4 +246,24 @@ it('saves the auction rules, rejecting increment bands out of order', function (
     expect($saved->step_up_mode)->toBe('first')->and($saved->increment_bands)->toBe([[2000000, 20000], [null, 40000]])
         ->and(Increments::at(1500000))->toBe(20000);
     $this->actingAs(User::factory()->staff(SystemRole::Finance)->create())->get(route('admin.settings.auction-rules'))->assertForbidden();
+});
+
+it('keeps automatic bidding on by default; switched off, refuses new maximums but honours existing ones', function () {
+    $rules = app(AuctionSettings::class);
+    expect($rules->auto_bid_enabled)->toBeTrue();
+    $listing = test()->listing;
+    $a = bidder('Auto', 'Holder', '5151');
+    $b = bidder('Manual', 'Bidder', '5252');
+    $engine = app(BidEngine::class);
+    $engine->place($listing, $a, 1000000, 1200000);                            // set while switched on
+
+    $rules->auto_bid_enabled = false;
+    $rules->save();
+
+    $this->actingAs($b)->post(route('auctions.bid', $listing->ulid), ['amount' => 1025000, 'maximum' => 1500000])->assertSessionHasErrors('maximum');
+    $this->actingAs($b)->post(route('auctions.bid', $listing->ulid), ['amount' => 1025000])->assertSessionHasNoErrors();
+
+    $state = BidEngine::state($listing->fresh());
+    expect(BidderApproval::whereKey($state->leader_approval_id)->value('bidder_number'))->toBe('5151')    // A's existing maximum still defends
+        ->and($state->current_amount)->toBe(1050000);
 });

@@ -14,6 +14,7 @@ type Rules = {
     step_up_mode: 'off' | 'first' | 'every' | 'threshold';
     step_up_threshold: number;
     increment_bands: Band[];
+    auto_bid_enabled: boolean;
     soft_close_enabled: boolean;
     soft_close_window_minutes: number;
     soft_close_extension_minutes: number;
@@ -247,6 +248,38 @@ export default function AuctionRules({ rules }: { rules: Rules }) {
                         </Button>
                     </div>
                     <InputError message={errors.increment_bands} />
+                </section>
+                <section
+                    aria-labelledby="auto-h"
+                    className="grid gap-3 rounded-xl border border-border bg-card p-5"
+                >
+                    <h2 id="auto-h" className="font-semibold">
+                        Automatic bidding
+                    </h2>
+                    <label className="flex cursor-pointer items-start gap-3 text-sm">
+                        <input
+                            type="checkbox"
+                            checked={f.auto_bid_enabled}
+                            onChange={(e) =>
+                                setF({
+                                    ...f,
+                                    auto_bid_enabled: e.target.checked,
+                                })
+                            }
+                            className="mt-0.5 size-5 accent-primary"
+                        />
+                        <span>
+                            <span className="font-semibold">
+                                Let buyers set a maximum and bid automatically
+                            </span>
+                            <span className="block text-muted-foreground">
+                                Recommended: buyers who can’t watch every minute
+                                still compete fairly. If switched off, buyers
+                                can’t set new maximums; maximums already set
+                                keep working until those auctions close.
+                            </span>
+                        </span>
+                    </label>
                 </section>
 
                 <section

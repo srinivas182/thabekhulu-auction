@@ -23,7 +23,7 @@ class AuctionRulesController extends Controller
         return Inertia::render('admin/settings/auction-rules', ['rules' => [
             'step_up_mode' => StepUp::mode(), 'step_up_threshold' => $s->step_up_threshold,
             'increment_bands' => array_map(fn (array $b) => ['upTo' => $b[0], 'step' => $b[1]], $s->increment_bands),
-            'soft_close_enabled' => $s->soft_close_enabled, 'soft_close_window_minutes' => $s->soft_close_window_minutes,
+            'auto_bid_enabled' => $s->auto_bid_enabled, 'soft_close_enabled' => $s->soft_close_enabled, 'soft_close_window_minutes' => $s->soft_close_window_minutes,
             'soft_close_extension_minutes' => $s->soft_close_extension_minutes, 'closing_soon_hours' => $s->closing_soon_hours,
         ]]);
     }
@@ -36,6 +36,7 @@ class AuctionRulesController extends Controller
             'increment_bands' => ['required', 'array', 'min:1', 'max:12'],
             'increment_bands.*.upTo' => ['nullable', 'integer', 'min:1'],
             'increment_bands.*.step' => ['required', 'integer', 'min:1', 'max:100000000'],
+            'auto_bid_enabled' => ['required', 'boolean'],
             'soft_close_enabled' => ['required', 'boolean'],
             'soft_close_window_minutes' => ['required', 'integer', 'min:1', 'max:60'],
             'soft_close_extension_minutes' => ['required', 'integer', 'min:1', 'max:60'],
@@ -53,17 +54,18 @@ class AuctionRulesController extends Controller
             $previous = (int) ($band['upTo'] ?? $previous);
         }
 
-        $before = ['mode' => StepUp::mode(), 'bands' => $s->increment_bands];
+        $before = ['mode' => StepUp::mode(), 'bands' => $s->increment_bands, 'auto_bid' => $s->auto_bid_enabled];
         $s->step_up_mode = $data['step_up_mode'];
         $s->step_up_threshold = (int) $data['step_up_threshold'];
         $s->increment_bands = array_map(fn (array $b) => [$b['upTo'] === null ? null : (int) $b['upTo'], (int) $b['step']], $bands);
+        $s->auto_bid_enabled = (bool) $data['auto_bid_enabled'];
         $s->soft_close_enabled = (bool) $data['soft_close_enabled'];
         $s->soft_close_window_minutes = (int) $data['soft_close_window_minutes'];
         $s->soft_close_extension_minutes = (int) $data['soft_close_extension_minutes'];
         $s->closing_soon_hours = (int) $data['closing_soon_hours'];
         $s->save();
 
-        Audit::record('settings', 'auction_rules_updated', 'Updated the auction rules', null, $actor, ['before' => $before, 'after' => ['mode' => $s->step_up_mode, 'bands' => $s->increment_bands]]);
+        Audit::record('settings', 'auction_rules_updated', 'Updated the auction rules', null, $actor, ['before' => $before, 'after' => ['mode' => $s->step_up_mode, 'bands' => $s->increment_bands, 'auto_bid' => $s->auto_bid_enabled]]);
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Auction rules saved. They apply to bids from now on.')]);
 
         return back();
