@@ -5,6 +5,7 @@ namespace App\Domains\Verification\Http\Controllers;
 use App\Domains\Audit\Support\Audit;
 use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Models\BankAccount;
+use App\Domains\Verification\Models\BankMessage;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\BiddingEntity;
 use App\Domains\Verification\Models\ProofOfFunds;
@@ -115,6 +116,11 @@ class KycReviewController extends Controller
                 'type' => BankAccount::TYPES[$bank->account_type] ?? $bank->account_type, 'holder' => $bank->holder_name, 'status' => $bank->status,
                 'locked' => $bank->locked, 'proofUrl' => $bank->proof_path ? route('admin.kyc.bank-proof', $bank) : null,
             ],
+            'bankMessages' => BankMessage::thread($user->id),
+            'previousBanks' => BankAccount::where('user_id', $user->id)->where('id', '!=', $bank->id ?? 0)->latest('id')->get()->map(fn (BankAccount $b) => [
+                'id' => $b->id, 'bank' => $b->bank, 'last4' => $b->account_last4, 'holder' => $b->holder_name, 'status' => $b->status,
+                'at' => $b->created_at?->setTimezone((string) config('platform.display_timezone'))->format('j M Y, H:i'), 'proofUrl' => $b->proof_path ? route('admin.kyc.bank-proof', $b) : null,
+            ]),
             'screeningResults' => Screening::RESULTS,
             'can' => ['approve' => Gate::allows('kyc.approve'), 'reject' => Gate::allows('kyc.reject')],
         ]);
@@ -211,20 +217,28 @@ class KycReviewController extends Controller
 
     public function decideBank(Request $request, BankAccount $bank, #[CurrentUser] User $actor): RedirectResponse
     {
-        $data = $request->validate(['decision' => ['required', Rule::in(['verify', 'reject'])], 'reason' => ['nullable', 'required_if:decision,reject', 'string', 'max:500']]);
+        $data = $request->validate(['decision' => ['required', Rule::in(['verify', 'reject', 'info'])], 'reason' => ['nullable', 'required_if:decision,reject,info', 'string', 'max:1000']]);
         abort_unless(Gate::allows($data['decision'] === 'verify' ? 'kyc.approve' : 'kyc.reject'), 403);
+        abort_unless(in_array($bank->status, ['pending', 'info_requested'], true), 422, 'This account has already been decided.');
 
         if ($data['decision'] === 'verify') {
             $bank->forceFill(['status' => 'verified', 'verified_by' => $actor->id, 'verified_at' => now(), 'rejection_reason' => null])->save();
             $bank->user->notify(new KycUpdate('bank_verified'));
+            BankMessage::note($bank->user_id, $bank->id, 'reviewer', 'verified', null, $actor->id);
+        } elseif ($data['decision'] === 'info') {
+            // Neither verified nor rejected: the buyer replies and/or submits a corrected letter.
+            $bank->forceFill(['status' => 'info_requested', 'rejection_reason' => null])->save();
+            $bank->user->notify(new KycUpdate('bank_info', $data['reason']));
+            BankMessage::note($bank->user_id, $bank->id, 'reviewer', 'info_request', $data['reason'], $actor->id);
         } else {
             $bank->forceFill(['status' => 'rejected', 'rejection_reason' => $data['reason']])->save();
             $bank->user->notify(new KycUpdate('bank_rejected', $data['reason']));
+            BankMessage::note($bank->user_id, $bank->id, 'reviewer', 'rejected', $data['reason'], $actor->id);
         }
 
-        Audit::record('kyc', "bank_{$data['decision']}", ($data['decision'] === 'verify' ? 'Verified' : 'Rejected')." bank account of {$bank->user->name}", $bank, $actor, ['reason' => $data['reason'] ?? null]);
+        Audit::record('kyc', "bank_{$data['decision']}", ['verify' => 'Verified', 'reject' => 'Rejected', 'info' => 'Asked for more about'][$data['decision']]." the bank account of {$bank->user->name}", $bank, $actor, ['reason' => $data['reason'] ?? null]);
 
-        return $this->done($data['decision'] === 'verify' ? 'Bank account verified.' : 'Bank account rejected; the buyer has been emailed.');
+        return $this->done(['verify' => 'Bank account verified.', 'reject' => 'Bank account rejected; the buyer has been emailed.', 'info' => 'Request sent; the buyer has been emailed and can reply or submit a corrected letter.'][$data['decision']]);
     }
 
     /** @return Builder<Verification> */

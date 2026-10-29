@@ -13,7 +13,7 @@ class KycUpdate extends Notification implements ShouldQueue
 {
     use Queueable;
 
-    /** @param 'verified'|'rejected'|'info'|'bank_verified'|'bank_rejected' $kind */
+    /** @param 'verified'|'rejected'|'info'|'bank_verified'|'bank_rejected'|'bank_info' $kind */
     public function __construct(public readonly string $kind, public readonly ?string $reason = null) {}
 
     /** @return list<string> */
@@ -31,6 +31,7 @@ class KycUpdate extends Notification implements ShouldQueue
             'rejected' => TemplateMail::make('kyc.rejected', $vars, route('account.verification')),
             'info' => TemplateMail::make('kyc.more_info', $vars, route('account.verification')),
             'bank_verified' => TemplateMail::make('bank.verified', $vars),
+            'bank_info' => TemplateMail::make('bank.more_info', $vars, route('account.bank')),
             default => TemplateMail::make('bank.rejected', $vars, route('account.bank')),
         };
     }

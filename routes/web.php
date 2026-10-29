@@ -146,6 +146,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('account/notifications', [NotificationPreferenceController::class, 'update'])->name('account.notifications.update');
     Route::get('account/bank', [BankAccountController::class, 'show'])->name('account.bank');
     Route::post('account/bank', [BankAccountController::class, 'store'])->middleware('throttle:10,1')->name('account.bank.store');
+    Route::post('account/bank/reply', [BankAccountController::class, 'reply'])->middleware('throttle:10,1')->name('account.bank.reply');
     Route::prefix('account/verification')->name('account.verification')->group(function () {
         Route::get('/', [BuyerVerificationController::class, 'show']);
         Route::post('identity', [BuyerVerificationController::class, 'identity'])->name('.identity');
