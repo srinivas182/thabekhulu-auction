@@ -28,13 +28,32 @@ it('fills About and How it works, keeps them marked for review, and adds Home fi
     $this->get('/')->assertInertia(fn ($p) => $p->where('site.header.0.label', 'Home'));
 });
 
-it('never overwrites an edited page or touches the legal pages', function () {
+it('never overwrites an edited page, including a legal page the attorney has written', function () {
     $about = Page::where('slug', 'about')->first();
     $about->update(['blocks' => [['type' => 'rich_text', 'html' => '<p>Our own words.</p>']], 'needs_content' => false]);
-    $rules = Page::where('slug', 'rules-of-auction')->first()->blocks;
+    Page::where('slug', 'rules-of-auction')->update(['blocks' => [['type' => 'rich_text', 'html' => '<p>Attorney’s rules.</p>']], 'needs_content' => false]);
 
     $this->artisan('content:starter')->assertSuccessful();
 
     expect(Page::where('slug', 'about')->first()->blocks[0]['html'])->toBe('<p>Our own words.</p>')
-        ->and(Page::where('slug', 'rules-of-auction')->first()->blocks)->toBe($rules);
+        ->and(Page::where('slug', 'rules-of-auction')->first()->blocks[0]['html'])->toBe('<p>Attorney’s rules.</p>');
+});
+
+it('fills the buyer’s guide, fees and legal pages, marking legal drafts for the attorney', function () {
+    $this->seed([AccessSeeder::class, CatalogueSeeder::class, CmsSeeder::class]);
+    $this->artisan('content:starter')->assertSuccessful();
+
+    foreach (['buyers-guide', 'rules-of-auction', 'fees', 'privacy', 'paia-manual', 'disclaimer'] as $slug) {
+        $page = Page::where('slug', $slug)->firstOrFail();
+        $html = json_encode($page->blocks);
+        expect($page->blocks)->not->toBeEmpty()->and($page->needs_content)->toBeTrue();
+        expect(str_contains($html, 'Draft for review'))->toBe(in_array($slug, ['rules-of-auction', 'privacy', 'paia-manual', 'disclaimer'], true));
+        $this->get("/{$slug}")->assertOk();
+    }
+    expect(json_encode(Page::where('slug', 'rules-of-auction')->value('blocks')))->toContain('Consumer Protection Act');
+
+    // Pages someone has edited are never overwritten.
+    Page::where('slug', 'fees')->update(['blocks' => [], 'needs_content' => false]);
+    $this->artisan('content:starter')->assertSuccessful();
+    expect(Page::where('slug', 'fees')->first()->blocks)->toBe([]);
 });
