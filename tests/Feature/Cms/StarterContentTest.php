@@ -60,6 +60,8 @@ it('fills the buyer’s guide, fees and legal pages, marking legal drafts for th
     expect(html_entity_decode(json_encode(Page::where('slug', 'contact')->value('blocks'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)))->toContain('+27 61 961 1898')->toContain('admin@stevemaqueens.co.za');
     expect(json_encode(Page::where('slug', 'paia-manual')->value('blocks')))->toContain('Nonstikelelo');
     expect(app(GeneralSettings::class)->contact_email)->toBe('admin@stevemaqueens.co.za');
+    expect(app(GeneralSettings::class)->office_address)->toContain('Durban, 4001');
+    expect(json_encode(Page::where('slug', 'contact')->value('blocks')))->toContain('Durban, 4001');
 
     // Pages someone has edited are never overwritten.
     Page::where('slug', 'fees')->update(['blocks' => [], 'needs_content' => false]);
