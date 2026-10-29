@@ -46,7 +46,55 @@ class HealthCheck
 
                 return $connection;
             }),
+            'migrations' => $this->migrations(),
+            'uploads' => $this->uploads(),
         ];
+    }
+
+    /**
+     * Database updates shipped with the code but not yet run: features that need them fail with a server error.
+     *
+     * @return array{ok: bool, detail: string}
+     */
+    private function migrations(): array
+    {
+        try {
+            $files = array_keys(app('migrator')->getMigrationFiles([database_path('migrations')]));
+            $ran = DB::table('migrations')->pluck('migration')->all();
+            $pending = count(array_diff($files, $ran));
+
+            return $pending === 0
+                ? ['ok' => true, 'detail' => 'Up to date']
+                : ['ok' => false, 'detail' => "{$pending} pending: run php artisan migrate --force"];
+        } catch (Throwable $e) {
+            report($e);
+
+            return ['ok' => false, 'detail' => 'Unavailable'];
+        }
+    }
+
+    /**
+     * PHP's upload limits must allow the app's 10 MB documents (cPanel defaults are 2 MB and 8 MB).
+     *
+     * @return array{ok: bool, detail: string}
+     */
+    private function uploads(): array
+    {
+        $bytes = function (string $v): int {
+            $v = trim($v);
+            $n = (int) $v;
+
+            return match (strtolower(substr($v, -1))) {
+                'g' => $n * 1024 ** 3, 'm' => $n * 1024 ** 2, 'k' => $n * 1024, default => $n
+            };
+        };
+        $upload = (string) ini_get('upload_max_filesize');
+        $post = (string) ini_get('post_max_size');
+        $ok = $bytes($upload) >= 10 * 1024 ** 2 && $bytes($post) >= 12 * 1024 ** 2;
+
+        return ['ok' => $ok, 'detail' => $ok
+            ? "Files up to {$upload}"
+            : "Files limited to {$upload} (request {$post}): set upload_max_filesize=20M and post_max_size=25M in MultiPHP INI Editor"];
     }
 
     /**

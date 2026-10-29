@@ -36,6 +36,7 @@ type V = {
     expiresAt: string | null;
 };
 type Props = {
+    bankStatus: string | null;
     verification: V | null;
     maritalOptions: Record<string, string>;
     countries: Record<string, string>;
@@ -137,6 +138,7 @@ function FileField({
 
 export default function Verification({
     verification: v,
+    bankStatus,
     maritalOptions,
     countries,
     user,
@@ -187,8 +189,28 @@ export default function Verification({
                         label="Verify identity"
                         state={v?.status === 'verified' ? 'done' : 'current'}
                     />
-                    <Step n={3} label="Refund bank account" state="todo" />
-                    <Step n={4} label="Ready to bid" state="todo" />
+                    <Step
+                        n={3}
+                        label="Refund bank account"
+                        state={
+                            bankStatus === 'verified'
+                                ? 'done'
+                                : v?.status === 'verified'
+                                  ? 'current'
+                                  : 'todo'
+                        }
+                    />
+                    <Step
+                        n={4}
+                        label="Ready to bid"
+                        state={
+                            v?.status === 'verified' &&
+                            !v.expired &&
+                            bankStatus === 'verified'
+                                ? 'done'
+                                : 'todo'
+                        }
+                    />
                 </ol>
 
                 <div className="mt-9 flex flex-wrap items-start gap-10">

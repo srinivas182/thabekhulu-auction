@@ -16,6 +16,7 @@ use App\Domains\Payments\Actions\DepositService;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Payments\Notifications\DepositsOpen;
 use App\Domains\Payments\Support\DepositReference;
+use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Screening;
 use App\Domains\Verification\Models\Verification;
@@ -186,4 +187,26 @@ it('attaches evidence to a compliance sign-off, kept on record and opened only b
 
     $this->actingAs($admin)->delete(route('admin.listings.compliance.withdraw', [$this->listing, $item]), ['reason' => 'Mandate expired'])->assertSessionHasNoErrors();
     expect(DB::table('listing_compliance_attachments')->where('listing_id', $this->listing->id)->count())->toBe(2); // kept on record
+});
+
+it('answers an upload bigger than PHP allows with a clear message, not an error page', function () {
+    $buyer = advBidder('Big', '6666', 'awaiting');
+    $this->actingAs($buyer)->from(route('deposits.show', $this->listing))
+        ->call('POST', route('deposits.proof', $this->listing), [], [], [], ['CONTENT_LENGTH' => 999_999_999_999, 'HTTP_X_INERTIA' => 'true'])
+        ->assertStatus(303);
+});
+
+it('shows the refund bank and ready-to-bid steps from the latest bank account', function () {
+    $buyer = advBidder('Steps', '7777');
+    BankAccount::create(['user_id' => $buyer->id, 'bank' => 'FNB', 'branch_code' => '250655', 'account_number' => '62000000001', 'account_last4' => '0001',
+        'account_type' => 'cheque', 'holder_name' => 'Steps', 'status' => 'superseded']);
+    BankAccount::create(['user_id' => $buyer->id, 'bank' => 'FNB', 'branch_code' => '250655', 'account_number' => '62000000002', 'account_last4' => '0002',
+        'account_type' => 'cheque', 'holder_name' => 'Steps', 'status' => 'verified']);
+
+    $this->actingAs($buyer)->get(route('account.verification'))->assertInertia(fn ($p) => $p->where('bankStatus', 'verified')->where('verification.status', 'verified'));
+});
+
+it('reports pending database updates in system status', function () {
+    $this->actingAs(User::factory()->staff(SystemRole::SuperAdmin)->create())->get(route('admin.dashboard'))
+        ->assertInertia(fn ($p) => $p->where('health.migrations.ok', true)->has('health.uploads.detail'));
 });

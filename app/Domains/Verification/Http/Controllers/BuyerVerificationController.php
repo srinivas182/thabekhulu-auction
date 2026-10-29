@@ -7,6 +7,7 @@ use App\Domains\Verification\Actions\ApplyCheckResult;
 use App\Domains\Verification\Data\CheckResult;
 use App\Domains\Verification\Data\IdentityRequest;
 use App\Domains\Verification\Enums\CheckType;
+use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\Verification;
 use App\Domains\Verification\Models\VerificationDocument;
 use App\Domains\Verification\Support\Countries;
@@ -46,6 +47,8 @@ class BuyerVerificationController extends Controller
 
         return Inertia::render('account/verification', [
             'countries' => Countries::forPassports(),
+            // The latest record: earlier bank submissions are kept as 'superseded'.
+            'bankStatus' => BankAccount::where('user_id', $user->id)->latest('id')->value('status'),
             'verification' => $v === null ? null : [
                 'status' => $v->status, 'statusLabel' => Verification::STATUSES[$v->status] ?? $v->status,
                 'documentType' => $v->document_type, 'idNumberLast4' => $v->id_number ? substr($v->id_number, -4) : null,
