@@ -40,21 +40,21 @@ it('never overwrites an edited page, including a legal page the attorney has wri
         ->and(Page::where('slug', 'rules-of-auction')->first()->blocks[0]['html'])->toBe('<p>Attorney’s rules.</p>');
 });
 
-it('fills the buyer’s guide, fees and legal pages, marking legal drafts for the attorney', function () {
+it('fills the buyer’s guide, fees, legal and records pages, without draft notes', function () {
     $this->seed([AccessSeeder::class, CatalogueSeeder::class, CmsSeeder::class]);
     $this->artisan('content:starter')->assertSuccessful();
 
-    foreach (['buyers-guide', 'rules-of-auction', 'fees', 'privacy', 'paia-manual', 'disclaimer'] as $slug) {
+    foreach (['buyers-guide', 'rules-of-auction', 'fees', 'privacy', 'paia-manual', 'disclaimer', 'automatically-available-records'] as $slug) {
         $page = Page::where('slug', $slug)->firstOrFail();
         $html = json_encode($page->blocks);
         expect($page->blocks)->not->toBeEmpty()->and($page->needs_content)->toBeTrue();
-        expect(str_contains($html, 'Draft for review'))->toBe(in_array($slug, ['rules-of-auction', 'privacy', 'paia-manual', 'disclaimer'], true));
+        expect(str_contains($html, 'Draft for review'))->toBeFalse(); // approved by the attorney
         $this->get("/{$slug}")->assertOk();
     }
     expect(json_encode(Page::where('slug', 'rules-of-auction')->value('blocks')))->toContain('Consumer Protection Act');
 
     // No [placeholders] left anywhere, and the company details are in place.
-    foreach (['about', 'how-it-works', 'buyers-guide', 'rules-of-auction', 'fees', 'privacy', 'paia-manual', 'disclaimer', 'contact'] as $slug) {
+    foreach (['about', 'how-it-works', 'buyers-guide', 'rules-of-auction', 'fees', 'privacy', 'paia-manual', 'disclaimer', 'contact', 'automatically-available-records'] as $slug) {
         expect(json_encode(Page::where('slug', $slug)->value('blocks'), JSON_UNESCAPED_UNICODE))->not->toMatch('/\\[[A-Za-z]/');
     }
     expect(html_entity_decode(json_encode(Page::where('slug', 'contact')->value('blocks'), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)))->toContain('+27 61 961 1898')->toContain('admin@stevemaqueens.co.za');
