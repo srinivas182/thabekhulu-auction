@@ -28,6 +28,7 @@ use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -174,6 +175,8 @@ class ListingController extends Controller
                 return [
                     'item' => $item->value, 'label' => $item->label(),
                     'signedBy' => $done?->signer->name, 'signedAt' => $done?->signed_off_at->toIso8601String(), 'note' => $done?->note,
+                    'attachments' => DB::table('listing_compliance_attachments')->where('listing_id', $listing->id)->where('item', $item->value)->orderBy('id')->get()
+                        ->map(fn ($a) => ['id' => $a->id, 'name' => $a->name, 'url' => route('admin.listings.compliance.file', [$listing, $a->id])])->values(),
                 ];
             }),
             'pricing' => [

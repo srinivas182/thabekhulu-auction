@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Route as Router;
 const PERMISSION_CHECKED_IN_CONTROLLER = [
     // Viewable by any of settlement.manage, auctions.settle, settlement.confirm_default (SettlementController::mayView).
     'admin.settlement.index', 'admin.settlement.show', 'admin.settlement.document',
+    // Compliance evidence: compliance.signoff or compliance.review (ListingAssetController::complianceFile).
+    'admin.listings.compliance.file',
 ];
 
 /** @return list<Route> */

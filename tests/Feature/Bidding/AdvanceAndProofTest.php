@@ -23,6 +23,7 @@ use App\Models\User;
 use Database\Seeders\AccessSeeder;
 use Database\Seeders\CatalogueSeeder;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -159,4 +160,30 @@ it('emails approved, unpaid bidders once, when the last legal check is signed of
     $this->actingAs($admin)->post(route('admin.listings.compliance.signoff', [$this->listing, $items[0]->value]), ['note' => 'Re-checked'])->assertSessionHasNoErrors();
     Notification::assertSentToTimes($unpaid, DepositsOpen::class, 1);
     $this->actingAs($unpaid)->get("/auctions/homes/sandton/{$this->listing->slug}")->assertInertia(fn ($p) => $p->where('bidder.depositsOpen', true));
+});
+
+it('attaches evidence to a compliance sign-off, kept on record and opened only by compliance staff', function () {
+    $admin = User::factory()->staff(SystemRole::SuperAdmin)->create();
+    $item = ComplianceItem::cases()[0]->value;
+    $route = route('admin.listings.compliance.signoff', [$this->listing, $item]);
+
+    $this->actingAs($admin)->post($route, ['note' => 'Mandate checked', 'files' => [UploadedFile::fake()->create('virus.exe', 10)]])->assertSessionHasErrors('files.0');
+    $this->actingAs($admin)->post($route, ['note' => 'Mandate checked', 'files' => array_map(fn ($i) => UploadedFile::fake()->create("f{$i}.pdf", 5, 'application/pdf'), range(1, 11))])->assertSessionHasErrors('files');
+    $this->actingAs($admin)->post($route, ['note' => 'Mandate checked', 'files' => [
+        UploadedFile::fake()->create('mandate.pdf', 80, 'application/pdf'), UploadedFile::fake()->image('title-deed.jpg'),
+    ]])->assertSessionHasNoErrors();
+
+    $files = DB::table('listing_compliance_attachments')->where('listing_id', $this->listing->id)->orderBy('id')->get();
+    expect($files)->toHaveCount(2)->and($files[0]->name)->toBe('mandate.pdf');
+    $this->actingAs($admin)->get(route('admin.listings.edit', $this->listing))->assertInertia(fn ($p) => $p->where('compliance.0.attachments.1.name', 'title-deed.jpg'));
+
+    $this->actingAs($admin)->get(route('admin.listings.compliance.file', [$this->listing, $files[0]->id]))->assertOk();
+    expect(AuditEntry::where('event', 'attachment_viewed')->exists())->toBeTrue();
+    $outsider = User::factory()->staff(SystemRole::Support)->create();
+    $outsider->syncRoles([]);
+    $outsider->syncPermissions(['listings.view']);
+    $this->actingAs($outsider)->get(route('admin.listings.compliance.file', [$this->listing, $files[0]->id]))->assertForbidden();
+
+    $this->actingAs($admin)->delete(route('admin.listings.compliance.withdraw', [$this->listing, $item]), ['reason' => 'Mandate expired'])->assertSessionHasNoErrors();
+    expect(DB::table('listing_compliance_attachments')->where('listing_id', $this->listing->id)->count())->toBe(2); // kept on record
 });

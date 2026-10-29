@@ -244,6 +244,7 @@ Route::middleware(['auth', 'verified', 'staff', 'staff.2fa', 'admin.ip'])
             Route::post('listings/{listing}/compliance/{item}', [ListingAssetController::class, 'signOff'])->name('listings.compliance.signoff');
             Route::delete('listings/{listing}/compliance/{item}', [ListingAssetController::class, 'withdrawSignOff'])->name('listings.compliance.withdraw');
         });
+        Route::get('listings/{listing}/compliance-files/{attachment}', [ListingAssetController::class, 'complianceFile'])->whereNumber('attachment')->name('listings.compliance.file');
 
         Route::middleware('can:cms.manage')->prefix('cms')->name('cms.')->group(function () {
             Route::get('pages', [CmsController::class, 'pages'])->name('pages');

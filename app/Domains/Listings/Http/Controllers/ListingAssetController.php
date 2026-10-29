@@ -10,17 +10,20 @@ use App\Domains\Listings\Models\ListingDocument;
 use App\Domains\Payments\Actions\DepositService;
 use App\Domains\Payments\Notifications\DepositsOpen;
 use App\Domains\Verification\Models\BidderApproval;
+use App\Domains\Verification\Support\SecureFiles;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -144,7 +147,12 @@ class ListingAssetController extends Controller
     public function signOff(Request $request, Listing $listing, string $item, #[CurrentUser] User $actor): RedirectResponse
     {
         $item = ComplianceItem::tryFrom($item) ?? abort(404);
-        $note = $request->validate(['note' => ['required', 'string', 'max:1000']])['note'];
+        $data = $request->validate([
+            'note' => ['required', 'string', 'max:1000'],
+            'files' => ['nullable', 'array', 'max:10'],
+            'files.*' => ['file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx', 'max:10240'],
+        ], ['files.max' => __('Attach up to 10 files.'), 'files.*.mimes' => __('Attach PDF, image, Word or Excel files.'), 'files.*.max' => __('Each file can be up to 10 MB.')]);
+        $note = $data['note'];
         $wasComplete = DepositService::complianceComplete($listing);
 
         $listing->complianceItems()->updateOrCreate(['item' => $item->value], [
@@ -158,6 +166,13 @@ class ListingAssetController extends Controller
                 ->each(fn ($a) => $a->user->notify(new DepositsOpen($listing->title, route('deposits.show', $listing))));
         }
 
+        foreach ($request->file('files', []) as $file) {
+            DB::table('listing_compliance_attachments')->insert([
+                'listing_id' => $listing->id, 'item' => $item->value, 'path' => SecureFiles::put($file, "compliance/{$listing->ulid}"),
+                'mime' => (string) $file->getMimeType(), 'name' => mb_substr($file->getClientOriginalName(), 0, 200), 'size' => (int) $file->getSize(),
+                'uploaded_by' => $actor->id, 'created_at' => now(),
+            ]);
+        }
         Audit::record('compliance', 'signed_off', "Signed off “{$item->label()}” for {$listing->title}", $listing, $actor, ['item' => $item->value, 'note' => $note]);
         $this->toast('Signed off.');
 
@@ -189,5 +204,18 @@ class ListingAssetController extends Controller
     private function toast(string $message): void
     {
         Inertia::flash('toast', ['type' => 'success', 'message' => __($message)]);
+    }
+
+    /** Opens a compliance attachment (compliance staff only); every opening is logged. */
+    public function complianceFile(Listing $listing, int $attachment, #[CurrentUser] User $actor): Response
+    {
+        abort_unless(Gate::any(['compliance.signoff', 'compliance.review']), 403);
+        $a = DB::table('listing_compliance_attachments')->where('id', $attachment)->where('listing_id', $listing->id)->first() ?? abort(404);
+        Audit::record('compliance', 'attachment_viewed', "Opened compliance file “{$a->name}” for {$listing->title}", $listing, $actor);
+
+        return response(SecureFiles::read((string) $a->path), 200, [
+            'Content-Type' => (string) $a->mime, 'Content-Disposition' => 'inline; filename="'.str_replace('"', '', (string) $a->name).'"',
+            'Cache-Control' => 'no-store, private', 'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 }

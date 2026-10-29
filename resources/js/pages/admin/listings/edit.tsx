@@ -14,6 +14,14 @@ import InputError from '@/components/input-error';
 import RichTextEditor from '@/components/rich-text-editor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { formatDateTime } from '@/lib/format';
 import { rand } from '@/lib/money';
@@ -107,6 +115,7 @@ type Props = {
         signedBy: string | null;
         signedAt: string | null;
         note: string | null;
+        attachments: { id: number; name: string; url: string }[];
     }[];
     pricing: { floor: number | null };
     readiness: string[];
@@ -259,9 +268,63 @@ export default function ListingEdit(props: Props) {
     const belowFloor =
         floor !== null && p.minimum_price !== null && p.minimum_price < floor;
 
-    const prompted = (message: string, action: (text: string) => void) => {
-        const text = window.prompt(message);
-        if (text && text.trim()) action(text.trim());
+    // Branded dialogs instead of the browser's prompt box.
+    type Dlg = {
+        title: string;
+        label: string;
+        hint: string;
+        confirm: string;
+        danger?: boolean;
+        files?: boolean;
+        run: (text: string, files: File[]) => void;
+    };
+    const [dlg, setDlg] = useState<Dlg | null>(null);
+    const [dlgText, setDlgText] = useState('');
+    const [dlgFiles, setDlgFiles] = useState<File[]>([]);
+    const dialogs: Record<string, Omit<Dlg, 'run'>> = {
+        'What needs to change?': {
+            title: 'Request changes',
+            label: 'What needs to change?',
+            hint: 'The listing goes back to its author with this note.',
+            confirm: 'Send back',
+        },
+        'Reason for withdrawing this listing': {
+            title: 'Withdraw this listing',
+            label: 'Reason',
+            hint: 'The listing is taken off the website. The reason is recorded.',
+            confirm: 'Withdraw listing',
+            danger: true,
+        },
+        'Why is this sign-off being withdrawn?': {
+            title: 'Withdraw sign-off',
+            label: 'Reason',
+            hint: 'Deposits close again until this check is signed off. Its attachments are kept on record.',
+            confirm: 'Withdraw sign-off',
+            danger: true,
+        },
+        'What did you check? (recorded with your sign-off)': {
+            title: 'Sign off this check',
+            label: 'What did you check?',
+            hint: 'Recorded with your name and the time. Attach the supporting documents, such as the seller’s mandate, title deed, approvals or escrow agreement.',
+            confirm: 'Sign off',
+            files: true,
+        },
+    };
+    const prompted = (
+        message: string,
+        action: (text: string, files: File[]) => void,
+    ) => {
+        setDlgText('');
+        setDlgFiles([]);
+        setDlg({
+            ...(dialogs[message] ?? {
+                title: message,
+                label: 'Details',
+                hint: '',
+                confirm: 'Continue',
+            }),
+            run: action,
+        });
     };
 
     const upload = (
@@ -396,6 +459,86 @@ export default function ListingEdit(props: Props) {
     return (
         <>
             <Head title={l.title} />
+            <Dialog
+                open={dlg !== null}
+                onOpenChange={(open) => !open && setDlg(null)}
+            >
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle className="font-display text-2xl">
+                            {dlg?.title}
+                        </DialogTitle>
+                        {dlg?.hint && (
+                            <DialogDescription>{dlg.hint}</DialogDescription>
+                        )}
+                    </DialogHeader>
+                    <div className="grid gap-2">
+                        <Label htmlFor="dlg-text">{dlg?.label}</Label>
+                        <textarea
+                            id="dlg-text"
+                            rows={4}
+                            value={dlgText}
+                            onChange={(e) => setDlgText(e.target.value)}
+                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        />
+                    </div>
+                    {dlg?.files && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="dlg-files">
+                                Attachments (optional, up to 10)
+                            </Label>
+                            <input
+                                id="dlg-files"
+                                type="file"
+                                multiple
+                                accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx"
+                                onChange={(e) =>
+                                    setDlgFiles(
+                                        Array.from(e.target.files ?? []).slice(
+                                            0,
+                                            10,
+                                        ),
+                                    )
+                                }
+                                className="text-sm"
+                            />
+                            {dlgFiles.length > 0 && (
+                                <ul className="grid gap-0.5 text-xs text-muted-foreground">
+                                    {dlgFiles.map((f) => (
+                                        <li key={f.name}>
+                                            {f.name} (
+                                            {Math.max(
+                                                1,
+                                                Math.round(f.size / 1024),
+                                            )}{' '}
+                                            KB)
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            <p className="text-xs text-muted-foreground">
+                                PDF, images, Word or Excel; up to 10 MB each.
+                                Stored encrypted.
+                            </p>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setDlg(null)}>
+                            Cancel
+                        </Button>
+                        <Button
+                            variant={dlg?.danger ? 'destructive' : 'default'}
+                            disabled={dlgText.trim() === ''}
+                            onClick={() => {
+                                dlg?.run(dlgText.trim(), dlgFiles);
+                                setDlg(null);
+                            }}
+                        >
+                            {dlg?.confirm}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <div className="flex flex-1 flex-col gap-5 p-4 sm:p-6">
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
@@ -1583,12 +1726,30 @@ export default function ListingEdit(props: Props) {
                                                 <p className="text-sm text-muted-foreground">
                                                     Signed off by {c.signedBy},{' '}
                                                     {formatDateTime(c.signedAt)}
-                                                    : {c.note}
+                                                    {c.note
+                                                        ? `: ${c.note}`
+                                                        : ''}
                                                 </p>
                                             ) : (
                                                 <p className="text-sm text-muted-foreground">
                                                     Not signed off
                                                 </p>
+                                            )}
+                                            {c.attachments.length > 0 && (
+                                                <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                                                    {c.attachments.map((a) => (
+                                                        <li key={a.id}>
+                                                            <a
+                                                                href={a.url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="underline"
+                                                            >
+                                                                {a.name}
+                                                            </a>
+                                                        </li>
+                                                    ))}
+                                                </ul>
                                             )}
                                         </div>
                                     </div>
@@ -1628,7 +1789,7 @@ export default function ListingEdit(props: Props) {
                                                 onClick={() =>
                                                     prompted(
                                                         'What did you check? (recorded with your sign-off)',
-                                                        (note) =>
+                                                        (note, files) =>
                                                             router.post(
                                                                 compliance.signoff(
                                                                     {
@@ -1637,8 +1798,11 @@ export default function ListingEdit(props: Props) {
                                                                         item: c.item,
                                                                     },
                                                                 ).url,
-                                                                { note },
-                                                                opts,
+                                                                { note, files },
+                                                                {
+                                                                    ...opts,
+                                                                    forceFormData: true,
+                                                                },
                                                             ),
                                                     )
                                                 }
