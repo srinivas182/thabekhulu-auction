@@ -26,7 +26,7 @@ class ComplianceScan extends Command
     public function handle(): int
     {
         // 1. Integrity flags (Sprint 6c) on live auctions and those closed in the last 30 days.
-        $listings = Listing::whereIn('status', [ListingStatus::Live, ListingStatus::Closed, ListingStatus::Sold, ListingStatus::NoBids])->where('ends_at', '>=', now()->subDays(30))->get();
+        $listings = Listing::whereIn('status', [ListingStatus::Live, ListingStatus::Closed, ListingStatus::UnderOffer, ListingStatus::Sold, ListingStatus::NotSold, ListingStatus::NoBids])->where('ends_at', '>=', now()->subDays(30))->get();
         foreach ($listings as $l) {
             foreach (ShillReport::for($l) as $f) {
                 $this->add('integrity', 'integrity:'.$l->id.':'.md5($f['kind'].implode('|', $f['bidders'])), $l->id, null,

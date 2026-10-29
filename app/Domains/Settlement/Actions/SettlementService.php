@@ -3,6 +3,7 @@
 namespace App\Domains\Settlement\Actions;
 
 use App\Domains\Audit\Support\Audit;
+use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Actions\RefundService;
 use App\Domains\Payments\Models\Deposit;
@@ -83,6 +84,7 @@ class SettlementService
                 }
             }
             $case->forceFill(['status' => 'completed', 'completed_at' => now()])->save();
+            $case->listing->forceFill(['status' => ListingStatus::Sold])->save(); // agreement accepted, balance confirmed
         });
 
         Audit::record('settlement', 'completed', "Settlement completed for {$case->listing->title}", $case, $by);
@@ -165,6 +167,8 @@ class SettlementService
     {
         $result = DB::table('auction_results')->where('listing_id', $listing->id)->first();
         if ($result === null || $result->runner_up_approval_id === null) {
+            $listing->forceFill(['status' => ListingStatus::NotSold])->save(); // nobody left to offer it to
+
             return null;
         }
         $approval = BidderApproval::with('user')->find((int) $result->runner_up_approval_id);
@@ -210,6 +214,7 @@ class SettlementService
     {
         $this->assertOffer($case, $buyer);
         $case->forceFill(['status' => 'declined'])->save();
+        $case->listing->forceFill(['status' => ListingStatus::NotSold])->save();
         Audit::record('settlement', 'runner_up_declined', "Runner-up declined {$case->listing->title}", $case, $buyer);
     }
 

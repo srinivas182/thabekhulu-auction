@@ -5,6 +5,7 @@ const tone = {
     closing: 'text-status-closing',
     soon: 'text-status-soon',
     processing: 'text-status-processing',
+    under_offer: 'text-status-processing',
     sold: 'text-status-sold',
 } as const;
 

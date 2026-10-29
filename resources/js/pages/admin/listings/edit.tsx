@@ -523,7 +523,8 @@ export default function ListingEdit(props: Props) {
                                     Auction
                                 </Link>
                             )}
-                        {l.status === 'no_bids' && (
+                        {(l.status === 'no_bids' ||
+                            l.status === 'not_sold') && (
                             <button
                                 type="button"
                                 onClick={() =>
