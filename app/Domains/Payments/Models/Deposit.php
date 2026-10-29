@@ -47,7 +47,7 @@ class Deposit extends Model
 
     protected function casts(): array
     {
-        return ['amount' => 'integer', 'received_at' => 'datetime'];
+        return ['amount' => 'integer', 'received_at' => 'datetime', 'proof_uploaded_at' => 'datetime'];
     }
 
     public function getRouteKeyName(): string

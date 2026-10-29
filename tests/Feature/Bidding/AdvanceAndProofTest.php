@@ -210,3 +210,13 @@ it('reports pending database updates in system status', function () {
     $this->actingAs(User::factory()->staff(SystemRole::SuperAdmin)->create())->get(route('admin.dashboard'))
         ->assertInertia(fn ($p) => $p->where('health.migrations.ok', true)->has('health.uploads.detail'));
 });
+
+it('still opens the deposit page and finance list after a proof of payment is uploaded', function () {
+    $buyer = advBidder('Reopen', '8888', 'awaiting');
+    $this->actingAs($buyer)->post(route('deposits.proof', $this->listing), ['proof' => UploadedFile::fake()->create('pop.pdf', 50, 'application/pdf')])->assertSessionHasNoErrors();
+
+    $this->actingAs($buyer)->get(route('deposits.show', $this->listing))->assertOk()
+        ->assertInertia(fn ($p) => $p->where('deposit.proofUploadedAt', fn ($v) => is_string($v) && $v !== ''));
+    $this->actingAs(User::factory()->staff(SystemRole::Finance)->create())->get(route('admin.finance.index', ['tab' => 'deposits']))->assertOk()
+        ->assertInertia(fn ($p) => $p->where('deposits.0.proofAt', fn ($v) => is_string($v) && $v !== ''));
+});
