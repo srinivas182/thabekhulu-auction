@@ -22,5 +22,5 @@ export type ListingCardData = {
     badges?: string[];
     auctionType: 'open' | 'sealed';
     facts: Fact[];
-    position: { lat: number; lng: number } | null;
+    position: { lat: number; lng: number; approximate?: boolean } | null;
 };

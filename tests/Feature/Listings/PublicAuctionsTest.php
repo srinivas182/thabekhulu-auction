@@ -75,7 +75,7 @@ it('never exposes seller terms, the fee, the street address or review notes', fu
         ->missing('listing.sellerNetPrice')
         ->missing('listing.address')
         ->missing('listing.feeBps')
-        ->where('listing.position', ['lat' => -25.87, 'lng' => 29.23]));
+        ->where('listing.position', ['lat' => -25.87, 'lng' => 29.23, 'approximate' => false]));
 
     $index = $this->get('/auctions')->getContent();
     expect($index)->not->toContain('1777777')->not->toContain('12 Secret Street');

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Catalogue\Models\Province;
+use App\Domains\Catalogue\Support\CityCoordinates;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -52,7 +53,8 @@ class CatalogueSeeder extends Seeder
             $p = Province::firstOrCreate(['code' => $code], ['name' => $province, 'slug' => Str::slug($province)]);
 
             foreach ($cities as $city) {
-                City::firstOrCreate(['province_id' => $p->id, 'slug' => Str::slug($city)], ['name' => $city]);
+                [$lat, $lng] = CityCoordinates::for($city) ?? [null, null];
+                City::firstOrCreate(['province_id' => $p->id, 'slug' => Str::slug($city)], ['name' => $city, 'latitude' => $lat, 'longitude' => $lng]);
             }
         }
     }

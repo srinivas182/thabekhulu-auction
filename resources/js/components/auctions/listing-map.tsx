@@ -57,8 +57,11 @@ export default function ListingMap({
                     title: l.title,
                     keyboard: true,
                 }).addTo(map!);
-                marker.on('click', () => {
-                    window.location.href = l.url;
+                // A preview, then "View listing" (built as elements, never raw HTML, so titles can't inject markup).
+                marker.bindPopup(() => popupFor(l), {
+                    maxWidth: 260,
+                    minWidth: 220,
+                    className: 'listing-popup',
                 });
             });
 
@@ -86,4 +89,55 @@ export default function ListingMap({
     return (
         <div ref={ref} role="region" aria-label={label} className={className} />
     );
+}
+
+/** The marker popup: photo, title, place, price, timing and a link to the listing. */
+function popupFor(l: ListingCardData): HTMLElement {
+    const el = (tag: string, cls: string, text?: string) => {
+        const n = document.createElement(tag);
+        n.className = cls;
+        if (text !== undefined) n.textContent = text;
+        return n;
+    };
+    const box = el('div', 'grid gap-1.5 text-sm');
+    if (l.image) {
+        const img = document.createElement('img');
+        img.src = l.image;
+        img.alt = l.imageAlt;
+        img.loading = 'lazy';
+        img.className = 'h-28 w-full rounded-md object-cover';
+        box.append(img);
+    }
+    box.append(
+        el(
+            'span',
+            'text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+            l.category,
+        ),
+    );
+    box.append(el('strong', 'text-base leading-snug', l.title));
+    const place = [l.suburb, l.city].filter(Boolean).join(', ');
+    if (place)
+        box.append(
+            el(
+                'span',
+                'text-muted-foreground',
+                l.position?.approximate
+                    ? `${place} (approximate location)`
+                    : place,
+            ),
+        );
+    if (l.minimum !== null)
+        box.append(el('span', '', `Minimum bid ${rand(l.minimum)}`));
+    const when = l.status.key === 'soon' ? l.opensLabel : l.closesLabel;
+    if (when) box.append(el('span', 'text-muted-foreground', when));
+    const link = el(
+        'a',
+        'mt-1 inline-flex justify-center rounded-md bg-primary px-3 py-2 font-semibold !text-primary-foreground no-underline',
+        'View listing',
+    ) as HTMLAnchorElement;
+    link.href = l.url;
+    box.append(link);
+
+    return box;
 }
