@@ -10,6 +10,7 @@ use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Premium\Support\SoldResult;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Models\User;
 
@@ -43,6 +44,7 @@ final class AuctionView
                     'hasBid' => Bid::where('listing_id', $listing->id)->where('bidder_approval_id', $approval->id)->whereNull('voided_at')->exists(),
                     // Per bidder, never broadcast: from which amount an emailed code is needed (null: none).
                     'codeFrom' => StepUp::requiredFrom($listing, $user), 'codeFirstOnly' => StepUp::mode() === 'first',
+                    'autoBid' => app(AuctionSettings::class)->auto_bid_enabled,
                 ];
             }
         }

@@ -30,6 +30,9 @@ class AuctionSettings extends Settings
     /** off | first (first bid in each auction) | every | threshold */
     public string $step_up_mode;
 
+    /** Buyers may set a maximum (and an advance maximum). Off stops new maximums only. */
+    public bool $auto_bid_enabled;
+
     public int $default_suspension_months;
 
     public int $hot_badge_min_bids;

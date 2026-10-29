@@ -7,6 +7,7 @@ use App\Domains\Bidding\Support\BidEligibility;
 use App\Domains\Bidding\Support\Increments;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
@@ -23,6 +24,9 @@ final class AdvanceBids
     /** The buyer sets or changes their advance maximum (only before bidding opens). */
     public function set(Listing $listing, User $user, int $amount): AdvanceBid
     {
+        if (! app(AuctionSettings::class)->auto_bid_enabled) {
+            throw ValidationException::withMessages(['maximum' => __('Automatic bidding is switched off, so advance maximums can’t be set.')]);
+        }
         $this->assertOpenForAdvance($listing);
         $approval = $this->eligibility->bidder($listing, $user, CarbonImmutable::now()); // approved, deposit received, identity and screening valid
         if ($amount < (int) $listing->minimum_price) {

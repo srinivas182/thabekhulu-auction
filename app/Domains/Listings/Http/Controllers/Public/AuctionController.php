@@ -16,6 +16,7 @@ use App\Domains\Listings\Public\PublicListing;
 use App\Domains\Payments\Actions\DepositService;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Platform\Support\Seo;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Settings\Settings\GeneralSettings;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\BiddingEntity;
@@ -129,6 +130,7 @@ class AuctionController extends Controller
             'opens' => $listing->starts_at?->setTimezone((string) config('platform.display_timezone'))->format('j F, H:i'),
             'advanceMax' => $approval !== null ? (($a = AdvanceBid::where('bidder_approval_id', $approval->id)->whereNull('applied_at')->first()) ? (int) $a->amount : null) : null,
             'otpFrom' => StepUp::requiredFrom($listing, $user),
+            'autoBid' => app(AuctionSettings::class)->auto_bid_enabled,
             'reason' => $approval !== null && in_array($approval->status, ['rejected', 'revoked'], true) ? $approval->reason : null,
             'needsFunds' => $eligibility->needsProofOfFunds($listing),
             'entities' => BiddingEntity::where('user_id', $user->id)->where('status', '!=', 'rejected')->get(['ulid', 'name', 'status'])

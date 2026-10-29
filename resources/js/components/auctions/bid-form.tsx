@@ -33,6 +33,7 @@ export type AuctionLive = {
         hasBid: boolean;
         codeFrom: number | null;
         codeFirstOnly: boolean;
+        autoBid: boolean;
         offer?: number | null;
     } | null;
 };
@@ -68,6 +69,8 @@ export default function BidForm({
     const value = Number(amount.replace(/\D/g, '')) || 0;
     const max = useMax ? Number(maximum.replace(/\D/g, '')) || 0 : null;
     // Per bidder: "first bid in each auction" stops asking once they've bid.
+    // Automatic bidding can be switched off in Auction rules (maximums already set keep working).
+    const autoBid = auction.mine?.autoBid ?? true;
     const codeFrom =
         auction.mine?.codeFirstOnly && auction.mine?.hasBid
             ? null
@@ -155,34 +158,36 @@ export default function BidForm({
                             </span>
                         )}
                     </label>
-                    <label
-                        className={cn(
-                            'flex cursor-pointer items-start gap-3 rounded-[12px] border p-3.5 transition-colors',
-                            useMax
-                                ? 'border-primary bg-primary/5'
-                                : 'border-border hover:bg-muted/50',
-                        )}
-                    >
-                        <input
-                            type="checkbox"
-                            checked={useMax}
-                            onChange={(e) => setUseMax(e.target.checked)}
-                            className="mt-0.5 size-6 shrink-0 cursor-pointer accent-primary"
-                        />
-                        <span className="grid gap-1 text-sm">
-                            <span className="font-semibold">
-                                Bid automatically up to a maximum
+                    {autoBid && (
+                        <label
+                            className={cn(
+                                'flex cursor-pointer items-start gap-3 rounded-[12px] border p-3.5 transition-colors',
+                                useMax
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-border hover:bg-muted/50',
+                            )}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={useMax}
+                                onChange={(e) => setUseMax(e.target.checked)}
+                                className="mt-0.5 size-6 shrink-0 cursor-pointer accent-primary"
+                            />
+                            <span className="grid gap-1 text-sm">
+                                <span className="font-semibold">
+                                    Bid automatically up to a maximum
+                                </span>
+                                <span className="text-muted-foreground">
+                                    Tell us the most you’ll pay. When someone
+                                    outbids you, we raise your bid by the next
+                                    step for you, only as much as needed, never
+                                    above your maximum. Nobody, including our
+                                    staff, can see it.
+                                </span>
                             </span>
-                            <span className="text-muted-foreground">
-                                Tell us the most you’ll pay. When someone
-                                outbids you, we raise your bid by the next step
-                                for you, only as much as needed, never above
-                                your maximum. Nobody, including our staff, can
-                                see it.
-                            </span>
-                        </span>
-                    </label>
-                    {useMax && (
+                        </label>
+                    )}
+                    {autoBid && useMax && (
                         <label className="flex flex-col gap-1.5 text-sm font-semibold">
                             Your maximum (R)
                             <input
