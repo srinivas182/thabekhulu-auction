@@ -171,7 +171,7 @@ Route::middleware('signed')->prefix('q')->name('quotes.public.')->group(function
 /*
 | Back office: staff only, two-factor required, every page permission-checked
 */
-Route::middleware(['auth', 'verified', 'staff', 'password.fresh', 'staff.2fa', 'admin.ip'])
+Route::middleware(['auth', 'verified', 'staff', 'password.fresh', 'staff.2fa', 'admin.ip', 'security.approval'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {

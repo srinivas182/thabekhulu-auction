@@ -11,6 +11,7 @@ use App\Domains\Settings\Http\Middleware\RestrictAdminIp;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RequireFreshPassword;
+use App\Http\Middleware\RequireSecurityApproval;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -29,7 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
-    ->withCommands([__DIR__.'/../app/Domains/Listings/Console', __DIR__.'/../app/Domains/Quotes/Console', __DIR__.'/../app/Domains/Bidding/Console', __DIR__.'/../app/Domains/Settlement/Console', __DIR__.'/../app/Domains/Growth/Console', __DIR__.'/../app/Domains/Compliance/Console', __DIR__.'/../app/Domains/Platform/Console', __DIR__.'/../app/Domains/Privacy/Console', __DIR__.'/../app/Domains/Demo/Console', __DIR__.'/../app/Domains/Cms/Console'])
+    ->withCommands([__DIR__.'/../app/Domains/Security', __DIR__.'/../app/Domains/Listings/Console', __DIR__.'/../app/Domains/Quotes/Console', __DIR__.'/../app/Domains/Bidding/Console', __DIR__.'/../app/Domains/Settlement/Console', __DIR__.'/../app/Domains/Growth/Console', __DIR__.'/../app/Domains/Compliance/Console', __DIR__.'/../app/Domains/Platform/Console', __DIR__.'/../app/Domains/Privacy/Console', __DIR__.'/../app/Domains/Demo/Console', __DIR__.'/../app/Domains/Cms/Console'])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
         // Provider callbacks are authenticated by their signatures, not CSRF tokens.
@@ -40,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => EnsureStaff::class,
             'staff.2fa' => RequireStaffTwoFactor::class,
             'password.fresh' => RequireFreshPassword::class,
+            'security.approval' => RequireSecurityApproval::class,
             'admin.ip' => RestrictAdminIp::class,
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
