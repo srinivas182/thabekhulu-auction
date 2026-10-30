@@ -1,9 +1,12 @@
 <?php
 
 use App\Domains\Access\Enums\SystemRole;
+use App\Domains\Security\ApprovalGate;
 use App\Domains\Settings\Settings\SecuritySettings;
 use App\Models\User;
 use Database\Seeders\AccessSeeder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 beforeEach(function () {
     $this->seed(AccessSeeder::class);
@@ -57,4 +60,31 @@ it('lets only super admins create super admins, and refuses staff without permis
 
     createStaff($this->admin);
     $this->actingAs($this->admin)->post(route('admin.staff.create'), ['first_name' => 'A', 'last_name' => 'B', 'email' => 'thandi@example.com', 'role' => 'finance'])->assertSessionHasErrors('email');
+});
+
+it('issues a new temporary password, signing the person out, never for yourself or (unless super admin) a super admin', function () {
+    createStaff($this->admin);
+    $user = User::where('email', 'thandi@example.com')->firstOrFail();
+    $user->forceFill(['must_change_password' => false])->save();
+    DB::table('sessions')->insert(['id' => 'abc', 'user_id' => $user->id, 'payload' => '', 'last_activity' => time()]);
+    $oldHash = $user->password;
+
+    $this->actingAs($this->admin)->post(route('admin.staff.temporary-password', $user->ulid))->assertSessionHasNoErrors();
+    $password = session('inertia.flash_data')['temporaryPassword']['password'] ?? null;
+    $user->refresh();
+    expect($password)->toBeString()->toHaveLength(16)
+        ->and($user->password)->not->toBe($oldHash)->and(Hash::check($password, $user->password))->toBeTrue()
+        ->and($user->must_change_password)->toBeTrue()
+        ->and(DB::table('sessions')->where('user_id', $user->id)->count())->toBe(0);
+
+    $this->actingAs($this->admin)->post(route('admin.staff.temporary-password', $this->admin->ulid))->assertSessionHasErrors('staff');
+    $staffAdmin = User::factory()->staff(SystemRole::Support)->create();
+    $staffAdmin->syncRoles([]);
+    $staffAdmin->givePermissionTo(['staff.view', 'staff.invite']);
+    $this->actingAs($staffAdmin)->post(route('admin.staff.temporary-password', $this->admin->ulid))->assertForbidden();
+
+    $route = app('router')->getRoutes()->getByName('admin.staff.temporary-password');
+    $request = Request::create('/'.$route->uri(), 'POST');
+    $request->setRouteResolver(fn () => $route->bind($request));
+    expect(ApprovalGate::label($request))->not->toBeNull(); // needs a security approval code
 });

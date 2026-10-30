@@ -41,7 +41,7 @@ final class ApprovalGate
         'admin.finance.settings.update' => 'Change the trust account or refund settings', 'admin.finance.providers.update' => 'Change payment provider settings',
         'admin.finance.providers.deposit' => 'Change which payment provider takes deposits',
         // Removals that aren't DELETE requests.
-        'admin.bids.void' => 'Void a bid', 'admin.staff.deactivate' => 'Deactivate a staff member',
+        'admin.bids.void' => 'Void a bid', 'admin.staff.deactivate' => 'Deactivate a staff member', 'admin.staff.temporary-password' => 'Issue a new temporary password for a staff member',
     ];
 
     public const MINUTES = 10;
