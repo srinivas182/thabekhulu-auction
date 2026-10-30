@@ -1,3 +1,4 @@
+import SiteCredit from '@/components/site-credit';
 import { Form, Link, usePage } from '@inertiajs/react';
 import type { PropsWithChildren } from 'react';
 import { subscribe } from '@/routes/newsletter';
@@ -195,6 +196,9 @@ export default function PublicLayout({ children }: PropsWithChildren) {
                             ))}
                         </nav>
                     )}
+                </div>
+                <div className="border-t border-white/10">
+                    <SiteCredit tone="onDark" />
                 </div>
             </footer>
         </div>

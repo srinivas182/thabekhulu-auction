@@ -22,6 +22,12 @@ class HomeSettings extends Settings
     /** ULID of the listing in the hero, or null for the text-only hero. */
     public ?string $featured_listing;
 
+    /** Home banner photo (public disk path), shown when no auction is featured. Never removed by the launch reset. */
+    public ?string $hero_image;
+
+    /** Sign-in and sign-up photo (public disk path). */
+    public ?string $auth_image;
+
     public static function group(): string
     {
         return 'home';

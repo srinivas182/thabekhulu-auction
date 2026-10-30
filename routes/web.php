@@ -277,6 +277,8 @@ Route::middleware(['auth', 'verified', 'staff', 'password.fresh', 'staff.2fa', '
             Route::put('galleries/{gallery}/images/{media}', [MediaContentController::class, 'updateGalleryImage'])->name('galleries.images.update');
             Route::delete('galleries/{gallery}/images/{media}', [MediaContentController::class, 'destroyGalleryImage'])->name('galleries.images.destroy');
             Route::put('home', [CmsController::class, 'updateHome'])->name('home.update');
+            Route::post('home/images/{kind}', [CmsController::class, 'uploadBrandImage'])->whereIn('kind', ['hero', 'auth'])->name('home.images.store');
+            Route::delete('home/images/{kind}', [CmsController::class, 'removeBrandImage'])->whereIn('kind', ['hero', 'auth'])->name('home.images.destroy');
         });
 
         Route::middleware('can:quotes.create')->prefix('quotes')->name('quotes.')->group(function () {

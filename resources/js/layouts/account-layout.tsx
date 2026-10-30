@@ -1,5 +1,6 @@
 import { AccountSidebar } from '@/components/account-sidebar';
 import { AppContent } from '@/components/app-content';
+import SiteCredit from '@/components/site-credit';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import type { AppLayoutProps } from '@/types';
@@ -15,6 +16,7 @@ export default function AccountLayout({
             <AppContent variant="sidebar" className="min-w-0 overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 {children}
+                <SiteCredit className="mt-auto" />
             </AppContent>
         </AppShell>
     );

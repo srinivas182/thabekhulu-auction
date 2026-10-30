@@ -1,4 +1,5 @@
 import { AppContent } from '@/components/app-content';
+import SiteCredit from '@/components/site-credit';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
@@ -14,6 +15,7 @@ export default function AppSidebarLayout({
             <AppContent variant="sidebar" className="min-w-0 overflow-x-clip">
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 {children}
+                <SiteCredit className="mt-auto" />
             </AppContent>
         </AppShell>
     );

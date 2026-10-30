@@ -4,10 +4,12 @@ use App\Domains\Access\Enums\SystemRole;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Cms\Models\Page;
+use App\Domains\Cms\Settings\HomeSettings;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Platform\Console\LaunchReset;
+use App\Domains\Platform\Support\AuthCover;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Models\User;
 use Database\Seeders\AccessSeeder;
@@ -60,6 +62,14 @@ it('deletes the test data, keeps staff and configuration, and runs only once', f
         ->and(DB::table('platform_launches')->count())->toBe(1)
         ->and(DB::table('activity_log')->where('event', 'launch_reset')->count())->toBe(1);
 
+    // The home banner and sign-in photos were copied from the listing before it went, so those pages keep a photo.
+    $home = app(HomeSettings::class)->refresh();
+    expect($home->hero_image)->not->toBeNull()->and($home->auth_image)->not->toBeNull()
+        ->and(Storage::disk('public')->exists((string) $home->hero_image))->toBeTrue()
+        ->and(Storage::disk('public')->exists((string) $home->auth_image))->toBeTrue()
+        ->and($home->featured_listing)->toBeNull()
+        ->and(AuthCover::url())->not->toBeNull();
+
     $this->artisan('platform:launch-reset', ['--confirm' => LaunchReset::PHRASE, '--no-backup' => true])->expectsOutputToContain('already ran')->assertFailed();
 });
 
@@ -67,5 +77,18 @@ it('deletes nothing if the backup fails', function () {
     // Point the backup at a database that doesn't exist (the open connection keeps working), so the dump fails on SQLite or MySQL.
     config(['database.connections.'.config('database.default').'.database' => '/nonexistent/no_such_database']);
     $this->artisan('platform:launch-reset', ['--confirm' => LaunchReset::PHRASE])->expectsOutputToContain('Backup failed')->assertFailed();
-    expect(Listing::count())->toBe(1)->and(User::where('type', 'buyer')->count())->toBe(1);
+    expect(Listing::count())->toBe(1)->and(User::where('type', 'buyer')->count())->toBe(1)
+        ->and(glob(storage_path('launch-backup-*')))->toBe([]); // no half-made backup left behind
+});
+
+it('lets staff upload and remove the site photos, which the home page uses', function () {
+    $admin = User::factory()->staff(SystemRole::SuperAdmin)->create();
+    $this->actingAs($admin)->post(route('admin.cms.home.images.store', 'hero'), ['image' => UploadedFile::fake()->image('banner.jpg', 1600, 900)])->assertSessionHasNoErrors();
+    $path = (string) app(HomeSettings::class)->refresh()->hero_image;
+    expect(Storage::disk('public')->exists($path))->toBeTrue();
+    $this->get('/')->assertInertia(fn ($p) => $p->where('hero.image', fn ($v) => is_string($v) && str_contains($v, 'brand/hero-')));
+
+    $this->actingAs($admin)->post(route('admin.cms.home.images.store', 'auth'), ['image' => UploadedFile::fake()->image('small.jpg', 300, 200)])->assertSessionHasErrors('image');
+    $this->actingAs($admin)->delete(route('admin.cms.home.images.destroy', 'hero'))->assertSessionHasNoErrors();
+    expect(Storage::disk('public')->exists($path))->toBeFalse()->and(app(HomeSettings::class)->refresh()->hero_image)->toBeNull();
 });

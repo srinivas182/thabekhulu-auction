@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { pages } from '@/routes/admin/cms';
 import homeRoutes from '@/routes/admin/cms/home';
+import imageRoutes from '@/routes/admin/cms/home/images';
 
 type Home = {
     hero_title: string;
@@ -21,9 +22,11 @@ type Home = {
 export default function HomeSettings({
     home,
     listings,
+    images,
 }: {
     home: Home;
     listings: { ulid: string; title: string }[];
+    images: { hero: string | null; auth: string | null };
 }) {
     const [h, setH] = useState(home);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -175,6 +178,93 @@ export default function HomeSettings({
                         Save home page
                     </Button>
                 </div>
+                <section
+                    aria-labelledby="photos-h"
+                    className="grid gap-4 rounded-xl border border-border bg-card p-5"
+                >
+                    <div>
+                        <h2 id="photos-h" className="font-semibold">
+                            Site photos
+                        </h2>
+                        <p className="text-sm text-muted-foreground">
+                            Shown when no auction is featured, and on the
+                            sign-in and sign-up pages. They belong to the site,
+                            not to a listing, so they stay when listings are
+                            removed.
+                        </p>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {(
+                            [
+                                ['hero', 'Home banner'],
+                                ['auth', 'Sign-in and sign-up pages'],
+                            ] as const
+                        ).map(([kind, label]) => (
+                            <div key={kind} className="grid gap-2">
+                                <span className="text-sm font-semibold">
+                                    {label}
+                                </span>
+                                {images[kind] ? (
+                                    <img
+                                        src={images[kind] as string}
+                                        alt=""
+                                        className="h-36 w-full rounded-lg object-cover"
+                                    />
+                                ) : (
+                                    <div className="grid h-36 place-items-center rounded-lg bg-muted text-sm text-muted-foreground">
+                                        No photo yet
+                                    </div>
+                                )}
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <label className="inline-flex cursor-pointer items-center rounded-md border border-input px-3 py-1.5 text-sm font-semibold hover:bg-muted">
+                                        {images[kind] ? 'Replace' : 'Upload'}
+                                        <input
+                                            type="file"
+                                            accept=".jpg,.jpeg,.png,.webp"
+                                            className="sr-only"
+                                            onChange={(e) => {
+                                                const file =
+                                                    e.target.files?.[0];
+                                                if (file)
+                                                    router.post(
+                                                        imageRoutes.store(kind)
+                                                            .url,
+                                                        { image: file },
+                                                        {
+                                                            preserveScroll: true,
+                                                            forceFormData: true,
+                                                            onError: (er) =>
+                                                                setErrors(er),
+                                                        },
+                                                    );
+                                            }}
+                                        />
+                                    </label>
+                                    {images[kind] && (
+                                        <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() =>
+                                                router.delete(
+                                                    imageRoutes.destroy(kind)
+                                                        .url,
+                                                    { preserveScroll: true },
+                                                )
+                                            }
+                                        >
+                                            Remove
+                                        </Button>
+                                    )}
+                                </div>
+                                <span className="text-xs text-muted-foreground">
+                                    JPG, PNG or WebP, at least 800 pixels wide,
+                                    up to 10 MB.
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                    <InputError message={errors.image} />
+                </section>
             </div>
         </>
     );
