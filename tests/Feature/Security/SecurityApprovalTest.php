@@ -5,6 +5,7 @@ use App\Domains\Catalogue\Models\Category;
 use App\Domains\Catalogue\Models\City;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
+use App\Domains\Payments\Settings\PaymentSettings;
 use App\Domains\Security\ApprovalGate;
 use App\Domains\Security\Notifications\ApprovalCode;
 use App\Domains\Settings\Settings\SecuritySettings;
@@ -115,6 +116,22 @@ it('also needs a code to void a bid, deactivate staff or match a bank line to a 
     foreach (['admin.bids.void', 'admin.finance.resolve'] as $name) {
         $route = app('router')->getRoutes()->getByName($name);
         $request = Request::create('/'.$route->uri(), 'POST');
+        $request->setRouteResolver(fn () => $route->bind($request));
+        expect(ApprovalGate::label($request))->not->toBeNull();
+    }
+});
+
+it('needs a code to change the trust account or payment providers, which could redirect money', function () {
+    $before = app(PaymentSettings::class)->trust_account_number;
+    $this->actingAs($this->admin)->put(route('admin.finance.settings.update'), [
+        'trust_bank' => 'FNB', 'trust_account_name' => 'Someone Else', 'trust_account_number' => '99999999999', 'trust_branch_code' => '250655',
+        'refund_business_days' => 5, 'runner_up_hold_days' => 30,
+    ])->assertSessionHasErrors('approval_code');
+    expect(app(PaymentSettings::class)->refresh()->trust_account_number)->toBe($before);
+
+    foreach (['admin.finance.providers.update', 'admin.finance.providers.deposit'] as $name) {
+        $route = app('router')->getRoutes()->getByName($name);
+        $request = Request::create('/'.$route->uri(), $route->methods()[0]);
         $request->setRouteResolver(fn () => $route->bind($request));
         expect(ApprovalGate::label($request))->not->toBeNull();
     }
