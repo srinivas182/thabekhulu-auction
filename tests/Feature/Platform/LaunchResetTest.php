@@ -64,7 +64,8 @@ it('deletes the test data, keeps staff and configuration, and runs only once', f
 });
 
 it('deletes nothing if the backup fails', function () {
-    config(['database.connections.sqlite.database' => '/nonexistent/database.sqlite']);
+    // Point the backup at a database that doesn't exist (the open connection keeps working), so the dump fails on SQLite or MySQL.
+    config(['database.connections.'.config('database.default').'.database' => '/nonexistent/no_such_database']);
     $this->artisan('platform:launch-reset', ['--confirm' => LaunchReset::PHRASE])->expectsOutputToContain('Backup failed')->assertFailed();
     expect(Listing::count())->toBe(1)->and(User::where('type', 'buyer')->count())->toBe(1);
 });
