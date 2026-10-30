@@ -1,3 +1,4 @@
+import ApprovalCodeDialog from '@/components/approval-code-dialog';
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -11,6 +12,7 @@ export default function AppLayout({
     return (
         <AppLayoutTemplate breadcrumbs={breadcrumbs}>
             {children}
+            <ApprovalCodeDialog />
         </AppLayoutTemplate>
     );
 }

@@ -61,6 +61,8 @@ final class SettingsRegistry
                     'email_verification_required' => ['type' => 'boolean', 'label' => 'Buyers must verify their email address', 'help' => 'Must be on for go-live, once email sending works. While off, no verification emails are sent.', 'rules' => ['boolean']],
                     'session_lifetime_minutes' => ['type' => 'number', 'label' => 'Sign out after inactivity', 'suffix' => 'minutes', 'rules' => ['required', 'integer', 'min:15', 'max:1440']],
                     'admin_ip_allowlist' => ['type' => 'list', 'label' => 'Back-office IP allow-list', 'help' => 'One IP address or range (CIDR) per line. Leave empty to allow any address. Your current address must be included.', 'rules' => ['array', 'max:50'], 'itemRules' => ['string', 'max:64']],
+                    'approvals_enabled' => ['type' => 'boolean', 'label' => 'Security approval codes', 'help' => 'Deletes, changes to public listings and finance approvals need a code emailed to the approvers below. Changing these security settings also needs a code.', 'rules' => ['boolean']],
+                    'approver_emails' => ['type' => 'list', 'label' => 'Security approvers', 'help' => 'One email address per line. Every code goes to all of them; any one can give it to the person asking.', 'rules' => ['array', 'min:1', 'max:5'], 'itemRules' => ['email:rfc', 'max:160']],
                 ],
             ],
         ];

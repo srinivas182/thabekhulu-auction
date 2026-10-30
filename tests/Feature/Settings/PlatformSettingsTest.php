@@ -79,6 +79,8 @@ it('lets an admin switch staff two-factor and email verification off for testing
         'staff_two_factor_required' => '0',
         'email_verification_required' => '0',
         'session_lifetime_minutes' => 60,
+        'approvals_enabled' => '1',
+        'approver_emails' => 'srinivas@mayuraconsultancy.com',
         'admin_ip_allowlist' => '',
     ])->assertSessionHasNoErrors();
 
@@ -105,11 +107,15 @@ it('needs settings.view to see and settings.manage to change', function () {
 it('refuses an IP allow-list that would lock out the admin', function () {
     $this->actingAs($this->admin)->put(route('admin.settings.update', 'security'), [
         'session_lifetime_minutes' => 120,
+        'approvals_enabled' => '1',
+        'approver_emails' => 'srinivas@mayuraconsultancy.com',
         'admin_ip_allowlist' => '196.25.10.0/24',
     ], ['REMOTE_ADDR' => '41.0.0.5'])->assertSessionHasErrors('admin_ip_allowlist');
 
     $this->actingAs($this->admin)->put(route('admin.settings.update', 'security'), [
         'session_lifetime_minutes' => 120,
+        'approvals_enabled' => '1',
+        'approver_emails' => 'srinivas@mayuraconsultancy.com',
         'admin_ip_allowlist' => 'not-an-ip',
     ])->assertSessionHasErrors('admin_ip_allowlist');
 });

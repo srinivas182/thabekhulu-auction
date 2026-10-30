@@ -21,6 +21,12 @@ class SecuritySettings extends Settings
      */
     public array $admin_ip_allowlist;
 
+    /** Sensitive actions need a code emailed to the approvers. */
+    public bool $approvals_enabled;
+
+    /** @var list<string> */
+    public array $approver_emails;
+
     public static function group(): string
     {
         return 'security';
