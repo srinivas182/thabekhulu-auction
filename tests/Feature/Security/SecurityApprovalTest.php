@@ -11,6 +11,7 @@ use App\Domains\Settings\Settings\SecuritySettings;
 use App\Models\User;
 use Database\Seeders\AccessSeeder;
 use Database\Seeders\CatalogueSeeder;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
@@ -51,7 +52,7 @@ it('asks for an emailed code to delete, and deletes only with the right one', fu
     expect(Listing::whereKey($listing->id)->exists())->toBeTrue();
 
     [$code, $to] = lastCode();
-    expect($to)->toBe(['srinivas@mayuraconsultancy.com', 'admin@stevemaqueen.co.za']);
+    expect($to)->toBe(['srinivas@mayuraconsultancy.com', 'admin@stevemaqueens.co.za']);
     Notification::assertSentOnDemand(ApprovalCode::class, function (ApprovalCode $n) {
         $mail = implode("\n", array_merge($n->toMail(new AnonymousNotifiable)->introLines, $n->toMail(new AnonymousNotifiable)->outroLines));
 
@@ -104,4 +105,17 @@ it('needs a code for finance approvals, telling the approvers the amount and ref
         ->assertSessionHasErrors('approval_code');
     Notification::assertSentOnDemand(ApprovalCode::class, fn (ApprovalCode $n) => str_contains($n->summary, 'Confirm a payment received')
         && str_contains($n->summary, 'TDG-D-2499-KAHJM') && str_contains($n->summary, '50000'));
+});
+
+it('also needs a code to void a bid, deactivate staff or match a bank line to a payment', function () {
+    $staff = User::factory()->staff(SystemRole::Support)->create();
+    $this->actingAs($this->admin)->post(route('admin.staff.deactivate', $staff))->assertSessionHasErrors('approval_code');
+    expect($staff->fresh()->deactivated_at ?? null)->toBeNull();
+
+    foreach (['admin.bids.void', 'admin.finance.resolve'] as $name) {
+        $route = app('router')->getRoutes()->getByName($name);
+        $request = Request::create('/'.$route->uri(), 'POST');
+        $request->setRouteResolver(fn () => $route->bind($request));
+        expect(ApprovalGate::label($request))->not->toBeNull();
+    }
 });
