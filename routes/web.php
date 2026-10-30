@@ -186,6 +186,7 @@ Route::middleware(['auth', 'verified', 'staff', 'password.fresh', 'staff.2fa', '
         Route::put('staff/{user}/role', [StaffController::class, 'changeRole'])->middleware('can:staff.invite')->name('staff.role');
         Route::post('staff/{user}/deactivate', [StaffController::class, 'deactivate'])->middleware('can:staff.deactivate')->name('staff.deactivate');
         Route::post('staff/{user}/reactivate', [StaffController::class, 'reactivate'])->middleware('can:staff.deactivate')->name('staff.reactivate');
+        Route::post('staff/{user}/temporary-password', [StaffController::class, 'temporaryPassword'])->middleware(['can:staff.invite', 'throttle:10,1'])->name('staff.temporary-password');
 
         Route::get('roles', [RoleController::class, 'index'])->middleware('can:roles.view')->name('roles.index');
         Route::middleware('can:roles.manage')->group(function () {

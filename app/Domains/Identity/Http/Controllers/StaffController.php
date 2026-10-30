@@ -15,8 +15,10 @@ use App\Models\User;
 use Illuminate\Container\Attributes\CurrentUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -156,6 +158,28 @@ class StaffController extends Controller
         Audit::record('staff', 'created_with_password', "Created staff account for {$user->email} ({$role->name}) with a temporary password", $user, $actor);
 
         // Shown once to the person who created the account; never stored in readable form.
+        Inertia::flash('temporaryPassword', ['email' => $user->email, 'password' => $temporary]);
+
+        return back();
+    }
+
+    /**
+     * Issue a new temporary password for a staff member (for example, if the first one was lost).
+     * Shown once; they're signed out everywhere and must choose their own at the next sign-in.
+     */
+    public function temporaryPassword(User $user, #[CurrentUser] User $actor): RedirectResponse
+    {
+        abort_unless($user->type === UserType::Staff, 404);
+        if ($user->id === $actor->id) {
+            throw ValidationException::withMessages(['staff' => __('Change your own password in Security settings instead.')]);
+        }
+        abort_if($user->hasRole(SystemRole::SuperAdmin->value) && ! $actor->hasRole(SystemRole::SuperAdmin->value), 403);
+
+        $temporary = Str::password(16, symbols: false);
+        $user->forceFill(['password' => $temporary, 'must_change_password' => true, 'remember_token' => Str::random(60)])->save();
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+        Audit::record('staff', 'temporary_password_issued', "Issued a new temporary password for {$user->email}", $user, $actor);
+
         Inertia::flash('temporaryPassword', ['email' => $user->email, 'password' => $temporary]);
 
         return back();

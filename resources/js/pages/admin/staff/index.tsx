@@ -275,13 +275,13 @@ export default function StaffIndex({ staff, invitations, roles }: Props) {
                     <DialogContent className="sm:max-w-md">
                         <DialogHeader>
                             <DialogTitle className="font-display text-2xl">
-                                Account created
+                                Sign-in details
                             </DialogTitle>
                             <DialogDescription>
-                                Give these details to the new staff member in
-                                person or by phone, not by email. This password
-                                is shown only now; they’ll choose their own when
-                                they first sign in.
+                                Give these details to the staff member in person
+                                or by phone, not by email. This password is
+                                shown only now; they’ll choose their own when
+                                they next sign in.
                             </DialogDescription>
                         </DialogHeader>
                         <dl className="grid gap-2 text-sm">
@@ -472,7 +472,29 @@ export default function StaffIndex({ staff, invitations, roles }: Props) {
                                                   )
                                                 : 'Deactivated'}
                                         </td>
-                                        <td className="px-5 py-3 text-right">
+                                        <td className="space-x-2 px-5 py-3 text-right whitespace-nowrap">
+                                            {can('staff.invite') &&
+                                                !isSelf &&
+                                                member.active && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        title="Issue a new temporary password (shown once); they’re signed out and choose their own at the next sign-in"
+                                                        onClick={() =>
+                                                            router.post(
+                                                                staffRoutes.temporaryPassword(
+                                                                    member.ulid,
+                                                                ).url,
+                                                                {},
+                                                                {
+                                                                    preserveScroll: true,
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        New temporary password
+                                                    </Button>
+                                                )}
                                             {can('staff.deactivate') &&
                                                 !isSelf && (
                                                     <Button
