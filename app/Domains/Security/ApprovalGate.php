@@ -37,6 +37,9 @@ final class ApprovalGate
         'admin.finance.refunds.approve' => 'Approve refunds', 'admin.finance.refunds.paid' => 'Mark refunds paid',
         'admin.settlement.payout.approve' => 'Approve a seller payout', 'admin.settlement.payout.paid' => 'Mark a seller payout paid',
         'admin.finance.resolve' => 'Match a bank statement line to a payment',
+        // Settings that could redirect money.
+        'admin.finance.settings.update' => 'Change the trust account or refund settings', 'admin.finance.providers.update' => 'Change payment provider settings',
+        'admin.finance.providers.deposit' => 'Change which payment provider takes deposits',
         // Removals that aren't DELETE requests.
         'admin.bids.void' => 'Void a bid', 'admin.staff.deactivate' => 'Deactivate a staff member',
     ];
