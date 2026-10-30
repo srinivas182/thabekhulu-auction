@@ -9,7 +9,7 @@ import { rand } from '@/lib/money';
 
 type Props = {
     seo: Seo;
-    hero: { title: string; text: string };
+    hero: { title: string; text: string; image: string | null };
     featured: (ListingCardData & { closesLabel: string | null }) | null;
     closingSoon: ListingCardData[];
     categories: {
@@ -53,10 +53,10 @@ export default function Home({
                 aria-label="Introduction"
                 className="relative bg-brand text-brand-foreground"
             >
-                {featured?.image && (
-                    // Decorative: the card on the right names the featured listing.
+                {(featured?.image ?? hero.image) && (
+                    // Decorative: the featured auction's photo, else the site's banner photo (kept through the launch reset).
                     <img
-                        src={featured.image}
+                        src={(featured?.image ?? hero.image) as string}
                         alt=""
                         className="absolute inset-0 size-full object-cover opacity-45"
                     />

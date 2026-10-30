@@ -10,6 +10,7 @@ use App\Domains\Cms\Models\MenuItem;
 use App\Domains\Cms\Models\Page;
 use App\Domains\Cms\Settings\HomeSettings;
 use App\Domains\Cms\Support\Blocks;
+use App\Domains\Cms\Support\BrandImages;
 use App\Domains\Cms\Support\SiteNavigation;
 use App\Domains\Listings\Models\Listing;
 use App\Http\Controllers\Controller;
@@ -194,6 +195,7 @@ class CmsController extends Controller
     {
         return Inertia::render('admin/cms/home', [
             'home' => $home->toArray(),
+            'images' => ['hero' => BrandImages::url('hero'), 'auth' => BrandImages::url('auth')],
             'listings' => Listing::public()->orderBy('title')->get(['ulid', 'title'])->map(fn (Listing $l) => ['ulid' => $l->ulid, 'title' => $l->title]),
         ]);
     }
@@ -254,5 +256,27 @@ class CmsController extends Controller
     private function toast(string $message): void
     {
         Inertia::flash('toast', ['type' => 'success', 'message' => __($message)]);
+    }
+
+    /** Upload the home banner or sign-in photo (kept through the launch reset). */
+    public function uploadBrandImage(Request $request, string $kind, #[CurrentUser] User $actor): RedirectResponse
+    {
+        abort_unless(array_key_exists($kind, BrandImages::KINDS), 404);
+        $file = $request->validate(['image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240', 'dimensions:min_width=800']])['image'];
+        BrandImages::put($kind, (string) file_get_contents($file->getRealPath()), $file->extension());
+        Audit::record('cms', 'brand_image_updated', 'Updated the '.($kind === 'hero' ? 'home banner' : 'sign-in').' photo', null, $actor);
+        $this->toast('Photo updated.');
+
+        return back();
+    }
+
+    public function removeBrandImage(string $kind, #[CurrentUser] User $actor): RedirectResponse
+    {
+        abort_unless(array_key_exists($kind, BrandImages::KINDS), 404);
+        BrandImages::remove($kind);
+        Audit::record('cms', 'brand_image_removed', 'Removed the '.($kind === 'hero' ? 'home banner' : 'sign-in').' photo', null, $actor);
+        $this->toast('Photo removed.');
+
+        return back();
     }
 }

@@ -5,6 +5,7 @@ namespace App\Domains\Cms\Http\Controllers\Public;
 use App\Domains\Catalogue\Models\Category;
 use App\Domains\Cms\Models\Collection;
 use App\Domains\Cms\Settings\HomeSettings;
+use App\Domains\Cms\Support\BrandImages;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Listings\Public\PublicListing;
@@ -35,7 +36,7 @@ class HomeController extends Controller
         $tz = (string) config('platform.display_timezone');
 
         return Inertia::render('public/home', [
-            'hero' => ['title' => $home->hero_title, 'text' => $home->hero_text],
+            'hero' => ['title' => $home->hero_title, 'text' => $home->hero_text, 'image' => BrandImages::url('hero')],
             'featured' => $featured !== null ? PublicListing::card($featured) + ['closesLabel' => $featured->ends_at?->setTimezone($tz)->format('j F, H:i')] : null,
             'closingSoon' => $closing->map(fn (Listing $l): array => PublicListing::card($l))->values(),
             'categories' => Category::where('is_visible', true)->orderBy('sort_order')

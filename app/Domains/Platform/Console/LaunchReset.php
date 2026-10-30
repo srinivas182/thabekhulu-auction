@@ -5,6 +5,8 @@ namespace App\Domains\Platform\Console;
 use App\Domains\Audit\Support\Audit;
 use App\Domains\Cms\Models\Gallery;
 use App\Domains\Cms\Models\Post;
+use App\Domains\Cms\Settings\HomeSettings;
+use App\Domains\Cms\Support\BrandImages;
 use App\Domains\Listings\Models\Listing;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -107,6 +109,11 @@ class LaunchReset extends Command
             }
         }
 
+        // Keep the photos the site shows now (home banner, sign-in pages) before the listings they come from go.
+        $kept = $this->keepSitePhotos();
+        if ($kept !== []) {
+            $this->info('Kept as site photos: '.implode(', ', $kept).'.');
+        }
         // Media first, through the media library, so their files are removed too (website page images are kept).
         Media::query()->whereIn('model_type', self::MEDIA_OF_TEST_CONTENT)->each(fn ($m) => $m->delete());
         DB::transaction(fn () => $this->wipe($staffIds));
@@ -187,24 +194,31 @@ class LaunchReset extends Command
     {
         $dir = storage_path('launch-backup-'.now()->format('Ymd-His'));
         File::ensureDirectoryExists($dir);
-        $connection = config('database.default');
-        $db = config("database.connections.{$connection}");
+        try {
+            $connection = config('database.default');
+            $db = config("database.connections.{$connection}");
 
-        if (($db['driver'] ?? '') === 'sqlite') {
-            File::copy((string) $db['database'], "{$dir}/database.sqlite");
-        } else {
-            $result = Process::env(['MYSQL_PWD' => (string) ($db['password'] ?? '')])->timeout(600)->run([
-                'mysqldump', '--single-transaction', '--routines', '-h', (string) $db['host'], '-P', (string) $db['port'], '-u', (string) $db['username'],
-                '--result-file='."{$dir}/database.sql", (string) $db['database'],
-            ]);
-            if (! $result->successful() || ! File::exists("{$dir}/database.sql") || File::size("{$dir}/database.sql") === 0) {
-                throw new \RuntimeException('mysqldump failed: '.trim($result->errorOutput()));
+            if (($db['driver'] ?? '') === 'sqlite') {
+                File::copy((string) $db['database'], "{$dir}/database.sqlite");
+            } else {
+                $result = Process::env(['MYSQL_PWD' => (string) ($db['password'] ?? '')])->timeout(600)->run([
+                    'mysqldump', '--single-transaction', '--routines', '-h', (string) $db['host'], '-P', (string) $db['port'], '-u', (string) $db['username'],
+                    '--result-file='."{$dir}/database.sql", (string) $db['database'],
+                ]);
+                if (! $result->successful() || ! File::exists("{$dir}/database.sql") || File::size("{$dir}/database.sql") === 0) {
+                    throw new \RuntimeException('mysqldump failed: '.trim($result->errorOutput()));
+                }
             }
-        }
 
-        $files = Process::timeout(600)->path(storage_path('app'))->run(['tar', '-czf', "{$dir}/files.tar.gz", '.']);
-        if (! $files->successful()) {
-            throw new \RuntimeException('file archive failed: '.trim($files->errorOutput()));
+            $files = Process::timeout(600)->path(storage_path('app'))->run(['tar', '-czf', "{$dir}/files.tar.gz", '.']);
+            if (! $files->successful()) {
+                throw new \RuntimeException('file archive failed: '.trim($files->errorOutput()));
+            }
+
+        } catch (Throwable $e) {
+            File::deleteDirectory($dir); // never leave a half-made backup (it could hold personal data)
+
+            throw $e;
         }
 
         return $dir;
@@ -248,5 +262,36 @@ class LaunchReset extends Command
         }
 
         return $ordered;
+    }
+
+    /**
+     * Copy the featured (or newest public) listing's photo into the home banner and sign-in photos when
+     * none are set, so those pages look the same after the reset; clear the featured auction (it is deleted).
+     *
+     * @return list<string>
+     */
+    private function keepSitePhotos(): array
+    {
+        $home = app(HomeSettings::class);
+        $query = Listing::public()->whereHas('media');
+        $listing = ($home->featured_listing ? (clone $query)->where('ulid', $home->featured_listing)->first() : null) ?? $query->latest('id')->first();
+        $media = $listing?->getFirstMedia('photos');
+        $kept = [];
+        if ($media !== null && is_readable($media->getPath())) {
+            $contents = (string) file_get_contents($media->getPath());
+            $extension = pathinfo($media->file_name, PATHINFO_EXTENSION) ?: 'jpg';
+            foreach (['hero' => 'home banner', 'auth' => 'sign-in and sign-up'] as $kind => $label) {
+                if (BrandImages::url($kind) === null) {
+                    BrandImages::put($kind, $contents, $extension);
+                    $kept[] = $label.' photo';
+                }
+            }
+        }
+        $home = app(HomeSettings::class);
+        $home->refresh();
+        $home->featured_listing = null;
+        $home->save();
+
+        return $kept;
     }
 }
