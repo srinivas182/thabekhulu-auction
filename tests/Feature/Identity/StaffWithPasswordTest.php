@@ -75,7 +75,8 @@ it('issues a new temporary password, signing the person out, never for yourself 
     expect($password)->toBeString()->toHaveLength(16)
         ->and($user->password)->not->toBe($oldHash)->and(Hash::check($password, $user->password))->toBeTrue()
         ->and($user->must_change_password)->toBeTrue()
-        ->and(DB::table('sessions')->where('user_id', $user->id)->count())->toBe(0);
+        ->and(DB::table('sessions')->where('user_id', $user->id)->count())->toBe(0)
+        ->and(DB::table('activity_log')->where('event', 'temporary_password_issued')->where('subject_id', $user->id)->exists())->toBeTrue();
 
     $this->actingAs($this->admin)->post(route('admin.staff.temporary-password', $this->admin->ulid))->assertSessionHasErrors('staff');
     $staffAdmin = User::factory()->staff(SystemRole::Support)->create();
@@ -86,5 +87,5 @@ it('issues a new temporary password, signing the person out, never for yourself 
     $route = app('router')->getRoutes()->getByName('admin.staff.temporary-password');
     $request = Request::create('/'.$route->uri(), 'POST');
     $request->setRouteResolver(fn () => $route->bind($request));
-    expect(ApprovalGate::label($request))->not->toBeNull(); // needs a security approval code
+    expect(ApprovalGate::label($request))->toBeNull(); // no security code needed (audit-logged instead)
 });
