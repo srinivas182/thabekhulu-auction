@@ -35,7 +35,7 @@ class BuyerDepositController extends Controller
         return Inertia::render('account/deposit', [
             'listing' => ['ulid' => $listing->ulid, 'title' => $listing->title, 'url' => PublicListing::url($listing), 'amount' => (int) $listing->deposit_amount, 'terms' => $listing->deposit_terms->value],
             'approval' => $approval?->status,
-            'gateOpen' => DepositService::complianceComplete($listing),
+            'gateOpen' => DepositService::depositsOpen($listing),
             'deposit' => $deposit === null ? null : [
                 'reference' => $deposit->reference, 'status' => $deposit->status, 'statusLabel' => Deposit::STATUSES[$deposit->status], 'proofUploadedAt' => $deposit->proof_uploaded_at?->setTimezone((string) config('platform.display_timezone'))->format('j F Y, H:i'),
                 'amount' => $deposit->amount, 'paid' => $deposit->balance(),

@@ -6,6 +6,7 @@ use App\Domains\Catalogue\Models\City;
 use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Models\Deposit;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Models\User;
 use Database\Seeders\AccessSeeder;
@@ -24,6 +25,9 @@ function dashListing(string $slug, ListingStatus $status): Listing
 }
 
 it('shows what needs attention and the key figures', function () {
+    $s = app(AuctionSettings::class);
+    $s->deposits_need_legal_signoff = true;
+    $s->save();
     $live = dashListing('live-home', ListingStatus::Live);
     dashListing('offer-home', ListingStatus::UnderOffer);
     $buyer = User::factory()->create(['type' => 'buyer']);
@@ -52,5 +56,13 @@ it('shows each person only the figures their role allows', function () {
     $this->actingAs(User::factory()->staff(SystemRole::KycOfficer)->create())->get(route('admin.dashboard'))->assertOk()->assertInertia(function (Assert $p) {
         $titles = collect($p->toArray()['props']['groups'])->pluck('title')->all();
         expect($titles)->not->toContain('Money')->not->toContain('Settlement');
+    });
+});
+
+it('does not flag unsigned legal checks when deposits do not wait for them', function () {
+    dashListing('live-home', ListingStatus::Live);
+
+    $this->actingAs(User::factory()->staff(SystemRole::SuperAdmin)->create())->get(route('admin.dashboard'))->assertOk()->assertInertia(function (Assert $p) {
+        expect(collect($p->toArray()['props']['attention'])->pluck('label'))->not->toContain('Public listings with legal checks incomplete (deposits closed)');
     });
 });

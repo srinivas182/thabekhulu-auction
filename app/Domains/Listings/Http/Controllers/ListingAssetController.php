@@ -153,14 +153,14 @@ class ListingAssetController extends Controller
             'files.*' => ['file', 'mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx', 'max:10240'],
         ], ['files.max' => __('Attach up to 10 files.'), 'files.*.mimes' => __('Attach PDF, image, Word or Excel files.'), 'files.*.max' => __('Each file can be up to 10 MB.')]);
         $note = $data['note'];
-        $wasComplete = DepositService::complianceComplete($listing);
+        $wasComplete = DepositService::depositsOpen($listing);
 
         $listing->complianceItems()->updateOrCreate(['item' => $item->value], [
             'signed_off_by' => $actor->id, 'signed_off_at' => now(), 'note' => $note,
         ]);
 
-        // The last legal check just completed: tell approved bidders who haven't paid that deposits are open.
-        if (! $wasComplete && DepositService::complianceComplete($listing->fresh() ?? $listing)) {
+        // Deposits were held for legal checks and the last one just completed: tell approved bidders who haven't paid that deposits are open.
+        if (! $wasComplete && DepositService::depositsOpen($listing->fresh() ?? $listing)) {
             BidderApproval::with('user')->where('listing_id', $listing->id)->where('status', 'approved')
                 ->whereDoesntHave('deposits', fn ($q) => $q->whereIn('status', ['received', 'applied']))->get()
                 ->each(fn ($a) => $a->user->notify(new DepositsOpen($listing->title, route('deposits.show', $listing))));

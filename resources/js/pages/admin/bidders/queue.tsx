@@ -26,6 +26,7 @@ type Application = {
     ready: boolean;
     checksSigned: number;
     checksTotal: number;
+    depositsOpen: boolean;
     missing: string[];
 };
 
@@ -91,7 +92,7 @@ export default function BidderQueue({
                                         </span>
                                     )}
                                 </p>
-                                {a.checksSigned < a.checksTotal && (
+                                {!a.depositsOpen && (
                                     <p className="font-medium text-amber-700 dark:text-amber-400">
                                         Deposits not open yet: {a.checksSigned}{' '}
                                         of {a.checksTotal} legal checks signed

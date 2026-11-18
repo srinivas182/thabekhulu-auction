@@ -143,7 +143,10 @@ it('takes proof of an EFT payment and lets finance open it, logged', function ()
     $this->actingAs(User::factory()->staff(SystemRole::ListingsManager)->create())->get(route('admin.deposits.proof', $deposit))->assertForbidden();
 });
 
-it('emails approved, unpaid bidders once, when the last legal check is signed off', function () {
+it('emails approved, unpaid bidders once, when the last legal check is signed off (deposits held for checks)', function () {
+    $s = app(AuctionSettings::class);
+    $s->deposits_need_legal_signoff = true;
+    $s->save();
     $unpaid = advBidder('Unpaid', '1111', null);
     $paid = advBidder('Paid', '2222');
     $pendingUser = User::factory()->create(['type' => 'buyer']);
@@ -156,7 +159,7 @@ it('emails approved, unpaid bidders once, when the last legal check is signed of
         $this->actingAs($admin)->post(route('admin.listings.compliance.signoff', [$this->listing, $item->value]), ['note' => 'Checked'])->assertSessionHasNoErrors();
     }
     Notification::assertNothingSent();
-    $this->actingAs($admin)->get(route('admin.bidders.queue'))->assertInertia(fn ($p) => $p->where('applications.0.checksSigned', count($items) - 1)->where('applications.0.checksTotal', count($items)));
+    $this->actingAs($admin)->get(route('admin.bidders.queue'))->assertInertia(fn ($p) => $p->where('applications.0.checksSigned', count($items) - 1)->where('applications.0.checksTotal', count($items))->where('applications.0.depositsOpen', false));
 
     $this->actingAs($admin)->post(route('admin.listings.compliance.signoff', [$this->listing, end($items)->value]), ['note' => 'Checked'])->assertSessionHasNoErrors();
     Notification::assertSentTo($unpaid, DepositsOpen::class);
@@ -223,4 +226,15 @@ it('still opens the deposit page and finance list after a proof of payment is up
         ->assertInertia(fn ($p) => $p->where('deposit.proofUploadedAt', fn ($v) => is_string($v) && $v !== ''));
     $this->actingAs(User::factory()->staff(SystemRole::Finance)->create())->get(route('admin.finance.index', ['tab' => 'deposits']))->assertOk()
         ->assertInertia(fn ($p) => $p->where('deposits.0.proofAt', fn ($v) => is_string($v) && $v !== ''));
+});
+
+it('sends no deposits-open email when deposits never waited for legal checks', function () {
+    $unpaid = advBidder('Unpaid', '1111', null);
+    $admin = User::factory()->staff(SystemRole::SuperAdmin)->create();
+
+    $this->actingAs($unpaid)->get("/auctions/homes/sandton/{$this->listing->slug}")->assertInertia(fn ($p) => $p->where('bidder.depositsOpen', true));
+    foreach (ComplianceItem::cases() as $item) {
+        $this->actingAs($admin)->post(route('admin.listings.compliance.signoff', [$this->listing, $item->value]), ['note' => 'Checked'])->assertSessionHasNoErrors();
+    }
+    Notification::assertNotSentTo($unpaid, DepositsOpen::class);
 });

@@ -11,6 +11,7 @@ use App\Domains\Payments\Models\Receipt;
 use App\Domains\Payments\Notifications\DepositReceived;
 use App\Domains\Payments\Support\DepositReference;
 use App\Domains\Payments\Support\ReceiptNumber;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Models\User;
@@ -33,6 +34,15 @@ class DepositService
         return collect(ComplianceItem::cases())->every(fn (ComplianceItem $i) => in_array($i->value, $signed, true));
     }
 
+    /**
+     * Whether approved bidders may pay the deposit. The legal sign-off only holds
+     * deposits back when Auction rules says so; by default it is optional.
+     */
+    public static function depositsOpen(Listing $listing): bool
+    {
+        return ! app(AuctionSettings::class)->deposits_need_legal_signoff || self::complianceComplete($listing);
+    }
+
     public function open(BidderApproval $approval, User $buyer): Deposit
     {
         $listing = $approval->listing;
@@ -41,7 +51,7 @@ class DepositService
             // Approve first, then pay: nobody pays a deposit for an application that may be declined.
             throw ValidationException::withMessages(['deposit' => __('You can pay the deposit once you’re approved to bid.')]);
         }
-        if (! self::complianceComplete($listing)) {
+        if (! self::depositsOpen($listing)) {
             throw ValidationException::withMessages(['deposit' => __('Deposits for this listing open once our legal checks are complete. We’ll email you.')]);
         }
         if ((int) $listing->deposit_amount <= 0) {

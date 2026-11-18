@@ -39,7 +39,7 @@ class BuyerDashboardController extends Controller
         foreach ($approvals->whereIn('status', ['pending', 'approved']) as $a) {
             $deposit = Deposit::where('bidder_approval_id', $a->id)->first();
             if ((int) $a->listing->deposit_amount > 0 && ! in_array($deposit?->status, ['received', 'applied', 'refund_scheduled', 'refunded'], true)
-                && DepositService::complianceComplete($a->listing)) {
+                && DepositService::depositsOpen($a->listing)) {
                 $attention[] = ['kind' => 'deposit', 'text' => "Pay your deposit for {$a->listing->title}.", 'url' => route('deposits.show', $a->listing->ulid, false), 'action' => 'Pay deposit'];
             }
         }
