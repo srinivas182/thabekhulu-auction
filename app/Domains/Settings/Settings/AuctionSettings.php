@@ -33,6 +33,9 @@ class AuctionSettings extends Settings
     /** Buyers may set a maximum (and an advance maximum). Off stops new maximums only. */
     public bool $auto_bid_enabled;
 
+    /** On: deposits open only after every legal check is signed off. Off (default): sign-off is tracked but optional. */
+    public bool $deposits_need_legal_signoff;
+
     public int $default_suspension_months;
 
     public int $hot_badge_min_bids;

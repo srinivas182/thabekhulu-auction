@@ -368,7 +368,7 @@ function DocumentEditor({
             </div>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
                 <Check
-                    label="Mandatory before review"
+                    label="Expected for this category (not needed to publish)"
                     checked={d.mandatory}
                     onChange={(v) => setD({ ...d, mandatory: v })}
                 />
@@ -643,9 +643,9 @@ export default function CategoryEdit({
                             Document types
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                            Documents are never public. Mandatory ones must be
-                            uploaded before a listing can be submitted for
-                            review.
+                            Documents are never public and never block
+                            publishing: sellers can share them with approved
+                            bidders after the listing is live.
                         </p>
                     </div>
                     {docs.map((doc) => (

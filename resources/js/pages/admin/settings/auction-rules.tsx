@@ -15,6 +15,7 @@ type Rules = {
     step_up_threshold: number;
     increment_bands: Band[];
     auto_bid_enabled: boolean;
+    deposits_need_legal_signoff: boolean;
     soft_close_enabled: boolean;
     soft_close_window_minutes: number;
     soft_close_extension_minutes: number;
@@ -277,6 +278,44 @@ export default function AuctionRules({ rules }: { rules: Rules }) {
                                 still compete fairly. If switched off, buyers
                                 can’t set new maximums; maximums already set
                                 keep working until those auctions close.
+                            </span>
+                        </span>
+                    </label>
+                </section>
+                <section
+                    aria-labelledby="legal-h"
+                    className="grid gap-3 rounded-xl border border-border bg-card p-5"
+                >
+                    <h2 id="legal-h" className="font-semibold">
+                        Legal checks and deposits
+                    </h2>
+                    <label className="flex cursor-pointer items-start gap-3 text-sm">
+                        <input
+                            type="checkbox"
+                            checked={f.deposits_need_legal_signoff}
+                            onChange={(e) =>
+                                setF({
+                                    ...f,
+                                    deposits_need_legal_signoff:
+                                        e.target.checked,
+                                })
+                            }
+                            className="mt-0.5 size-5 accent-primary"
+                        />
+                        <span>
+                            <span className="font-semibold">
+                                Hold deposits until every legal check is signed
+                                off
+                            </span>
+                            <span className="block text-muted-foreground">
+                                Off by default: listings go live and approved
+                                bidders can pay their deposit straight away,
+                                while sellers share documents with approved
+                                bidders when they are ready. The legal checklist
+                                on each listing stays available and every
+                                sign-off is still logged. Switch this on to stop
+                                deposits on any listing whose checks are not all
+                                signed off.
                             </span>
                         </span>
                     </label>

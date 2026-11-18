@@ -7,6 +7,7 @@ use App\Domains\Listings\Enums\ListingStatus;
 use App\Domains\Listings\Models\Listing;
 use App\Domains\Payments\Models\Deposit;
 use App\Domains\Platform\Health\HealthCheck;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Domains\Verification\Models\Verification;
@@ -52,7 +53,7 @@ class AdminDashboardController extends Controller
         if (Gate::allows('settlement.manage')) {
             $add('Buyer settlement uploads to review', DB::table('settlement_uploads')->where('status', 'pending')->count(), route('admin.settlement.index'));
         }
-        if (Gate::allows('compliance.review') || Gate::allows('compliance.signoff')) {
+        if ((Gate::allows('compliance.review') || Gate::allows('compliance.signoff')) && app(AuctionSettings::class)->deposits_need_legal_signoff) {
             $total = count(ComplianceItem::cases());
             $incomplete = Listing::whereIn('status', [ListingStatus::Scheduled, ListingStatus::Live])->withCount(['complianceItems'])->get()
                 ->filter(fn (Listing $l) => $l->getAttribute('compliance_items_count') < $total)->count();

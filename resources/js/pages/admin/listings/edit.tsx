@@ -1093,7 +1093,7 @@ export default function ListingEdit(props: Props) {
                 {tab === 'Documents' && (
                     <Section
                         title="Documents"
-                        description="Stored privately. Who can open each type is set per category; nothing here is ever public."
+                        description="Optional: the listing can go live without any documents. Upload them when the seller is ready; types set to “Approved bidders after NDA” open only in the data room, to buyers you have approved. Nothing here is ever public."
                     >
                         <ul className="grid gap-3">
                             {props.documentTypes.map((t) => (
@@ -1105,8 +1105,8 @@ export default function ListingEdit(props: Props) {
                                         <p className="font-medium">
                                             {t.name}
                                             {t.mandatory && (
-                                                <span className="ml-2 text-xs font-semibold text-destructive">
-                                                    Mandatory
+                                                <span className="ml-2 text-xs font-semibold text-muted-foreground">
+                                                    Expected later
                                                 </span>
                                             )}
                                         </p>
@@ -1694,7 +1694,7 @@ export default function ListingEdit(props: Props) {
                 {tab === 'Compliance' && (
                     <Section
                         title="Compliance checklist"
-                        description="Deposits stay switched off for this listing until every item is signed off (enforced when payments go live)."
+                        description="Optional record of the legal checks done for this listing. It never stops the listing going live; it only holds deposits back if “Hold deposits until every legal check is signed off” is switched on in Auction rules."
                     >
                         <ul className="grid gap-3">
                             {props.compliance.map((c) => (

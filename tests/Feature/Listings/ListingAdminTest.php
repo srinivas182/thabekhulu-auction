@@ -33,7 +33,7 @@ function newListing(User $by, string $category = 'land'): Listing
 }
 
 /** Fills every section so the listing is ready for review. */
-function completeListing(User $by, Listing $listing): Listing
+function completeListing(User $by, Listing $listing, bool $documents = true): Listing
 {
     test()->actingAs($by)->put(route('admin.listings.update', [$listing, 'details']), [
         'title' => $listing->title, 'city_id' => City::where('slug', 'polokwane')->value('id'),
@@ -64,7 +64,7 @@ function completeListing(User $by, Listing $listing): Listing
         test()->actingAs($by)->put(route('admin.listings.media.update', [$listing, $m]), ['alt' => 'View of the farm']);
     }
 
-    foreach ($listing->category->documentTypes->where('is_mandatory', true) as $type) {
+    foreach ($documents ? $listing->category->documentTypes->where('is_mandatory', true) : [] as $type) {
         test()->actingAs($by)->post(route('admin.listings.documents.store', [$listing, $type]), [
             'file' => UploadedFile::fake()->create('doc.pdf', 200, 'application/pdf'),
         ])->assertSessionHasNoErrors();
@@ -140,6 +140,15 @@ it('blocks submission until the listing is complete', function () {
 
     $this->actingAs($this->manager)->post(route('admin.listings.submit', $listing))->assertSessionHasErrors('listing');
     expect($listing->fresh()->status)->toBe(ListingStatus::Draft);
+});
+
+it('lets a listing go live with no documents or legal sign-offs; sellers share them later', function () {
+    $listing = completeListing($this->manager, newListing($this->manager), false);
+    expect($listing->documents()->count())->toBe(0)->and($listing->complianceItems()->count())->toBe(0);
+
+    $this->actingAs($this->manager)->post(route('admin.listings.submit', $listing))->assertSessionHasNoErrors();
+    $this->actingAs($this->auctioneer)->post(route('admin.listings.approve', $listing))->assertSessionHasNoErrors();
+    expect($listing->fresh()->status)->toBe(ListingStatus::Scheduled);
 });
 
 it('requires alt text on every photo before submission', function () {

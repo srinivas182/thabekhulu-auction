@@ -12,6 +12,7 @@ use App\Domains\Payments\Models\LedgerEntry;
 use App\Domains\Payments\Models\Receipt;
 use App\Domains\Payments\Notifications\DepositReceived;
 use App\Domains\Quotes\Settings\QuotationSettings;
+use App\Domains\Settings\Settings\AuctionSettings;
 use App\Domains\Verification\Models\BankAccount;
 use App\Domains\Verification\Models\BidderApproval;
 use App\Models\User;
@@ -54,7 +55,17 @@ function openDeposit(): Deposit
     return Deposit::firstOrFail();
 }
 
-it('refuses deposits until every compliance item is signed off', function () {
+it('opens deposits without the legal sign-off by default', function () {
+    expect(app(AuctionSettings::class)->deposits_need_legal_signoff)->toBeFalse();
+
+    $deposit = openDeposit();
+    expect($deposit->status)->toBe('awaiting')->and($this->listing->complianceItems()->count())->toBe(0);
+});
+
+it('refuses deposits until every compliance item is signed off, when Auction rules holds them', function () {
+    $s = app(AuctionSettings::class);
+    $s->deposits_need_legal_signoff = true;
+    $s->save();
     $this->listing->complianceItems()->create(['item' => 'seller_authority', 'signed_off_by' => $this->finance->id, 'signed_off_at' => now()]);
 
     $this->actingAs($this->buyer)->post(route('deposits.open', $this->listing->ulid))->assertSessionHasErrors('deposit');

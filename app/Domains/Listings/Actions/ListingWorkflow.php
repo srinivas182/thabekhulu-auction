@@ -89,7 +89,7 @@ class ListingWorkflow
         }
 
         $problems = [];
-        $listing->loadMissing(['category.attributeDefinitions', 'category.documentTypes', 'attributeValues', 'documents']);
+        $listing->loadMissing(['category.attributeDefinitions', 'attributeValues']);
 
         if ($listing->city_id === null) {
             $problems[] = __('Choose the city.');
@@ -122,12 +122,8 @@ class ListingWorkflow
             }
         }
 
-        $uploaded = $listing->documents->pluck('document_type_id')->all();
-        foreach ($listing->category->documentTypes->where('is_mandatory', true) as $type) {
-            if (! in_array($type->id, $uploaded, true)) {
-                $problems[] = __('Upload the mandatory document “:doc”.', ['doc' => $type->name]);
-            }
-        }
+        // Documents never block publishing: sellers share them with approved bidders when ready.
+        // Expected ones that are still missing show on the listing's Documents tab instead.
 
         return $problems;
     }

@@ -125,7 +125,7 @@ class AuctionController extends Controller
             'bidderNumber' => $approval?->status === 'approved' ? $approval->bidder_number : null,
             'depositPaid' => $approval !== null && Deposit::where('bidder_approval_id', $approval->id)->whereIn('status', ['received', 'applied'])->exists(),
             'depositAmount' => (int) $listing->deposit_amount, 'depositUrl' => route('deposits.show', $listing),
-            'depositsOpen' => DepositService::complianceComplete($listing),
+            'depositsOpen' => DepositService::depositsOpen($listing),
             'scheduled' => $listing->status === ListingStatus::Scheduled, 'sealed' => $listing->auction_type->value === 'sealed',
             'opens' => $listing->starts_at?->setTimezone((string) config('platform.display_timezone'))->format('j F, H:i'),
             'advanceMax' => $approval !== null ? (($a = AdvanceBid::where('bidder_approval_id', $approval->id)->whereNull('applied_at')->first()) ? (int) $a->amount : null) : null,
